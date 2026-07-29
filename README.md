@@ -109,6 +109,8 @@ npm run type-check
 | `VITE_SUPABASE_URL` | Supabase 项目 URL |
 | `VITE_SUPABASE_ANON_KEY` | Supabase Anon Key（公开密钥） |
 
+部署到 Vercel 时，需要在项目的 **Settings → Environment Variables** 中分别配置这两个变量，并至少勾选 **Production**。`.env` 文件不会被提交或自动上传到 Vercel。修改变量后需要重新部署；值不要包含引号、换行或多余空格。
+
 ## 代码规范
 
 ### 命名规范

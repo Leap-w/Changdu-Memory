@@ -9,6 +9,16 @@
   </head>
   <body>
     <div id="app"></div>
+    <!-- 清除旧版 PWA Service Worker（避免缓存旧代码） -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          for (var i = 0; i < registrations.length; i++) {
+            registrations[i].unregister()
+          }
+        })
+      }
+    </script>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

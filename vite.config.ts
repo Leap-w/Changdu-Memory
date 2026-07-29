@@ -1,6 +1,5 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import { VitePWA } from 'vite-plugin-pwa'
 import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
@@ -11,29 +10,7 @@ export default defineConfig({
   },
   plugins: [
     vue(),
-    VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico'],
-      manifest: {
-        name: '昌都记忆 Changdu Memory',
-        short_name: '昌都记忆',
-        description: '个人数字记录平台',
-        theme_color: '#4F8EF7',
-        background_color: '#F7F9FC',
-        display: 'standalone',
-        icons: [
-          {
-            src: 'pwa-192x192.png',
-            sizes: '192x192',
-            type: 'image/png',
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-          },
-        ],
-      },
-    }),
+    // PWA 暂时禁用 — SW 会缓存旧 JS 导致部署后仍加载旧代码
+    // TODO: 等环境稳定后再重新启用
   ],
 })

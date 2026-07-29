@@ -44,8 +44,15 @@ async function handleSubmit() {
 
   try {
     if (isRegister.value) {
-      await authStore.register(email.value, password.value)
-      message.success('注册成功')
+      const data = await authStore.register(email.value, password.value)
+      if (!data.session) {
+        message.success('注册成功，请前往邮箱完成验证后再登录')
+        isRegister.value = false
+        password.value = ''
+        confirmPassword.value = ''
+        return
+      }
+      message.success('注册并登录成功')
     } else {
       await authStore.login(email.value, password.value)
       message.success('登录成功')

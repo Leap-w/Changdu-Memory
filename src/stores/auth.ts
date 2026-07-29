@@ -15,7 +15,7 @@ export const useAuthStore = defineStore('auth', () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  const isLoggedIn = computed(() => !!user.value)
+  const isLoggedIn = computed(() => !!session.value)
 
   /** 注册 */
   async function register(email: string, password: string) {
@@ -23,10 +23,13 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
     try {
       const data = await signUpWithEmail(email, password)
-      if (data.user) {
+      // 启用邮箱验证时，Supabase 会返回 user 但不会创建 session。
+      // 只有取得 session 后才视为已登录。
+      if (data.session) {
         user.value = data.user
         session.value = data.session
       }
+      return data
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '注册失败'
       error.value = message
