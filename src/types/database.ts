@@ -234,6 +234,41 @@ export interface Database {
           updated_at?: string
         }
       }
+      photo_records: {
+        Row: {
+          id: string
+          user_id: string
+          storage_path: string
+          title: string | null
+          description: string | null
+          photo_date: string
+          location_id: string | null
+          category: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          storage_path: string
+          title?: string | null
+          description?: string | null
+          photo_date?: string
+          location_id?: string | null
+          category?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          storage_path?: string
+          title?: string | null
+          description?: string | null
+          photo_date?: string
+          location_id?: string | null
+          category?: string
+          updated_at?: string
+        }
+      }
       contacts: {
         Row: {
           id: string

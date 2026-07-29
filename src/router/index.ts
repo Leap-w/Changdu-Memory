@@ -118,6 +118,30 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '编辑地点', requiresAuth: true },
   },
   {
+    path: '/photo',
+    name: 'Photo',
+    component: () => import('@/pages/Photo.vue'),
+    meta: { title: '照片', requiresAuth: true },
+  },
+  {
+    path: '/photo/new',
+    name: 'PhotoCreate',
+    component: () => import('@/pages/PhotoEdit.vue'),
+    meta: { title: '上传照片', requiresAuth: true },
+  },
+  {
+    path: '/photo/:id',
+    name: 'PhotoDetail',
+    component: () => import('@/pages/PhotoDetail.vue'),
+    meta: { title: '照片详情', requiresAuth: true },
+  },
+  {
+    path: '/photo/:id/edit',
+    name: 'PhotoEdit',
+    component: () => import('@/pages/PhotoEdit.vue'),
+    meta: { title: '编辑照片', requiresAuth: true },
+  },
+  {
     path: '/profile',
     name: 'Profile',
     component: () => import('@/pages/Profile.vue'),
