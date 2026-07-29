@@ -37,6 +37,10 @@ async function handleLogout() {
 function goTagManage() {
   router.push('/settings/tags')
 }
+
+function goImport() {
+  router.push('/import')
+}
 </script>
 
 <template>
@@ -61,6 +65,20 @@ function goTagManage() {
             @click="handleExport"
           >
             导出 JSON
+          </NButton>
+        </div>
+
+        <NDivider />
+
+        <div class="settings-item">
+          <div class="settings-item__info">
+            <span class="settings-item__label">数据导入</span>
+            <span class="settings-item__desc">
+              通过 Excel 模板批量导入历史数据。支持日记、工作、花费、地点、待办。
+            </span>
+          </div>
+          <NButton secondary @click="goImport">
+            导入
           </NButton>
         </div>
       </NCard>

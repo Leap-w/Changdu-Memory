@@ -148,6 +148,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '我的', requiresAuth: true },
   },
   {
+    path: '/import',
+    name: 'Import',
+    component: () => import('@/pages/Import.vue'),
+    meta: { title: '数据导入', requiresAuth: true },
+  },
+  {
     path: '/settings',
     name: 'Settings',
     component: () => import('@/pages/Settings.vue'),
