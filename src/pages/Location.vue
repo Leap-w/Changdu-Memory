@@ -13,8 +13,8 @@ onMounted(() => {
   locationStore.loadLocations()
 })
 
-function goEdit(id: string) {
-  router.push(`/location/${id}/edit`)
+function goDetail(id: string) {
+  router.push(`/location/${id}`)
 }
 
 function goCreate() {
@@ -61,7 +61,7 @@ const typeLabels: Record<string, string> = {
             v-for="loc in group.items"
             :key="loc.id"
             :location="loc"
-            @click="goEdit"
+            @click="goDetail"
           />
         </div>
       </div>

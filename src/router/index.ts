@@ -112,6 +112,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '添加地点', requiresAuth: true },
   },
   {
+    path: '/location/:id',
+    name: 'LocationDetail',
+    component: () => import('@/pages/LocationDetail.vue'),
+    meta: { title: '地点详情', requiresAuth: true },
+  },
+  {
     path: '/location/:id/edit',
     name: 'LocationEdit',
     component: () => import('@/pages/LocationEdit.vue'),
@@ -122,6 +128,12 @@ const routes: RouteRecordRaw[] = [
     name: 'Photo',
     component: () => import('@/pages/Photo.vue'),
     meta: { title: '照片', requiresAuth: true },
+  },
+  {
+    path: '/photo/timeline',
+    name: 'PhotoTimeline',
+    component: () => import('@/pages/PhotoTimeline.vue'),
+    meta: { title: '照片时间轴', requiresAuth: true },
   },
   {
     path: '/photo/new',
