@@ -11,6 +11,9 @@ node_modules
 dist
 dist-ssr
 
+# TypeScript build cache
+*.tsbuildinfo
+
 # Env
 .env
 .env.local
