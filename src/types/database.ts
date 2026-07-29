@@ -57,11 +57,10 @@ export interface Database {
           user_id: string
           title: string
           description: string | null
-          category: string | null
-          priority: number
-          status: string
-          deadline: string | null
-          completed_at: string | null
+          todo_date: string
+          priority: string
+          category: string
+          completed: boolean
           created_at: string
           updated_at: string
         }
@@ -70,22 +69,20 @@ export interface Database {
           user_id: string
           title: string
           description?: string | null
-          category?: string | null
-          priority?: number
-          status?: string
-          deadline?: string | null
-          completed_at?: string | null
+          todo_date?: string
+          priority?: string
+          category?: string
+          completed?: boolean
           created_at?: string
           updated_at?: string
         }
         Update: {
           title?: string
           description?: string | null
-          category?: string | null
-          priority?: number
-          status?: string
-          deadline?: string | null
-          completed_at?: string | null
+          todo_date?: string
+          priority?: string
+          category?: string
+          completed?: boolean
           updated_at?: string
         }
       }

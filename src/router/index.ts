@@ -28,6 +28,18 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '今日待办', requiresAuth: true },
   },
   {
+    path: '/todo/new',
+    name: 'TodoCreate',
+    component: () => import('@/pages/TodoEdit.vue'),
+    meta: { title: '新建待办', requiresAuth: true },
+  },
+  {
+    path: '/todo/:id/edit',
+    name: 'TodoEdit',
+    component: () => import('@/pages/TodoEdit.vue'),
+    meta: { title: '编辑待办', requiresAuth: true },
+  },
+  {
     path: '/work',
     name: 'Work',
     component: () => import('@/pages/Work.vue'),

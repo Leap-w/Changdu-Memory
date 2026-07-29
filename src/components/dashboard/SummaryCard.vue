@@ -2,13 +2,17 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDiaryStore } from '@/stores/diary'
+import { useTodoStore } from '@/stores/todo'
 import { NCard, NGrid, NGi } from 'naive-ui'
 import type { Diary } from '@/repositories/DiaryRepository'
+import type { Todo } from '@/repositories/TodoRepository'
 
 const router = useRouter()
 const diaryStore = useDiaryStore()
+const todoStore = useTodoStore()
 
 const latestDiary = ref<Diary | null>(null)
+const todayTodos = ref<Todo[]>([])
 
 interface SummaryItem {
   label: string
@@ -20,53 +24,69 @@ interface SummaryItem {
 }
 
 onMounted(async () => {
-  try {
-    latestDiary.value = await diaryStore.getLatestDiary()
-  } catch {
-    // 忽略
+  // 并行加载
+  const [diary, todos] = await Promise.allSettled([
+    diaryStore.getLatestDiary(),
+    todoStore.loadTodayTodos(),
+  ])
+
+  if (diary.status === 'fulfilled') {
+    latestDiary.value = diary.value
+  }
+  if (todos.status === 'fulfilled') {
+    todayTodos.value = todos.value
   }
 })
 
-const items = computedSummaryItems()
+function getItems(): SummaryItem[] {
+  const pendingCount = todayTodos.value.filter((t) => !t.completed).length
+  const completedCount = todayTodos.value.filter((t) => t.completed).length
 
-function computedSummaryItems(): SummaryItem[] {
-  if (latestDiary.value) {
-    const title = latestDiary.value.title || '无标题'
-    return [
-      {
-        label: '今日待办',
-        icon: '✅',
-        route: '/todo',
-        value: '—',
-        clickable: false,
-      },
-      {
-        label: '今日花费',
-        icon: '💰',
-        route: '/expense',
-        value: '—',
-        clickable: false,
-      },
-      {
+  // 待办
+  const todoItem: SummaryItem = {
+    label: '今日待办',
+    icon: '✅',
+    route: '/todo',
+    value: todayTodos.value.length > 0 ? `${pendingCount}` : '—',
+    subtitle: todayTodos.value.length > 0 ? `已完成 ${completedCount}` : undefined,
+    clickable: true,
+  }
+
+  // 花费
+  const expenseItem: SummaryItem = {
+    label: '今日花费',
+    icon: '💰',
+    route: '/expense',
+    value: '—',
+    clickable: false,
+  }
+
+  // 最近日记
+  const diaryItem: SummaryItem = latestDiary.value
+    ? {
         label: '最近日记',
         icon: '📖',
         route: `/diary/${latestDiary.value.id}`,
-        value: title.length > 8 ? title.slice(0, 8) + '…' : title,
+        value:
+          (latestDiary.value.title || '无标题').length > 8
+            ? (latestDiary.value.title || '').slice(0, 8) + '…'
+            : (latestDiary.value.title || '无标题'),
         subtitle: latestDiary.value.diary_date,
         clickable: true,
-      },
-    ]
-  }
+      }
+    : {
+        label: '最近日记',
+        icon: '📖',
+        route: '/diary',
+        value: '—',
+        clickable: false,
+      }
 
-  return [
-    { label: '今日待办', icon: '✅', route: '/todo', value: '—', clickable: false },
-    { label: '今日花费', icon: '💰', route: '/expense', value: '—', clickable: false },
-    { label: '最近日记', icon: '📖', route: '/diary', value: '—', clickable: false },
-  ]
+  return [todoItem, expenseItem, diaryItem]
 }
 
 function handleClick(item: SummaryItem) {
-  if (item.clickable || item.route) {
+  if (item.clickable && item.route) {
     router.push(item.route)
   }
 }
@@ -75,7 +95,10 @@ function handleClick(item: SummaryItem) {
 <template>
   <NCard class="summary-card" title="今日概览">
     <NGrid :cols="3" :x-gap="12">
-      <NGi v-for="item in items" :key="item.label">
+      <NGi
+        v-for="item in getItems()"
+        :key="item.label"
+      >
         <div
           class="summary-item"
           :class="{ 'summary-item--clickable': item.clickable }"
@@ -84,7 +107,10 @@ function handleClick(item: SummaryItem) {
           <span class="summary-item__icon">{{ item.icon }}</span>
           <span class="summary-item__label">{{ item.label }}</span>
           <span class="summary-item__value">{{ item.value }}</span>
-          <span v-if="item.subtitle" class="summary-item__subtitle">
+          <span
+            v-if="item.subtitle"
+            class="summary-item__subtitle"
+          >
             {{ item.subtitle }}
           </span>
         </div>
