@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useLocationStore } from '@/stores/location'
+import { fetchLocationTagIds, setLocationTags } from '@/repositories/TagRepository'
 import LocationEditor from '@/components/location/LocationEditor.vue'
 import { NSpin, useMessage } from 'naive-ui'
 
@@ -20,6 +21,7 @@ const existingLocation = ref<{
   description: string
   address: string
   visit_date: string
+  tag_ids: string[]
 } | null>(null)
 
 onMounted(async () => {
@@ -28,12 +30,17 @@ onMounted(async () => {
     try {
       const cached = locationStore.locations.find((l) => l.id === locationId.value)
       if (cached) {
+        let tagIds: string[] = []
+        try {
+          tagIds = await fetchLocationTagIds(locationId.value)
+        } catch { /* ignore */ }
         existingLocation.value = {
           name: cached.name,
           location_type: cached.location_type,
           description: cached.description || '',
           address: cached.address || '',
           visit_date: cached.visit_date,
+          tag_ids: tagIds,
         }
       } else {
         message.warning('记录不存在')
@@ -54,13 +61,28 @@ async function handleSubmit(data: {
   description: string
   address: string
   visit_date: string
+  tag_ids: string[]
 }) {
   try {
     if (isEdit.value && locationId.value) {
-      await locationStore.editLocation(locationId.value, data)
+      await locationStore.editLocation(locationId.value, {
+        name: data.name,
+        location_type: data.location_type,
+        description: data.description,
+        address: data.address,
+        visit_date: data.visit_date,
+      })
+      await setLocationTags(locationId.value, data.tag_ids)
       message.success('已更新')
     } else {
-      await locationStore.addLocation(data)
+      const loc = await locationStore.addLocation({
+        name: data.name,
+        location_type: data.location_type,
+        description: data.description,
+        address: data.address,
+        visit_date: data.visit_date,
+      })
+      await setLocationTags(loc.id, data.tag_ids)
       message.success('已添加')
     }
     router.push('/location')
@@ -88,6 +110,7 @@ function handleCancel() {
         :description="existingLocation?.description"
         :address="existingLocation?.address"
         :visit-date="existingLocation?.visit_date"
+        :tag-ids="existingLocation?.tag_ids"
         :loading="locationStore.loading"
         :submit-label="isEdit ? '保存' : '添加'"
         @submit="handleSubmit"

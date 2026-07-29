@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { NCard, NInput, NDatePicker, NButton, NSpace, useMessage } from 'naive-ui'
+import TagSelector from '@/components/tag/TagSelector.vue'
 
 interface Props {
   title?: string
   content?: string
   diaryDate?: string
+  tagIds?: string[]
   loading?: boolean
   submitLabel?: string
 }
@@ -14,12 +16,13 @@ const props = withDefaults(defineProps<Props>(), {
   title: '',
   content: '',
   diaryDate: '',
+  tagIds: () => [],
   loading: false,
   submitLabel: '保存',
 })
 
 const emit = defineEmits<{
-  submit: [data: { title: string; content: string; diary_date: string }]
+  submit: [data: { title: string; content: string; diary_date: string; tag_ids: string[] }]
   cancel: []
 }>()
 
@@ -30,6 +33,7 @@ const localContent = ref(props.content)
 const localDate = ref(
   props.diaryDate ? new Date(props.diaryDate).getTime() : Date.now(),
 )
+const localTagIds = ref<string[]>([...props.tagIds])
 
 function handleSubmit() {
   if (!localTitle.value.trim()) {
@@ -45,6 +49,7 @@ function handleSubmit() {
     title: localTitle.value.trim(),
     content: localContent.value,
     diary_date: toDateStr(localDate.value),
+    tag_ids: [...localTagIds.value],
   })
 }
 </script>
@@ -71,6 +76,11 @@ function handleSubmit() {
           size="large"
           style="width: 100%"
         />
+      </div>
+
+      <div class="editor-field">
+        <label class="editor-label">标签（选填）</label>
+        <TagSelector v-model="localTagIds" />
       </div>
 
       <div class="editor-field">

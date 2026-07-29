@@ -9,6 +9,7 @@ import {
   NSpace,
   useMessage,
 } from 'naive-ui'
+import TagSelector from '@/components/tag/TagSelector.vue'
 
 interface Props {
   name?: string
@@ -16,6 +17,7 @@ interface Props {
   description?: string
   address?: string
   visitDate?: string
+  tagIds?: string[]
   loading?: boolean
   submitLabel?: string
 }
@@ -26,12 +28,13 @@ const props = withDefaults(defineProps<Props>(), {
   description: '',
   address: '',
   visitDate: '',
+  tagIds: () => [],
   loading: false,
   submitLabel: '保存',
 })
 
 const emit = defineEmits<{
-  submit: [data: { name: string; location_type: string; description: string; address: string; visit_date: string }]
+  submit: [data: { name: string; location_type: string; description: string; address: string; visit_date: string; tag_ids: string[] }]
   cancel: []
 }>()
 
@@ -44,6 +47,7 @@ const localAddress = ref(props.address)
 const localDate = ref<number | null>(
   props.visitDate ? new Date(props.visitDate + 'T00:00:00').getTime() : Date.now(),
 )
+const localTagIds = ref<string[]>([...props.tagIds])
 
 const typeOptions = [
   { label: '📚 支教学校', value: 'school' },
@@ -65,6 +69,7 @@ function handleSubmit() {
     description: localDesc.value,
     address: localAddress.value,
     visit_date: localDate.value ? toDateStr(localDate.value) : new Date().toISOString().split('T')[0],
+    tag_ids: [...localTagIds.value],
   })
 }
 </script>
@@ -110,6 +115,11 @@ function handleSubmit() {
           size="large"
           maxlength="200"
         />
+      </div>
+
+      <div class="editor-field">
+        <label class="editor-label">标签（选填）</label>
+        <TagSelector v-model="localTagIds" />
       </div>
 
       <div class="editor-field">

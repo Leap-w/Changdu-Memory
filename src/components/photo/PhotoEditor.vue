@@ -14,6 +14,7 @@ import {
 import type { UploadFileInfo } from 'naive-ui'
 import { validateImageFile, compressImage } from '@/utils/image'
 import { useLocationStore } from '@/stores/location'
+import TagSelector from '@/components/tag/TagSelector.vue'
 
 interface Props {
   title?: string
@@ -21,9 +22,9 @@ interface Props {
   photoDate?: string
   locationId?: string | null
   category?: string
+  tagIds?: string[]
   loading?: boolean
   submitLabel?: string
-  /** 编辑模式已有图片URL */
   existingImageUrl?: string
 }
 
@@ -33,13 +34,14 @@ const props = withDefaults(defineProps<Props>(), {
   photoDate: '',
   locationId: null,
   category: 'life',
+  tagIds: () => [],
   loading: false,
   submitLabel: '上传',
   existingImageUrl: '',
 })
 
 const emit = defineEmits<{
-  submit: [data: { file?: Blob; fileName?: string; title: string; description: string; photo_date: string; location_id: string | null; category: string }]
+  submit: [data: { file?: Blob; fileName?: string; title: string; description: string; photo_date: string; location_id: string | null; category: string; tag_ids: string[] }]
   cancel: []
 }>()
 
@@ -53,8 +55,8 @@ const localDate = ref<number | null>(
 )
 const localCategory = ref(props.category)
 const localLocationId = ref<string | null>(props.locationId)
+const localTagIds = ref<string[]>([...props.tagIds])
 
-// 上传文件
 const fileList = ref<UploadFileInfo[]>([])
 const uploading = ref(false)
 
@@ -70,7 +72,6 @@ const locationOptions = computedLocationOptions()
 
 function computedLocationOptions(): { label: string; value: string }[] {
   if (locationStore.locations.length === 0) {
-    // 延迟加载
     locationStore.loadLocations().catch(() => {})
   }
   return [
@@ -123,6 +124,7 @@ async function handleSubmit() {
       photo_date: localDate.value ? toDateStr(localDate.value) : new Date().toISOString().split('T')[0],
       location_id: localLocationId.value || null,
       category: localCategory.value,
+      tag_ids: [...localTagIds.value],
     })
   } catch {
     message.error('图片处理失败')
@@ -135,7 +137,6 @@ async function handleSubmit() {
 <template>
   <div class="photo-editor">
     <NCard>
-      <!-- 已有图片预览（编辑模式） -->
       <div v-if="existingImageUrl" class="editor-field">
         <label class="editor-label">照片</label>
         <NImage
@@ -145,7 +146,6 @@ async function handleSubmit() {
         />
       </div>
 
-      <!-- 上传区（新建模式） -->
       <div v-if="!existingImageUrl" class="editor-field">
         <label class="editor-label">选择照片</label>
         <NUpload
@@ -197,6 +197,11 @@ async function handleSubmit() {
           placeholder="选择地点..."
           clearable
         />
+      </div>
+
+      <div class="editor-field">
+        <label class="editor-label">标签（选填）</label>
+        <TagSelector v-model="localTagIds" />
       </div>
 
       <div class="editor-field">

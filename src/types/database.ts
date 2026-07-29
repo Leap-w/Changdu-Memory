@@ -269,6 +269,77 @@ export interface Database {
           updated_at?: string
         }
       }
+      tags: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          color: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          color?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          name?: string
+          color?: string
+          updated_at?: string
+        }
+      }
+      diary_tags: {
+        Row: {
+          id: string
+          diary_id: string
+          tag_id: string
+        }
+        Insert: {
+          id?: string
+          diary_id: string
+          tag_id: string
+        }
+        Update: {
+          diary_id?: string
+          tag_id?: string
+        }
+      }
+      photo_tags: {
+        Row: {
+          id: string
+          photo_id: string
+          tag_id: string
+        }
+        Insert: {
+          id?: string
+          photo_id: string
+          tag_id: string
+        }
+        Update: {
+          photo_id?: string
+          tag_id?: string
+        }
+      }
+      location_tags: {
+        Row: {
+          id: string
+          location_id: string
+          tag_id: string
+        }
+        Insert: {
+          id?: string
+          location_id: string
+          tag_id: string
+        }
+        Update: {
+          location_id?: string
+          tag_id?: string
+        }
+      }
       contacts: {
         Row: {
           id: string

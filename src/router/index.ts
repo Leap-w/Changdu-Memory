@@ -154,6 +154,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '设置', requiresAuth: true },
   },
   {
+    path: '/settings/tags',
+    name: 'TagManage',
+    component: () => import('@/pages/TagManage.vue'),
+    meta: { title: '标签管理', requiresAuth: true },
+  },
+  {
     path: '/:pathMatch(.*)*',
     redirect: '/',
   },

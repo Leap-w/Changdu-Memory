@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { usePhotoStore } from '@/stores/photo'
+import { fetchPhotoTagIds, setPhotoTags } from '@/repositories/TagRepository'
 import PhotoEditor from '@/components/photo/PhotoEditor.vue'
 import { NSpin, useMessage } from 'naive-ui'
 
@@ -20,6 +21,7 @@ const existingPhoto = ref<{
   photo_date: string
   location_id: string | null
   category: string
+  tag_ids: string[]
   imageUrl: string
 } | null>(null)
 
@@ -32,12 +34,17 @@ onMounted(async () => {
       }
       const found = photoStore.getPhotoById(photoId.value)
       if (found) {
+        let tagIds: string[] = []
+        try {
+          tagIds = await fetchPhotoTagIds(photoId.value)
+        } catch { /* ignore */ }
         existingPhoto.value = {
           title: found.title || '',
           description: found.description || '',
           photo_date: found.photo_date,
           location_id: found.location_id,
           category: found.category,
+          tag_ids: tagIds,
           imageUrl: photoStore.getPhotoDisplayUrl(found),
         }
       } else {
@@ -61,6 +68,7 @@ async function handleSubmit(data: {
   photo_date: string
   location_id: string | null
   category: string
+  tag_ids: string[]
 }) {
   try {
     if (isEdit.value && photoId.value) {
@@ -71,6 +79,7 @@ async function handleSubmit(data: {
         location_id: data.location_id,
         category: data.category,
       })
+      await setPhotoTags(photoId.value, data.tag_ids)
       message.success('已更新')
       router.push(`/photo/${photoId.value}`)
     } else if (data.file && data.fileName) {
@@ -81,6 +90,7 @@ async function handleSubmit(data: {
         location_id: data.location_id,
         category: data.category,
       })
+      await setPhotoTags(photo.id, data.tag_ids)
       message.success('上传成功')
       router.push(`/photo/${photo.id}`)
     }
@@ -108,6 +118,7 @@ function handleCancel() {
         :photo-date="existingPhoto?.photo_date"
         :location-id="existingPhoto?.location_id"
         :category="existingPhoto?.category"
+        :tag-ids="existingPhoto?.tag_ids"
         :existing-image-url="existingPhoto?.imageUrl"
         :loading="photoStore.loading"
         :submit-label="isEdit ? '保存' : '上传'"

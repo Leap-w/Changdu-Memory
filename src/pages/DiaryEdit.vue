@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useDiaryStore } from '@/stores/diary'
+import { fetchDiaryTagIds, setDiaryTags } from '@/repositories/TagRepository'
 import DiaryEditor from '@/components/diary/DiaryEditor.vue'
 import { NSpin, useMessage } from 'naive-ui'
 
@@ -18,6 +19,7 @@ const existingDiary = ref<{
   title: string
   content: string
   diary_date: string
+  tag_ids: string[]
 } | null>(null)
 
 onMounted(async () => {
@@ -26,10 +28,15 @@ onMounted(async () => {
     try {
       const diary = await diaryStore.getDiaryById(diaryId.value)
       if (diary) {
+        let tagIds: string[] = []
+        try {
+          tagIds = await fetchDiaryTagIds(diaryId.value)
+        } catch { /* ignore */ }
         existingDiary.value = {
           title: diary.title ?? '',
           content: diary.content ?? '',
           diary_date: diary.diary_date,
+          tag_ids: tagIds,
         }
       } else {
         message.error('日记不存在')
@@ -44,14 +51,16 @@ onMounted(async () => {
   }
 })
 
-async function handleSubmit(data: { title: string; content: string; diary_date: string }) {
+async function handleSubmit(data: { title: string; content: string; diary_date: string; tag_ids: string[] }) {
   try {
     if (isEdit.value && diaryId.value) {
-      await diaryStore.editDiary(diaryId.value, data)
+      await diaryStore.editDiary(diaryId.value, { title: data.title, content: data.content, diary_date: data.diary_date })
+      await setDiaryTags(diaryId.value, data.tag_ids)
       message.success('已更新')
       router.push(`/diary/${diaryId.value}`)
     } else {
-      const diary = await diaryStore.addDiary(data)
+      const diary = await diaryStore.addDiary({ title: data.title, content: data.content, diary_date: data.diary_date })
+      await setDiaryTags(diary.id, data.tag_ids)
       message.success('日记已创建')
       router.push(`/diary/${diary.id}`)
     }
@@ -77,6 +86,7 @@ function handleCancel() {
         :title="existingDiary?.title"
         :content="existingDiary?.content"
         :diary-date="existingDiary?.diary_date"
+        :tag-ids="existingDiary?.tag_ids"
         :loading="diaryStore.loading"
         :submit-label="isEdit ? '保存' : '创建'"
         @submit="handleSubmit"
