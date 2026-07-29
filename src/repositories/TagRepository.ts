@@ -99,6 +99,26 @@ export async function setPhotoTags(photoId: string, tagIds: string[]): Promise<v
   }
 }
 
+// ====== 全量表查询（统计用） ======
+
+ 
+export async function fetchAllDiaryTags(): Promise<{ diary_id: string; tag_id: string }[]> {
+  const { data } = await (supabase as any).from('diary_tags').select('diary_id,tag_id')
+  return (data ?? [])
+}
+
+ 
+export async function fetchAllPhotoTags(): Promise<{ photo_id: string; tag_id: string }[]> {
+  const { data } = await (supabase as any).from('photo_tags').select('photo_id,tag_id')
+  return (data ?? [])
+}
+
+ 
+export async function fetchAllLocationTags(): Promise<{ location_id: string; tag_id: string }[]> {
+  const { data } = await (supabase as any).from('location_tags').select('location_id,tag_id')
+  return (data ?? [])
+}
+
 // ====== 地点标签关联 ======
 
 export async function fetchLocationTagIds(locationId: string): Promise<string[]> {

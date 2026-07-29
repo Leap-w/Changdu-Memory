@@ -166,6 +166,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '数据导入', requiresAuth: true },
   },
   {
+    path: '/statistics',
+    name: 'Statistics',
+    component: () => import('@/pages/Statistics.vue'),
+    meta: { title: '年度统计', requiresAuth: true },
+  },
+  {
     path: '/settings',
     name: 'Settings',
     component: () => import('@/pages/Settings.vue'),

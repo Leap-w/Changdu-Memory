@@ -41,6 +41,10 @@ function goTagManage() {
 function goImport() {
   router.push('/import')
 }
+
+function goStatistics() {
+  router.push('/statistics')
+}
 </script>
 
 <template>
@@ -79,6 +83,20 @@ function goImport() {
           </div>
           <NButton secondary @click="goImport">
             导入
+          </NButton>
+        </div>
+
+        <NDivider />
+
+        <div class="settings-item">
+          <div class="settings-item__info">
+            <span class="settings-item__label">年度统计</span>
+            <span class="settings-item__desc">
+              查看支教一年的数据统计，包括日记、照片、花费、标签等。
+            </span>
+          </div>
+          <NButton secondary @click="goStatistics">
+            查看
           </NButton>
         </div>
       </NCard>
