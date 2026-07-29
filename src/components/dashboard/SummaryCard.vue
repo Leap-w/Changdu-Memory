@@ -3,16 +3,20 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDiaryStore } from '@/stores/diary'
 import { useTodoStore } from '@/stores/todo'
+import { useExpenseStore } from '@/stores/expense'
 import { NCard, NGrid, NGi } from 'naive-ui'
 import type { Diary } from '@/repositories/DiaryRepository'
 import type { Todo } from '@/repositories/TodoRepository'
+import type { Expense } from '@/repositories/ExpenseRepository'
 
 const router = useRouter()
 const diaryStore = useDiaryStore()
 const todoStore = useTodoStore()
+const expenseStore = useExpenseStore()
 
 const latestDiary = ref<Diary | null>(null)
 const todayTodos = ref<Todo[]>([])
+const todayExpenses = ref<Expense[]>([])
 
 interface SummaryItem {
   label: string
@@ -24,10 +28,11 @@ interface SummaryItem {
 }
 
 onMounted(async () => {
-  // 并行加载
-  const [diary, todos] = await Promise.allSettled([
+  // 并行加载三项
+  const [diary, todos, expenses] = await Promise.allSettled([
     diaryStore.getLatestDiary(),
     todoStore.loadTodayTodos(),
+    expenseStore.loadTodayExpenses(),
   ])
 
   if (diary.status === 'fulfilled') {
@@ -36,11 +41,26 @@ onMounted(async () => {
   if (todos.status === 'fulfilled') {
     todayTodos.value = todos.value
   }
+  if (expenses.status === 'fulfilled') {
+    todayExpenses.value = expenses.value
+  }
 })
 
 function getItems(): SummaryItem[] {
   const pendingCount = todayTodos.value.filter((t) => !t.completed).length
   const completedCount = todayTodos.value.filter((t) => t.completed).length
+
+  // 今日花费
+  const todayTotal = todayExpenses.value.reduce((s, e) => s + e.amount, 0)
+  const todayRounded = Math.round(todayTotal * 100) / 100
+  const expenseItem: SummaryItem = {
+    label: '今日花费',
+    icon: '💰',
+    route: '/expense',
+    value: todayExpenses.value.length > 0 ? `¥${todayRounded.toFixed(2)}` : '—',
+    subtitle: todayExpenses.value.length > 0 ? `${todayExpenses.value.length} 笔` : undefined,
+    clickable: true,
+  }
 
   // 待办
   const todoItem: SummaryItem = {
@@ -50,15 +70,6 @@ function getItems(): SummaryItem[] {
     value: todayTodos.value.length > 0 ? `${pendingCount}` : '—',
     subtitle: todayTodos.value.length > 0 ? `已完成 ${completedCount}` : undefined,
     clickable: true,
-  }
-
-  // 花费
-  const expenseItem: SummaryItem = {
-    label: '今日花费',
-    icon: '💰',
-    route: '/expense',
-    value: '—',
-    clickable: false,
   }
 
   // 最近日记

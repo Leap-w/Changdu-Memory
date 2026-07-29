@@ -123,25 +123,28 @@ export interface Database {
           id: string
           user_id: string
           amount: number
-          category: string | null
-          remark: string | null
+          category: string
+          description: string | null
           expense_date: string
           created_at: string
+          updated_at: string
         }
         Insert: {
           id?: string
           user_id: string
           amount: number
-          category?: string | null
-          remark?: string | null
-          expense_date: string
+          category?: string
+          description?: string | null
+          expense_date?: string
           created_at?: string
+          updated_at?: string
         }
         Update: {
           amount?: number
-          category?: string | null
-          remark?: string | null
+          category?: string
+          description?: string | null
           expense_date?: string
+          updated_at?: string
         }
       }
       diaries: {

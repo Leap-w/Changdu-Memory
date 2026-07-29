@@ -52,6 +52,18 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '花费记录', requiresAuth: true },
   },
   {
+    path: '/expense/new',
+    name: 'ExpenseCreate',
+    component: () => import('@/pages/ExpenseEdit.vue'),
+    meta: { title: '记录花费', requiresAuth: true },
+  },
+  {
+    path: '/expense/:id/edit',
+    name: 'ExpenseEdit',
+    component: () => import('@/pages/ExpenseEdit.vue'),
+    meta: { title: '编辑花费', requiresAuth: true },
+  },
+  {
     path: '/diary',
     name: 'Diary',
     component: () => import('@/pages/Diary.vue'),
