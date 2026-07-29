@@ -158,6 +158,7 @@ chore: 工程配置
 | Phase 6-A ✅ | 首页记忆化改造（TodayMemoryCard） |
 | Phase 6-B ✅ | 数据批量导入系统（Excel模板导入） |
 | Phase 6-C ✅ | 照片记忆增强系统（瀑布流+时间轴+地点关联） |
+| Phase 6-D ✅ | 年度数据统计中心（全模块数据可视化） |
 
 ## 版本
 
