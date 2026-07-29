@@ -4,12 +4,14 @@ import { useDiaryStore } from '@/stores/diary'
 import { useWorkStore } from '@/stores/work'
 import { useLocationStore } from '@/stores/location'
 import { usePhotoStore } from '@/stores/photo'
+import { useAuthStore } from '@/stores/auth'
 import { NCard, NTag, NSpin } from 'naive-ui'
 
 const diaryStore = useDiaryStore()
 const workStore = useWorkStore()
 const locationStore = useLocationStore()
 const photoStore = usePhotoStore()
+const authStore = useAuthStore()
 
 const ready = ref(false)
 
@@ -56,6 +58,12 @@ const periodLabels: Record<string, string> = {
 }
 
 onMounted(async () => {
+  // 游客模式：不加载数据，直接显示空状态
+  if (!authStore.isLoggedIn) {
+    ready.value = true
+    return
+  }
+
   // 只在未加载时拉取
   const promises: Promise<unknown>[] = []
   if (diaryStore.diaries.length === 0) promises.push(diaryStore.loadDiaries())

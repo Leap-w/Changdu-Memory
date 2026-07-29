@@ -13,7 +13,7 @@ const routes: RouteRecordRaw[] = [
     path: '/',
     name: 'Home',
     component: () => import('@/pages/Home.vue'),
-    meta: { title: '首页', requiresAuth: true },
+    meta: { title: '首页' },
   },
   {
     path: '/time-center',
@@ -163,7 +163,7 @@ const routes: RouteRecordRaw[] = [
     path: '/search',
     name: 'Search',
     component: () => import('@/pages/Search.vue'),
-    meta: { title: '搜索', requiresAuth: true },
+    meta: { title: '搜索' },
   },
   {
     path: '/profile',

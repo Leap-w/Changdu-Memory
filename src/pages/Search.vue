@@ -6,6 +6,7 @@ import { usePhotoStore } from '@/stores/photo'
 import { useLocationStore } from '@/stores/location'
 import { useWorkStore } from '@/stores/work'
 import { useTagStore } from '@/stores/tag'
+import { useAuthStore } from '@/stores/auth'
 import { fetchAllDiaryTags, fetchAllPhotoTags, fetchAllLocationTags } from '@/repositories/TagRepository'
 import SearchInput from '@/components/search/SearchInput.vue'
 import SearchFilter from '@/components/search/SearchFilter.vue'
@@ -19,6 +20,7 @@ const photoStore = usePhotoStore()
 const locationStore = useLocationStore()
 const workStore = useWorkStore()
 const tagStore = useTagStore()
+const authStore = useAuthStore()
 
 const loading = ref(true)
 const keyword = ref('')
@@ -33,6 +35,12 @@ const photoTags = ref<any[]>([])
 const locationTags = ref<any[]>([])
 
 onMounted(async () => {
+  // 游客模式：跳过数据加载
+  if (!authStore.isLoggedIn) {
+    loading.value = false
+    return
+  }
+
   const stores = [
     { load: () => diaryStore.diaries.length > 0 ? Promise.resolve() : diaryStore.loadDiaries() },
     { load: () => photoStore.photos.length > 0 ? Promise.resolve() : photoStore.loadPhotos() },

@@ -2,13 +2,15 @@
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTimeStore } from '@/stores/time'
+import { useAuthStore } from '@/stores/auth'
 import { NCard, NProgress, NTag } from 'naive-ui'
 
 const router = useRouter()
 const timeStore = useTimeStore()
+const authStore = useAuthStore()
 
 onMounted(() => {
-  if (!timeStore.profile) {
+  if (!timeStore.profile && authStore.isLoggedIn) {
     timeStore.loadTimeProfile()
   }
 })

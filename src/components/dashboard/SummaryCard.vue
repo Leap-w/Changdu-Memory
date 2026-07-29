@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useDiaryStore } from '@/stores/diary'
 import { useTodoStore } from '@/stores/todo'
 import { useExpenseStore } from '@/stores/expense'
+import { useAuthStore } from '@/stores/auth'
 import { NCard, NGrid, NGi } from 'naive-ui'
 import type { Diary } from '@/repositories/DiaryRepository'
 import type { Todo } from '@/repositories/TodoRepository'
@@ -13,6 +14,7 @@ const router = useRouter()
 const diaryStore = useDiaryStore()
 const todoStore = useTodoStore()
 const expenseStore = useExpenseStore()
+const authStore = useAuthStore()
 
 const latestDiary = ref<Diary | null>(null)
 const todayTodos = ref<Todo[]>([])
@@ -28,6 +30,9 @@ interface SummaryItem {
 }
 
 onMounted(async () => {
+  // 游客模式：不加载数据
+  if (!authStore.isLoggedIn) return
+
   // 并行加载三项
   const [diary, todos, expenses] = await Promise.allSettled([
     diaryStore.getLatestDiary(),

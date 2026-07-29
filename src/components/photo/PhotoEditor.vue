@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import {
   NCard,
   NInput,
@@ -60,6 +60,20 @@ const localTagIds = ref<string[]>([...props.tagIds])
 const fileList = ref<UploadFileInfo[]>([])
 const uploading = ref(false)
 
+onMounted(() => {
+  if (locationStore.locations.length === 0) {
+    locationStore.loadLocations().catch(() => {})
+  }
+})
+
+const locationOptions = computed(() => [
+  { label: '不关联地点', value: '' },
+  ...locationStore.locations.map((l) => ({
+    label: l.name,
+    value: l.id,
+  })),
+])
+
 const categoryOptions = [
   { label: '🏫 学校', value: 'school' },
   { label: '🏠 生活', value: 'life' },
@@ -67,21 +81,6 @@ const categoryOptions = [
   { label: '👤 人物', value: 'people' },
   { label: '📦 其他', value: 'other' },
 ]
-
-const locationOptions = computedLocationOptions()
-
-function computedLocationOptions(): { label: string; value: string }[] {
-  if (locationStore.locations.length === 0) {
-    locationStore.loadLocations().catch(() => {})
-  }
-  return [
-    { label: '不关联地点', value: '' },
-    ...locationStore.locations.map((l) => ({
-      label: `${l.name}`,
-      value: l.id,
-    })),
-  ]
-}
 
 async function handleSubmit() {
   if (!localTitle.value.trim()) {
