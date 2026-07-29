@@ -148,8 +148,8 @@ chore: 工程配置
 | Phase 2-B ✅ | 时光中心（倒计时系统） |
 | Phase 2-C ✅ | 首页 Dashboard |
 | Phase 3-A ✅ | 日记系统 |
-| Phase 3-B | 待办 + 工作安排 |
-| Phase 4 | 花费 + 日记 + 图片上传 |
+| Phase 3-B ✅ | 待办系统 |
+| Phase 4 | 花费 + 工作安排 + 图片上传 |
 | Phase 5 | 常用信息 + 数据管理 + 设置 + PWA |
 
 ## 版本
