@@ -44,10 +44,10 @@ onUnmounted(() => {
   <div class="desktop-layout">
     <aside class="sidebar" :class="{ collapsed: appStore.sidebarCollapsed }">
       <div class="sidebar-header">
-        <h1 class="sidebar-logo" v-if="!appStore.sidebarCollapsed">
+        <h1 v-if="!appStore.sidebarCollapsed" class="sidebar-logo">
           昌都记忆
         </h1>
-        <span class="sidebar-logo-short" v-else>昌</span>
+        <span v-else class="sidebar-logo-short">昌</span>
       </div>
       <nav class="sidebar-nav">
         <button
@@ -55,11 +55,11 @@ onUnmounted(() => {
           :key="item.path"
           class="sidebar-item"
           :class="{ active: isActive(item.path) }"
-          @click="navigateTo(item.path)"
           :title="item.label"
+          @click="navigateTo(item.path)"
         >
           <span class="sidebar-icon">{{ item.icon }}</span>
-          <span class="sidebar-label" v-if="!appStore.sidebarCollapsed">
+          <span v-if="!appStore.sidebarCollapsed" class="sidebar-label">
             {{ item.label }}
           </span>
         </button>
