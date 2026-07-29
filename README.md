@@ -152,7 +152,8 @@ chore: 工程配置
 | Phase 3-C ✅ | 花费记录系统 |
 | Phase 3-D ✅ | 工作安排系统 |
 | Phase 4-A ✅ | 地点档案系统 |
-| Phase 4-B | 图片上传 + 完善 |
+| Phase 4-B ✅ | 照片档案系统 |
+| Phase 5 | 收尾完善 + PWA |
 | Phase 5 | 常用信息 + 数据管理 + 设置 + PWA |
 
 ## 版本
