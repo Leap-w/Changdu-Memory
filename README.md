@@ -156,7 +156,7 @@ chore: 工程配置
 | Phase 4-C ✅ | 统一标签系统 |
 | Phase 5 ✅ | 上线准备（Schema整合 + 数据导出 + 设置） |
 | Phase 6-A ✅ | 首页记忆化改造（TodayMemoryCard） |
-| Phase 5 | 常用信息 + 数据管理 + 设置 + PWA |
+| Phase 6-B ✅ | 数据批量导入系统（Excel模板导入） |
 
 ## 版本
 
