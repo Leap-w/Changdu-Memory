@@ -100,6 +100,24 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '编辑日记', requiresAuth: true },
   },
   {
+    path: '/location',
+    name: 'Location',
+    component: () => import('@/pages/Location.vue'),
+    meta: { title: '地点', requiresAuth: true },
+  },
+  {
+    path: '/location/new',
+    name: 'LocationCreate',
+    component: () => import('@/pages/LocationEdit.vue'),
+    meta: { title: '添加地点', requiresAuth: true },
+  },
+  {
+    path: '/location/:id/edit',
+    name: 'LocationEdit',
+    component: () => import('@/pages/LocationEdit.vue'),
+    meta: { title: '编辑地点', requiresAuth: true },
+  },
+  {
     path: '/profile',
     name: 'Profile',
     component: () => import('@/pages/Profile.vue'),

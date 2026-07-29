@@ -14,6 +14,7 @@ const navItems = [
   { path: '/work', label: '工作', icon: '📋' },
   { path: '/expense', label: '花费', icon: '💰' },
   { path: '/diary', label: '日记', icon: '📖' },
+  { path: '/location', label: '地点', icon: '🗺️' },
   { path: '/profile', label: '我的', icon: '👤' },
   { path: '/settings', label: '设置', icon: '⚙️' },
 ]

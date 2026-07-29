@@ -202,6 +202,38 @@ export interface Database {
           sort_order?: number
         }
       }
+      locations: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          location_type: string
+          description: string | null
+          address: string | null
+          visit_date: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          location_type?: string
+          description?: string | null
+          address?: string | null
+          visit_date?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          name?: string
+          location_type?: string
+          description?: string | null
+          address?: string | null
+          visit_date?: string
+          updated_at?: string
+        }
+      }
       contacts: {
         Row: {
           id: string
