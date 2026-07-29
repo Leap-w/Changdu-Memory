@@ -4,7 +4,7 @@ import {
   fetchLocations,
   createLocation,
   updateLocation,
-  deleteLocationById,
+  softDeleteLocation,
 } from '@/repositories/LocationRepository'
 import type { Location } from '@/repositories/LocationRepository'
 
@@ -101,7 +101,7 @@ export const useLocationStore = defineStore('location', () => {
     loading.value = true
     error.value = null
     try {
-      await deleteLocationById(id)
+      await softDeleteLocation(id)
       locations.value = locations.value.filter((l) => l.id !== id)
     } catch (err: unknown) {
       error.value = err instanceof Error ? err.message : '删除失败'

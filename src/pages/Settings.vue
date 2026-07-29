@@ -49,6 +49,10 @@ function goStatistics() {
 function goSearch() {
   router.push('/search')
 }
+
+function goRecycleBin() {
+  router.push('/settings/recycle-bin')
+}
 </script>
 
 <template>
@@ -115,6 +119,21 @@ function goSearch() {
           </div>
           <NButton secondary @click="goSearch">
             搜索
+          </NButton>
+        </div>
+      </NCard>
+
+      <!-- 回收站 -->
+      <NCard class="settings-card" title="安全">
+        <div class="settings-item">
+          <div class="settings-item__info">
+            <span class="settings-item__label">回收站</span>
+            <span class="settings-item__desc">
+              查看和恢复已删除的数据。删除操作现在会先进入回收站。
+            </span>
+          </div>
+          <NButton secondary @click="goRecycleBin">
+            查看
           </NButton>
         </div>
       </NCard>

@@ -154,6 +154,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '编辑照片', requiresAuth: true },
   },
   {
+    path: '/memory',
+    name: 'MemoryTimeline',
+    component: () => import('@/pages/MemoryTimeline.vue'),
+    meta: { title: '记忆时间轴', requiresAuth: true },
+  },
+  {
     path: '/search',
     name: 'Search',
     component: () => import('@/pages/Search.vue'),
@@ -182,6 +188,12 @@ const routes: RouteRecordRaw[] = [
     name: 'Settings',
     component: () => import('@/pages/Settings.vue'),
     meta: { title: '设置', requiresAuth: true },
+  },
+  {
+    path: '/settings/recycle-bin',
+    name: 'RecycleBin',
+    component: () => import('@/pages/RecycleBin.vue'),
+    meta: { title: '回收站', requiresAuth: true },
   },
   {
     path: '/settings/tags',

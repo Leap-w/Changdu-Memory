@@ -6,7 +6,7 @@ import {
   createTodo,
   updateTodo,
   toggleCompleteTodo,
-  deleteTodoById,
+  softDeleteTodo,
 } from '@/repositories/TodoRepository'
 import type { Todo } from '@/repositories/TodoRepository'
 
@@ -131,7 +131,7 @@ export const useTodoStore = defineStore('todo', () => {
     loading.value = true
     error.value = null
     try {
-      await deleteTodoById(id)
+      await softDeleteTodo(id)
       todos.value = todos.value.filter((t) => t.id !== id)
     } catch (err: unknown) {
       error.value = err instanceof Error ? err.message : '删除失败'

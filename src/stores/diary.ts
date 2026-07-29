@@ -6,7 +6,7 @@ import {
   fetchLatestDiary,
   createDiary,
   updateDiary,
-  deleteDiary,
+  softDeleteDiary,
 } from '@/repositories/DiaryRepository'
 import type { Diary } from '@/repositories/DiaryRepository'
 
@@ -98,7 +98,7 @@ export const useDiaryStore = defineStore('diary', () => {
     loading.value = true
     error.value = null
     try {
-      await deleteDiary(id)
+      await softDeleteDiary(id)
       diaries.value = diaries.value.filter((d) => d.id !== id)
     } catch (err: unknown) {
       error.value = err instanceof Error ? err.message : '删除失败'

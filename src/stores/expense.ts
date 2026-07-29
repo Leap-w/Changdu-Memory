@@ -5,7 +5,7 @@ import {
   fetchTodayExpenses,
   createExpense,
   updateExpense,
-  deleteExpenseById,
+  softDeleteExpense,
 } from '@/repositories/ExpenseRepository'
 import type { Expense } from '@/repositories/ExpenseRepository'
 
@@ -134,7 +134,7 @@ export const useExpenseStore = defineStore('expense', () => {
     loading.value = true
     error.value = null
     try {
-      await deleteExpenseById(id)
+      await softDeleteExpense(id)
       expenses.value = expenses.value.filter((e) => e.id !== id)
     } catch (err: unknown) {
       error.value = err instanceof Error ? err.message : '删除失败'

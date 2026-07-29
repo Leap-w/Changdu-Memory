@@ -16,6 +16,7 @@ const navItems = [
   { path: '/diary', label: '日记', icon: '📖' },
   { path: '/location', label: '地点', icon: '🗺️' },
   { path: '/photo', label: '照片', icon: '📷' },
+  { path: '/memory', label: '记忆', icon: '📜' },
   { path: '/profile', label: '我的', icon: '👤' },
   { path: '/settings', label: '设置', icon: '⚙️' },
 ]

@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import {
   fetchPhotos,
   uploadPhoto,
-  deletePhotoById,
+  softDeletePhoto,
   updatePhotoMetadata,
   getPhotoUrl,
 } from '@/repositories/PhotoRepository'
@@ -88,7 +88,7 @@ export const usePhotoStore = defineStore('photo', () => {
     loading.value = true
     error.value = null
     try {
-      await deletePhotoById(id, photo.storage_path)
+      await softDeletePhoto(id)
       photos.value = photos.value.filter((p) => p.id !== id)
     } catch (err: unknown) {
       error.value = err instanceof Error ? err.message : '删除失败'

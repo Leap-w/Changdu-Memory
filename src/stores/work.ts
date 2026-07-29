@@ -4,7 +4,7 @@ import {
   fetchWorks,
   createWork,
   updateWork,
-  deleteWorkById,
+  softDeleteWork,
 } from '@/repositories/WorkRepository'
 import type { WorkPlan } from '@/repositories/WorkRepository'
 
@@ -100,7 +100,7 @@ export const useWorkStore = defineStore('work', () => {
     loading.value = true
     error.value = null
     try {
-      await deleteWorkById(id)
+      await softDeleteWork(id)
       works.value = works.value.filter((w) => w.id !== id)
     } catch (err: unknown) {
       error.value = err instanceof Error ? err.message : '删除失败'
