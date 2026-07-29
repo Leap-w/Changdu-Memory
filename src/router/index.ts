@@ -46,6 +46,24 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '日记', requiresAuth: true },
   },
   {
+    path: '/diary/new',
+    name: 'DiaryCreate',
+    component: () => import('@/pages/DiaryEdit.vue'),
+    meta: { title: '写日记', requiresAuth: true },
+  },
+  {
+    path: '/diary/:id',
+    name: 'DiaryDetail',
+    component: () => import('@/pages/DiaryDetail.vue'),
+    meta: { title: '日记详情', requiresAuth: true },
+  },
+  {
+    path: '/diary/:id/edit',
+    name: 'DiaryEdit',
+    component: () => import('@/pages/DiaryEdit.vue'),
+    meta: { title: '编辑日记', requiresAuth: true },
+  },
+  {
     path: '/profile',
     name: 'Profile',
     component: () => import('@/pages/Profile.vue'),
