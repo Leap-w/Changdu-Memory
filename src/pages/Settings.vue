@@ -45,6 +45,10 @@ function goImport() {
 function goStatistics() {
   router.push('/statistics')
 }
+
+function goSearch() {
+  router.push('/search')
+}
 </script>
 
 <template>
@@ -97,6 +101,20 @@ function goStatistics() {
           </div>
           <NButton secondary @click="goStatistics">
             查看
+          </NButton>
+        </div>
+
+        <NDivider />
+
+        <div class="settings-item">
+          <div class="settings-item__info">
+            <span class="settings-item__label">全局搜索</span>
+            <span class="settings-item__desc">
+              按关键词搜索日记、照片、地点、工作记录。
+            </span>
+          </div>
+          <NButton secondary @click="goSearch">
+            搜索
           </NButton>
         </div>
       </NCard>

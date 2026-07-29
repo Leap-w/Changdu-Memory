@@ -16,6 +16,7 @@ const actions: Action[] = [
   { label: '记录花费', icon: '💰', route: '/expense' },
   { label: '时光中心', icon: '⏰', route: '/time-center' },
   { label: '年度统计', icon: '📊', route: '/statistics' },
+  { label: '全局搜索', icon: '🔍', route: '/search' },
 ]
 
 function navigateTo(route: string) {
@@ -47,11 +48,11 @@ function navigateTo(route: string) {
 
 .quick-action__grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 8px;
 }
 
-@media (max-width: 400px) {
+@media (max-width: 480px) {
   .quick-action__grid {
     grid-template-columns: repeat(3, 1fr);
   }

@@ -154,6 +154,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '编辑照片', requiresAuth: true },
   },
   {
+    path: '/search',
+    name: 'Search',
+    component: () => import('@/pages/Search.vue'),
+    meta: { title: '搜索', requiresAuth: true },
+  },
+  {
     path: '/profile',
     name: 'Profile',
     component: () => import('@/pages/Profile.vue'),
