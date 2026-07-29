@@ -1,0 +1,49 @@
+:root {
+  /* === 昌都记忆主题色 === */
+
+  /* 主色 - 高原蓝 */
+  --color-primary: #4F8EF7;
+  --color-primary-light: #7AADFF;
+  --color-primary-dark: #3B6FCC;
+
+  /* 辅助色 - 草原绿 */
+  --color-secondary: #57B894;
+  --color-secondary-light: #7DCFA8;
+  --color-secondary-dark: #3D9A72;
+
+  /* 警告色 */
+  --color-warning: #F59E0B;
+
+  /* 错误色 */
+  --color-error: #EF4444;
+
+  /* 背景 */
+  --color-bg: #F7F9FC;
+  --color-bg-white: #FFFFFF;
+
+  /* 文字 */
+  --color-text-primary: #1F2937;
+  --color-text-secondary: #6B7280;
+
+  /* 圆角 */
+  --radius-card: 16px;
+  --radius-button: 12px;
+  --radius-input: 12px;
+
+  /* 间距 */
+  --spacing-page: 24px;
+  --spacing-card: 16px;
+
+  /* 阴影 */
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.06);
+
+  /* 字体大小 */
+  --font-title: 28px;
+  --font-card-title: 20px;
+  --font-content: 16px;
+  --font-secondary: 14px;
+  --font-caption: 12px;
+
+  /* 动画 */
+  --transition-normal: 300ms ease;
+}

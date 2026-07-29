@@ -1,0 +1,27 @@
+{
+  "name": "changdu-memory",
+  "private": true,
+  "version": "5.0.0",
+  "type": "module",
+  "description": "昌都记忆 Changdu Memory - 个人数字记录平台",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.4",
+    "naive-ui": "^2.41.0",
+    "pinia": "^2.3.1",
+    "vue": "^3.5.18",
+    "vue-router": "^4.5.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.2",
+    "@vitejs/plugin-vue": "^5.2.4",
+    "typescript": "~5.8.3",
+    "vite": "^6.3.5",
+    "vite-plugin-pwa": "^0.21.2",
+    "vue-tsc": "^2.2.12"
+  }
+}
