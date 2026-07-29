@@ -86,35 +86,35 @@ export interface Database {
           updated_at?: string
         }
       }
-      work_items: {
+      work_plans: {
         Row: {
           id: string
           user_id: string
-          date: string
+          work_date: string
           title: string
-          description: string | null
-          category: string | null
-          completed: boolean
+          period: string
+          content: string | null
+          category: string
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
           user_id: string
-          date: string
+          work_date?: string
           title: string
-          description?: string | null
-          category?: string | null
-          completed?: boolean
+          period?: string
+          content?: string | null
+          category?: string
           created_at?: string
           updated_at?: string
         }
         Update: {
-          date?: string
+          work_date?: string
           title?: string
-          description?: string | null
-          category?: string | null
-          completed?: boolean
+          period?: string
+          content?: string | null
+          category?: string
           updated_at?: string
         }
       }

@@ -46,6 +46,18 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '工作安排', requiresAuth: true },
   },
   {
+    path: '/work/new',
+    name: 'WorkCreate',
+    component: () => import('@/pages/WorkEdit.vue'),
+    meta: { title: '添加工作', requiresAuth: true },
+  },
+  {
+    path: '/work/:id/edit',
+    name: 'WorkEdit',
+    component: () => import('@/pages/WorkEdit.vue'),
+    meta: { title: '编辑工作', requiresAuth: true },
+  },
+  {
     path: '/expense',
     name: 'Expense',
     component: () => import('@/pages/Expense.vue'),
