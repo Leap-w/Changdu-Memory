@@ -1,6 +1,13 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { User, Session } from '@supabase/supabase-js'
+import {
+  supabase,
+  signUpWithEmail,
+  signInWithEmail,
+  signOut,
+  getCurrentSession,
+} from '@/services/supabase'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
@@ -10,26 +17,83 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isLoggedIn = computed(() => !!user.value)
 
-  function setUser(newUser: User | null) {
-    user.value = newUser
-  }
-
-  function setSession(newSession: Session | null) {
-    session.value = newSession
-  }
-
-  function setLoading(isLoading: boolean) {
-    loading.value = isLoading
-  }
-
-  function setError(err: string | null) {
-    error.value = err
-  }
-
-  function clearAuth() {
-    user.value = null
-    session.value = null
+  /** 注册 */
+  async function register(email: string, password: string) {
+    loading.value = true
     error.value = null
+    try {
+      const data = await signUpWithEmail(email, password)
+      if (data.user) {
+        user.value = data.user
+        session.value = data.session
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : '注册失败'
+      error.value = message
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /** 登录 */
+  async function login(email: string, password: string) {
+    loading.value = true
+    error.value = null
+    try {
+      const data = await signInWithEmail(email, password)
+      user.value = data.user
+      session.value = data.session
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : '登录失败'
+      error.value = message
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /** 登出 */
+  async function logout() {
+    loading.value = true
+    error.value = null
+    try {
+      await signOut()
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : '登出失败'
+      error.value = message
+    } finally {
+      user.value = null
+      session.value = null
+      loading.value = false
+    }
+  }
+
+  /** 初始化：检查已有 Session */
+  async function initialize() {
+    loading.value = true
+    try {
+      const currentSession = await getCurrentSession()
+      if (currentSession) {
+        session.value = currentSession
+        user.value = currentSession.user
+      }
+    } catch {
+      // 无 session，忽略
+    } finally {
+      loading.value = false
+    }
+
+    // 监听认证状态变化
+    supabase.auth.onAuthStateChange((event, newSession) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        session.value = newSession
+        user.value = newSession?.user ?? null
+      } else if (event === 'SIGNED_OUT') {
+        user.value = null
+        session.value = null
+      }
+    })
   }
 
   return {
@@ -38,10 +102,9 @@ export const useAuthStore = defineStore('auth', () => {
     loading,
     error,
     isLoggedIn,
-    setUser,
-    setSession,
-    setLoading,
-    setError,
-    clearAuth,
+    login,
+    register,
+    logout,
+    initialize,
   }
 })

@@ -11,3 +11,62 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
+
+/**
+ * 邮箱密码注册
+ * 成功后自动创建 profiles 记录
+ */
+export async function signUpWithEmail(email: string, password: string) {
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+  })
+
+  if (error) throw error
+
+  // 自动创建 profiles 记录
+  if (data.user) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: profileError } = await (supabase as any).from('profiles').insert({
+      id: data.user.id,
+      nickname: '新用户',
+    })
+
+    if (profileError) {
+      console.warn('创建 profiles 记录失败:', profileError.message)
+    }
+  }
+
+  return data
+}
+
+/**
+ * 邮箱密码登录
+ */
+export async function signInWithEmail(email: string, password: string) {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  })
+
+  if (error) throw error
+
+  return data
+}
+
+/**
+ * 登出
+ */
+export async function signOut() {
+  const { error } = await supabase.auth.signOut()
+  if (error) throw error
+}
+
+/**
+ * 获取当前 Session
+ */
+export async function getCurrentSession() {
+  const { data, error } = await supabase.auth.getSession()
+  if (error) throw error
+  return data.session
+}
