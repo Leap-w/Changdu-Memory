@@ -144,7 +144,8 @@ chore: 工程配置
 |-------|------|
 | Phase 1 ✅ | 项目基础架构搭建 |
 | Phase 1.5 ✅ | 工程规范完善（ESLint + Prettier + 基础组件） |
-| Phase 2 | 首页 Dashboard + 时光中心 |
+| Phase 2-A ✅ | 用户认证系统（Supabase Email Auth + Login + Router Guard） |
+| Phase 2-B | 首页 Dashboard + 时光中心 |
 | Phase 3 | 待办 + 工作安排 |
 | Phase 4 | 花费 + 日记 + 图片上传 |
 | Phase 5 | 常用信息 + 数据管理 + 设置 + PWA |
