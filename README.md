@@ -154,7 +154,7 @@ chore: 工程配置
 | Phase 4-A ✅ | 地点档案系统 |
 | Phase 4-B ✅ | 照片档案系统 |
 | Phase 4-C ✅ | 统一标签系统 |
-| Phase 5 | 收尾完善 + PWA |
+| Phase 5 ✅ | 上线准备（Schema整合 + 数据导出 + 设置） |
 | Phase 5 | 常用信息 + 数据管理 + 设置 + PWA |
 
 ## 版本
