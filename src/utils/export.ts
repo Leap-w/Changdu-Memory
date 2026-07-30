@@ -20,12 +20,8 @@ export interface ExportData {
   todos: JsonValue[]
   works: JsonValue[]
   expenses: JsonValue[]
-  locations: JsonValue[]
-  photos: JsonValue[]
   tags: JsonValue[]
   diary_tags: JsonValue[]
-  photo_tags: JsonValue[]
-  location_tags: JsonValue[]
 }
 
 /**
@@ -42,12 +38,8 @@ export async function exportAllData(): Promise<ExportData> {
     todos: [],
     works: [],
     expenses: [],
-    locations: [],
-    photos: [],
     tags: [],
     diary_tags: [],
-    photo_tags: [],
-    location_tags: [],
   }
 
   // 安全获取，单模块失败不影响其他
@@ -91,7 +83,7 @@ export async function exportAllData(): Promise<ExportData> {
   }
 
   // 并行导出所有模块
-  const [profile, timeProfile, diaries, todos, works, expenses, locations, photos, tags] =
+  const [profile, timeProfile, diaries, todos, works, expenses, tags] =
     await Promise.all([
       safeSingle('profiles'),
       safeSingle('time_profile'),
@@ -99,8 +91,6 @@ export async function exportAllData(): Promise<ExportData> {
       safeFetch('todos'),
       safeFetch('work_plans'),
       safeFetch('expenses'),
-      safeFetch('locations'),
-      safeFetch('photo_records'),
       safeFetch('tags'),
     ])
 
@@ -110,19 +100,11 @@ export async function exportAllData(): Promise<ExportData> {
   data.todos = todos
   data.works = works
   data.expenses = expenses
-  data.locations = locations
-  data.photos = photos
   data.tags = tags
 
   // 标签关联数据
   if (diaries.length > 0) {
     data.diary_tags = await safeFetch('diary_tags')
-  }
-  if (photos.length > 0) {
-    data.photo_tags = await safeFetch('photo_tags')
-  }
-  if (locations.length > 0) {
-    data.location_tags = await safeFetch('location_tags')
   }
 
   return data

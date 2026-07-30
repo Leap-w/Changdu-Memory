@@ -250,72 +250,35 @@ export interface Database {
           sort_order?: number
         }
       }
-      locations: {
+      memories: {
         Row: {
           id: string
           user_id: string
-          name: string
-          location_type: string
-          description: string | null
-          address: string | null
-          visit_date: string
-          created_at: string
-          updated_at: string
-          deleted_at: string | null
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          name: string
-          location_type?: string
-          description?: string | null
-          address?: string | null
-          visit_date?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          name?: string
-          location_type?: string
-          description?: string | null
-          address?: string | null
-          visit_date?: string
-          updated_at?: string
-        }
-      }
-      photo_records: {
-        Row: {
-          id: string
-          user_id: string
-          storage_path: string
-          title: string | null
-          description: string | null
-          photo_date: string
-          location_id: string | null
+          title: string
+          content: string | null
+          event_date: string
           category: string
+          image_urls: string[] | null
           created_at: string
           updated_at: string
-          deleted_at: string | null
         }
         Insert: {
           id?: string
           user_id: string
-          storage_path: string
-          title?: string | null
-          description?: string | null
-          photo_date?: string
-          location_id?: string | null
+          title: string
+          content?: string | null
+          event_date: string
           category?: string
+          image_urls?: string[] | null
           created_at?: string
           updated_at?: string
         }
         Update: {
-          storage_path?: string
-          title?: string | null
-          description?: string | null
-          photo_date?: string
-          location_id?: string | null
+          title?: string
+          content?: string | null
+          event_date?: string
           category?: string
+          image_urls?: string[] | null
           updated_at?: string
         }
       }
@@ -358,38 +321,6 @@ export interface Database {
           tag_id?: string
         }
       }
-      photo_tags: {
-        Row: {
-          id: string
-          photo_id: string
-          tag_id: string
-        }
-        Insert: {
-          id?: string
-          photo_id: string
-          tag_id: string
-        }
-        Update: {
-          photo_id?: string
-          tag_id?: string
-        }
-      }
-      location_tags: {
-        Row: {
-          id: string
-          location_id: string
-          tag_id: string
-        }
-        Insert: {
-          id?: string
-          location_id: string
-          tag_id: string
-        }
-        Update: {
-          location_id?: string
-          tag_id?: string
-        }
-      }
       students: {
         Row: {
           id: string
@@ -419,56 +350,6 @@ export interface Database {
           updated_at?: string
         }
       }
-      contacts: {
-        Row: {
-          id: string
-          user_id: string
-          category: string | null
-          title: string
-          content: string | null
-          remark: string | null
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          category?: string | null
-          title: string
-          content?: string | null
-          remark?: string | null
-        }
-        Update: {
-          category?: string | null
-          title?: string
-          content?: string | null
-          remark?: string | null
-        }
-      }
-      settings: {
-        Row: {
-          id: string
-          user_id: string
-          theme: string | null
-          language: string | null
-          sync_enabled: boolean
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          theme?: string | null
-          language?: string | null
-          sync_enabled?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          theme?: string | null
-          language?: string | null
-          sync_enabled?: boolean
-          updated_at?: string
-        }
-      },
       assets: {
         Row: {
           id: string
@@ -527,6 +408,35 @@ export interface Database {
           updated_at?: string
         }
         }
+      countdowns: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          start_date: string | null
+          end_date: string
+          pinned: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title: string
+          start_date?: string | null
+          end_date: string
+          pinned?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          title?: string
+          start_date?: string | null
+          end_date?: string
+          pinned?: boolean
+          updated_at?: string
+        }
+      }
 
     }
   }

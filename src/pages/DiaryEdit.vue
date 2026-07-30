@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useDiaryStore } from '@/stores/diary'
 import { fetchDiaryTagIds, setDiaryTags } from '@/repositories/TagRepository'
+import { uploadDiaryPhoto } from '@/repositories/DiaryPhotoRepository'
 import DiaryEditor from '@/components/diary/DiaryEditor.vue'
 import { NSpin, useMessage } from 'naive-ui'
 
@@ -45,7 +46,7 @@ onMounted(async () => {
   }
 })
 
-async function handleSubmit(data: { title: string; content: string; diary_date: string; tag_ids: string[] }) {
+async function handleSubmit(data: { title: string; content: string; diary_date: string; tag_ids: string[]; pendingImages?: File[] }) {
   try {
     if (isEdit.value && diaryId.value) {
       await diaryStore.editDiary(diaryId.value, { title: data.title, content: data.content, diary_date: data.diary_date })
@@ -55,6 +56,12 @@ async function handleSubmit(data: { title: string; content: string; diary_date: 
     } else {
       const diary = await diaryStore.addDiary({ title: data.title, content: data.content, diary_date: data.diary_date })
       await setDiaryTags(diary.id, data.tag_ids)
+      // 上传预缓存的图片
+      if (data.pendingImages && data.pendingImages.length > 0) {
+        for (let i = 0; i < data.pendingImages.length; i++) {
+          try { await uploadDiaryPhoto(diary.id, data.pendingImages[i], data.pendingImages[i].name, i) } catch { /* skip failed uploads */ }
+        }
+      }
       message.success('日记已创建')
       router.push(`/diary/${diary.id}`)
     }

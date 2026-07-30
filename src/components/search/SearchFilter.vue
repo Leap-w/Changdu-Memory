@@ -15,8 +15,6 @@ const emit = defineEmits<{
 const typeOptions = [
   { label: '全部', value: 'all' },
   { label: '📖 日记', value: 'diary' },
-  { label: '📷 照片', value: 'photo' },
-  { label: '📍 地点', value: 'location' },
   { label: '📋 工作', value: 'work' },
 ]
 

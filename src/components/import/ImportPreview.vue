@@ -135,7 +135,7 @@ defineProps<{
 .import-preview__table th {
   font-weight: 600;
   color: var(--color-text-primary);
-  background: rgba(79, 142, 247, 0.04);
+  background: var(--color-primary-bg);
 }
 
 .import-preview__more {

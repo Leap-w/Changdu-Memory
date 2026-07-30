@@ -133,7 +133,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /** 更新 profile */
-  async function updateProfile(fields: { nickname?: string | null; bio?: string | null }) {
+  async function updateProfile(fields: { nickname?: string | null; bio?: string | null; avatar_url?: string | null }) {
     loading.value = true
     error.value = null
     try {
@@ -146,6 +146,7 @@ export const useAuthStore = defineStore('auth', () => {
       if (err) throw err
       if (fields.nickname !== undefined) profile.value.nickname = fields.nickname ?? null
       if (fields.bio !== undefined) profile.value.bio = fields.bio ?? null
+      if (fields.avatar_url !== undefined) profile.value.avatar_url = fields.avatar_url ?? null
     } catch (err: unknown) {
       error.value = err instanceof Error ? err.message : '更新失败'
       throw err

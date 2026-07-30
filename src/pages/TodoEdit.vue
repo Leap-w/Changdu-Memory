@@ -50,11 +50,7 @@ onMounted(async () => {
 })
 
 async function handleSubmit(data: {
-  title: string
-  description: string
-  todo_date: string
-  priority: string
-  category: string
+  title: string; description: string; todo_date: string; due_date?: string; priority: string; category: string
 }) {
   try {
     if (isEdit.value && todoId.value) {

@@ -1,54 +1,84 @@
 :root {
-  /* === 昌都记忆 v5.1 主题色 === */
+  /* ================================================================
+     昌都记忆 V5.2 — 全新设计令牌系统
+     主色：高原湖绿（Teal）
+     保留 V5.1 旧变量作为别名，确保现有组件不受影响
+     ================================================================ */
 
-  /* 主色 - 高原蓝灰 */
-  --color-primary: #5E81AC;
-  --color-primary-light: #81A1C1;
-  --color-primary-dark: #4C6A8E;
-  --color-primary-bg: rgba(94, 129, 172, 0.06);
-  --color-primary-bg-hover: rgba(94, 129, 172, 0.10);
-  --color-primary-bg-active: rgba(94, 129, 172, 0.14);
+  /* ==========================================================
+     1. 主色 — 高原湖绿
+     primary:  #4A8C94  湖绿（主按钮、链接、激活态）
+     primary-light: #E8F3F4  极浅湖绿（背景 hover）
+     primary-dark:  #356A70  深湖绿（按钮 hover / active）
+     ========================================================== */
+  --color-primary: #4A8C94;
+  --color-primary-light: #E8F3F4;
+  --color-primary-dark: #356A70;
 
-  /* 辅助色 - 暖红点缀 */
-  --color-accent: #BF616A;
-  --color-accent-soft: #D08770;
+  /* primary 半透明背景系列（hover / active 背景） */
+  --color-primary-bg: rgba(74, 140, 148, 0.06);
+  --color-primary-bg-hover: rgba(74, 140, 148, 0.10);
+  --color-primary-bg-active: rgba(74, 140, 148, 0.14);
 
-  /* 辅助色 - 草原绿（保留兼容） */
-  --color-secondary: #6B9E85;
+  /* ==========================================================
+     2. 辅助色
+     ========================================================== */
+  --color-accent: #C2676A;        /* 暖红点缀 */
+  --color-accent-soft: #D08770;   /* 暖橙 */
+
+  --color-secondary: #6B9E85;     /* 草原绿（保留兼容） */
   --color-secondary-light: #8DB5A2;
   --color-secondary-dark: #527A65;
 
-  /* 警告 & 错误 */
+  /* 语义色 */
+  --color-success: #6B9E85;
   --color-warning: #E8B04C;
-  --color-error: #BF616A;
+  --color-error: #C2676A;
+  --color-info: #4A8C94;
 
-  /* 背景系统 */
-  --color-bg: #F8FAFC;
-  --color-bg-white: #FFFFFF;
-  --color-bg-card: #FFFFFF;
-  --color-bg-warm: #F5F0EB;
+  /* ==========================================================
+     3. 背景系统
+     ========================================================== */
+  --color-bg: #F6F8F7;            /* 页面底色 — 微湖绿灰 */
+  --color-bg-white: #FFFFFF;       /* 纯白 */
+  --color-bg-card: #FFFFFF;       /* 卡片背景 */
+  --color-bg-warm: #F5F0EB;       /* 暖灰（特殊场景） */
+  --color-bg-subtle: #F0F4F4;     /* 次级背景（新） */
 
-  /* 文字系统 */
-  --color-text-primary: #2E3440;
-  --color-text-secondary: #6B7B8D;
-  --color-text-tertiary: #9CA3AF;
-  --color-text-inverse: #FFFFFF;
+  /* ==========================================================
+     4. 文字系统
+     ========================================================== */
+  --color-text-primary: #1E2D2F;   /* 主文字 — 深湖绿黑 */
+  --color-text-secondary: #5F6F71; /* 次级文字 */
+  --color-text-tertiary: #8C9A9B;  /* 辅助文字 */
+  --color-text-inverse: #FFFFFF;   /* 反色文字 */
 
-  /* 边框 */
+  /* ==========================================================
+     5. 边框
+     ========================================================== */
   --color-border: rgba(0, 0, 0, 0.06);
   --color-border-light: rgba(0, 0, 0, 0.04);
+  --color-border-medium: rgba(0, 0, 0, 0.08);
 
-  /* 圆角系统 */
+  /* ==========================================================
+     6. 圆角系统
+     ========================================================== */
+  --radius-xs: 4px;
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-card: 16px;
   --radius-lg: 20px;
   --radius-xl: 24px;
+  --radius-2xl: 32px;
   --radius-button: 12px;
   --radius-input: 12px;
   --radius-full: 9999px;
+  --radius-avatar: 50%;
 
-  /* 间距系统 */
+  /* ==========================================================
+     7. 间距系统
+     ========================================================== */
+  --spacing-3xs: 2px;
   --spacing-xs: 4px;
   --spacing-sm: 8px;
   --spacing-md: 12px;
@@ -58,33 +88,104 @@
   --spacing-xl: 32px;
   --spacing-2xl: 40px;
   --spacing-3xl: 48px;
+  --spacing-4xl: 64px;
 
-  /* 阴影系统 */
+  /* ==========================================================
+     8. 阴影系统
+     ========================================================== */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.03);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.04);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.06);
+  --shadow-xl: 0 12px 36px rgba(0, 0, 0, 0.07);
 
-  /* 字体系统 */
+  /* ==========================================================
+     9. 字体系统
+     ========================================================== */
   --font-display: 36px;
   --font-title: 28px;
   --font-card-title: 20px;
   --font-content: 16px;
   --font-secondary: 14px;
   --font-caption: 12px;
+  --font-small: 10px;
 
-  /* 行高 */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+
+  /* ==========================================================
+     10. 行高
+     ========================================================== */
   --leading-tight: 1.2;
   --leading-normal: 1.5;
   --leading-relaxed: 1.7;
 
-  /* 过渡 */
+  /* ==========================================================
+     11. 过渡
+     ========================================================== */
   --transition-fast: 150ms ease;
   --transition-normal: 300ms ease;
   --transition-slow: 400ms ease;
 
-  /* 毛玻璃 */
+  /* ==========================================================
+     12. 毛玻璃（HeroSection / 弹窗遮罩）
+     ========================================================== */
   --glass-bg: rgba(255, 255, 255, 0.15);
   --glass-border: rgba(255, 255, 255, 0.22);
   --glass-blur: 24px;
+
+  /* ==========================================================
+     13. Z-index 层级
+     ========================================================== */
+  --z-dropdown: 100;
+  --z-sidebar: 100;
+  --z-modal-backdrop: 200;
+  --z-modal: 210;
+  --z-image-viewer: 300;
+  --z-toast: 400;
+
+  /* ==========================================================
+     14. 组件级令牌（可被组件覆盖）
+     ========================================================== */
+  --app-card-padding: var(--spacing-card);
+  --app-card-gap: var(--spacing-md);
+  --app-button-height: 44px;
+  --app-button-padding: 10px 24px;
+  --app-avatar-size-sm: 32px;
+  --app-avatar-size-md: 44px;
+  --app-avatar-size-lg: 64px;
+  --app-icon-size-sm: 16px;
+  --app-icon-size-md: 20px;
+  --app-icon-size-lg: 24px;
+
+  /* ==========================================================
+     15. 暗色模式（预留 — 第二阶段实施）
+     ========================================================== */
+}
+
+/* 暗色模式骨架（当前不启用，但结构已就绪） */
+.dark,
+[data-theme="dark"] {
+  --color-bg: #1A2022;
+  --color-bg-white: #243033;
+  --color-bg-card: #243033;
+  --color-bg-subtle: #2D3A3D;
+  --color-text-primary: #E8EDEE;
+  --color-text-secondary: #A0B0B2;
+  --color-text-tertiary: #6E8082;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-light: rgba(255, 255, 255, 0.05);
+  --color-border-medium: rgba(255, 255, 255, 0.10);
+  --color-primary-bg: rgba(74, 140, 148, 0.12);
+  --color-primary-bg-hover: rgba(74, 140, 148, 0.18);
+  --color-primary-bg-active: rgba(74, 140, 148, 0.24);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-xl: 0 12px 36px rgba(0, 0, 0, 0.4);
 }

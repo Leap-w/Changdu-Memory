@@ -28,7 +28,11 @@ onMounted(async () => {
 // ==========================================
 // Helpers
 // ==========================================
-function goCreate(_type: string) { router.push('/expense/new') }
+function goCreate(type: string) {
+  if (type === '资产') { openAddAsset(); return }
+  if (type === '福利') { openAddWelfare(); return }
+  router.push('/expense/new')
+}
 function goEdit(id: string) { router.push(`/expense/${id}/edit`) }
 
 function formatDate(ds: string) {
@@ -105,9 +109,9 @@ async function handleWelfareSave() {
         <span class="lp__sum-label">{{ formatMonth(expenseStore.currentMonth) }}支出</span>
         <span class="lp__sum-val">¥{{ expenseStore.monthlyExpenseTotal }}</span>
       </div>
-      <div class="lp__sum-card lp__sum-card--asset">
-        <span class="lp__sum-label">总资产</span>
-        <span class="lp__sum-val">¥{{ assetStore.totalAssets }}</span>
+      <div class="lp__sum-card lp__sum-card--income">
+        <span class="lp__sum-label">{{ formatMonth(expenseStore.currentMonth) }}收入</span>
+        <span class="lp__sum-val">¥{{ expenseStore.monthlyIncomeTotal }}</span>
       </div>
     </div>
 
@@ -277,8 +281,8 @@ async function handleWelfareSave() {
 .lp__sum-card { padding:16px;border-radius:var(--radius-md);background:#fff;border:1px solid var(--color-border-light);display:flex;flex-direction:column;gap:4px; }
 .lp__sum-label { font-size:12px;color:var(--color-text-tertiary); }
 .lp__sum-val { font-size:20px;font-weight:700;color:var(--color-text-primary); }
-.lp__sum-card--month { border-left:3px solid #5E81AC; }
-.lp__sum-card--asset { border-left:3px solid #6B9E85; }
+.lp__sum-card--month { border-left:3px solid var(--color-primary); }
+.lp__sum-card--income { border-left:3px solid var(--color-secondary); }
 
 /* Tabs */
 .lp__tabs { display:flex;gap:4px;margin-bottom:18px;overflow-x:auto; }

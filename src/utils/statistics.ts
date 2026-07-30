@@ -51,16 +51,6 @@ export function getMonthlyDiaryCount(diaries: Row[]): MonthlyCount[] {
   return groupByMonth(diaries, 'diary_date')
 }
 
-// ====== 照片统计 ======
-
-export function getMonthlyPhotoCount(photos: Row[]): MonthlyCount[] {
-  return groupByMonth(photos, 'photo_date')
-}
-
-export function getPhotoCategoryCount(photos: Row[]): { key: string; count: number }[] {
-  return groupByField(photos, 'category')
-}
-
 // ====== 工作统计 ======
 
 export function getWorkPeriodCount(works: Row[]): { key: string; count: number }[] {
@@ -101,38 +91,22 @@ export function getTotalExpense(expenses: Row[]): number {
   return Math.round(total * 100) / 100
 }
 
-// ====== 地点统计 ======
-
-export function getLocationTypeCount(locations: Row[]): { key: string; count: number }[] {
-  return groupByField(locations, 'location_type')
-}
-
 // ====== 标签统计 ======
 
 export function getTagUsageCount(
   tags: Row[],
   diaryTags: Row[],
-  photoTags: Row[],
-  locationTags: Row[],
 ): { name: string; color: string; count: number }[] {
   const countMap = new Map<string, number>()
   for (const dt of diaryTags) {
     const tid = String(dt.tag_id)
     countMap.set(tid, (countMap.get(tid) || 0) + 1)
   }
-  for (const pt of photoTags) {
-    const tid = String(pt.tag_id)
-    countMap.set(tid, (countMap.get(tid) || 0) + 1)
-  }
-  for (const lt of locationTags) {
-    const tid = String(lt.tag_id)
-    countMap.set(tid, (countMap.get(tid) || 0) + 1)
-  }
 
   return tags
     .map((t) => ({
       name: String(t.name),
-      color: String(t.color || '#5E81AC'),
+      color: String(t.color || '#4A8C94'),
       count: countMap.get(String(t.id)) || 0,
     }))
     .filter((t) => t.count > 0)

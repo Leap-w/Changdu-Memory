@@ -43,14 +43,6 @@ export interface ExpenseImportRow {
   description: string
 }
 
-export interface LocationImportRow {
-  name: string
-  location_type: string
-  visit_date: string
-  address: string
-  description: string
-}
-
 export interface TodoImportRow {
   todo_date: string
   title: string
@@ -58,11 +50,27 @@ export interface TodoImportRow {
   priority: string
 }
 
+export interface StudentImportRow {
+  name: string
+  class_name: string
+  role: string
+  notes: string
+}
+
+export interface ScheduleImportRow {
+  course_name: string
+  class_name: string
+  day_of_week: number
+  start_time: string
+  end_time: string
+  location: string
+  notes: string
+}
+
 export type ImportRow =
   | DiaryImportRow
   | WorkImportRow
   | ExpenseImportRow
-  | LocationImportRow
   | TodoImportRow
 
 // ====== 通用工具 ======
@@ -104,7 +112,6 @@ function cellStr(row: string[], col: number): string {
 const VALID_PERIODS = ['morning', 'afternoon', 'evening']
 const VALID_WORK_CATEGORIES = ['teaching', 'meeting', 'training', 'other']
 const VALID_EXPENSE_CATEGORIES = ['food', 'transport', 'daily', 'study', 'medical', 'other']
-const VALID_LOCATION_TYPES = ['school', 'city', 'travel', 'life', 'other']
 const VALID_TODO_CATEGORIES = ['teaching', 'life', 'growth']
 const VALID_PRIORITIES = ['high', 'medium', 'low']
 
@@ -240,49 +247,6 @@ export function parseAndValidateExpenses(rows: string[][]): ImportPreview<Expens
   return { validRows, errors, totalRows: dataRows.filter((r) => r && r.some((c) => c)).length }
 }
 
-export function parseAndValidateLocations(rows: string[][]): ImportPreview<LocationImportRow> {
-  const validRows: LocationImportRow[] = []
-  const errors: ImportError[] = []
-  const dataRows = rows.slice(1)
-
-  for (let i = 0; i < dataRows.length; i++) {
-    const rowNum = i + 2
-    const r = dataRows[i]
-    if (!r || r.every((c) => !c)) continue
-
-    const name = cellStr(r, 0)
-    const type = cellStr(r, 1).toLowerCase()
-
-    if (!name) {
-      errors.push({ row: rowNum, message: '地点名称不能为空' })
-      continue
-    }
-    if (!VALID_LOCATION_TYPES.includes(type)) {
-      errors.push({
-        row: rowNum,
-        message: `类型无效: "${cellStr(r, 1)}"，应为 school/city/travel/life/other`,
-      })
-      continue
-    }
-
-    const date = cellStr(r, 2)
-    if (date && !isValidDate(date)) {
-      errors.push({ row: rowNum, message: `日期格式错误: "${date}"` })
-      continue
-    }
-
-    validRows.push({
-      name,
-      location_type: type,
-      visit_date: date || new Date().toISOString().split('T')[0],
-      address: cellStr(r, 3),
-      description: cellStr(r, 4),
-    })
-  }
-
-  return { validRows, errors, totalRows: dataRows.filter((r) => r && r.some((c) => c)).length }
-}
-
 export function parseAndValidateTodos(rows: string[][]): ImportPreview<TodoImportRow> {
   const validRows: TodoImportRow[] = []
   const errors: ImportError[] = []
@@ -332,6 +296,42 @@ export function parseAndValidateTodos(rows: string[][]): ImportPreview<TodoImpor
   return { validRows, errors, totalRows: dataRows.filter((r) => r && r.some((c) => c)).length }
 }
 
+/** 解析学生 Excel */
+export function parseAndValidateStudents(rows: string[][]): ImportPreview<StudentImportRow> {
+  const validRows: StudentImportRow[] = []
+  const errors: ImportError[] = []
+  const dataRows = rows.slice(1)
+  for (let i = 0; i < dataRows.length; i++) {
+    const rowNum = i + 2; const r = dataRows[i]
+    if (!r || r.every((c) => !c)) continue
+    const name = cellStr(r, 0)
+    if (!name) { errors.push({ row: rowNum, message: '姓名不能为空' }); continue }
+    validRows.push({ name, class_name: cellStr(r, 1), role: cellStr(r, 2), notes: cellStr(r, 3) })
+  }
+  return { validRows, errors, totalRows: dataRows.filter((r) => r && r.some((c) => c)).length }
+}
+
+/** 解析课程表 Excel */
+export function parseAndValidateSchedules(rows: string[][]): ImportPreview<ScheduleImportRow> {
+  const validRows: ScheduleImportRow[] = []
+  const errors: ImportError[] = []
+  const dataRows = rows.slice(1)
+  for (let i = 0; i < dataRows.length; i++) {
+    const rowNum = i + 2; const r = dataRows[i]
+    if (!r || r.every((c) => !c)) continue
+    const name = cellStr(r, 0)
+    if (!name) { errors.push({ row: rowNum, message: '课程名称不能为空' }); continue }
+    const dow = parseInt(cellStr(r, 2)) || 1
+    if (dow < 1 || dow > 7) { errors.push({ row: rowNum, message: '星期无效，应为1-7' }); continue }
+    validRows.push({
+      course_name: name, class_name: cellStr(r, 1), day_of_week: dow,
+      start_time: cellStr(r, 3) || '08:00', end_time: cellStr(r, 4) || '09:00',
+      location: cellStr(r, 5), notes: cellStr(r, 6),
+    })
+  }
+  return { validRows, errors, totalRows: dataRows.filter((r) => r && r.some((c) => c)).length }
+}
+
 /** 解析 Excel 并验证（根据模块类型分派） */
 export function parseAndValidate(
   file: File,
@@ -339,18 +339,13 @@ export function parseAndValidate(
 ): Promise<ImportPreview<ImportRow>> {
   return parseExcel(file).then((rows) => {
     switch (moduleType) {
-      case 'diaries':
-        return parseAndValidateDiaries(rows) as ImportPreview<ImportRow>
-      case 'work_plans':
-        return parseAndValidateWorks(rows) as ImportPreview<ImportRow>
-      case 'expenses':
-        return parseAndValidateExpenses(rows) as ImportPreview<ImportRow>
-      case 'locations':
-        return parseAndValidateLocations(rows) as ImportPreview<ImportRow>
-      case 'todos':
-        return parseAndValidateTodos(rows) as ImportPreview<ImportRow>
-      default:
-        throw new Error(`未知的模块类型: ${moduleType}`)
+      case 'diaries': return parseAndValidateDiaries(rows) as ImportPreview<ImportRow>
+      case 'work_plans': return parseAndValidateWorks(rows) as ImportPreview<ImportRow>
+      case 'expenses': return parseAndValidateExpenses(rows) as ImportPreview<ImportRow>
+      case 'todos': return parseAndValidateTodos(rows) as ImportPreview<ImportRow>
+      case 'students': return parseAndValidateStudents(rows) as unknown as ImportPreview<ImportRow>
+      case 'schedules': return parseAndValidateSchedules(rows) as unknown as ImportPreview<ImportRow>
+      default: throw new Error(`未知的模块类型: ${moduleType}`)
     }
   })
 }

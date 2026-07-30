@@ -2,16 +2,29 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import router from './router'
 import { useAuthStore } from './stores/auth'
+import { useAppStore } from './stores/app'
 import App from './App.vue'
 import './styles/variables.css'
 import './styles/global.css'
 
 async function bootstrap() {
+  // 暗色模式：页面渲染前恢复，防止闪烁
+  const savedTheme = localStorage.getItem('theme')
+  if (savedTheme === 'dark') {
+    document.documentElement.classList.add('dark')
+  } else {
+    document.documentElement.classList.remove('dark')
+  }
+
   const app = createApp(App)
 
   const pinia = createPinia()
   app.use(pinia)
   app.use(router)
+
+  // 同步 Pinia theme 状态
+  const appStore = useAppStore()
+  appStore.setTheme(savedTheme === 'dark' ? 'dark' : 'light')
 
   // 初始化认证状态——带超时保护，确保 app 一定会挂载
   const authStore = useAuthStore()

@@ -1,10 +1,32 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { getTimeProfile, updateTimeProfile } from '@/repositories/TimeRepository'
-import type { TimeProfile } from '@/repositories/TimeRepository'
+import {
+  getTimeProfile,
+  updateTimeProfile,
+  fetchCountdowns,
+  createCountdown,
+  updateCountdown,
+  deleteCountdown,
+  toggleCountdownPin,
+} from '@/repositories/TimeRepository'
+import type { TimeProfile, Countdown } from '@/repositories/TimeRepository'
+
+/** 基于目标日计算距离目标还有多少天/已过多少天 */
+export function getCountdownStats(item: { end_date: string }) {
+  const target = new Date(item.end_date + 'T00:00:00')
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const diff = Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+  return {
+    diff,
+    isPast: diff < 0,
+    label: diff < 0 ? `已过 ${Math.abs(diff)} 天` : diff === 0 ? '就是今天' : `还有 ${diff} 天`,
+  }
+}
 
 export const useTimeStore = defineStore('time', () => {
   const profile = ref<TimeProfile | null>(null)
+  const countdowns = ref<Countdown[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -98,8 +120,57 @@ export const useTimeStore = defineStore('time', () => {
     }
   }
 
+  /** 加载所有倒计时 */
+  async function loadCountdowns() {
+    try {
+      countdowns.value = await fetchCountdowns()
+    } catch { /* ignore */ }
+  }
+
+  /** 排序：置顶优先，再按目标日 */
+  function sortCountdowns() {
+    countdowns.value.sort((a, b) => {
+      if (a.pinned !== b.pinned) return a.pinned ? -1 : 1
+      return b.end_date.localeCompare(a.end_date)
+    })
+  }
+
+  /** 创建倒计时 */
+  async function addCountdown(fields: { title: string; end_date: string }): Promise<Countdown> {
+    const cd = await createCountdown(fields)
+    countdowns.value.push(cd)
+    sortCountdowns()
+    return cd
+  }
+
+  /** 编辑倒计时 */
+  async function editCountdown(id: string, fields: { title: string; end_date: string }): Promise<Countdown> {
+    const cd = await updateCountdown(id, fields)
+    const idx = countdowns.value.findIndex((c) => c.id === id)
+    if (idx !== -1) countdowns.value[idx] = cd
+    sortCountdowns()
+    return cd
+  }
+
+  /** 删除倒计时 */
+  async function removeCountdown(id: string): Promise<void> {
+    await deleteCountdown(id)
+    countdowns.value = countdowns.value.filter((c) => c.id !== id)
+  }
+
+  /** 置顶切换 */
+  async function togglePin(id: string): Promise<void> {
+    const cd = countdowns.value.find((c) => c.id === id)
+    if (!cd) return
+    const newPinned = !cd.pinned
+    await toggleCountdownPin(id, newPinned)
+    cd.pinned = newPinned
+    sortCountdowns()
+  }
+
   return {
     profile,
+    countdowns,
     loading,
     error,
     startDate,
@@ -111,5 +182,10 @@ export const useTimeStore = defineStore('time', () => {
     phase,
     loadTimeProfile,
     updateProfile,
+    loadCountdowns,
+    addCountdown,
+    editCountdown,
+    removeCountdown,
+    togglePin,
   }
 })

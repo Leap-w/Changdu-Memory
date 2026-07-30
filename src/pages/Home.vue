@@ -7,7 +7,6 @@ import { useWorkStore } from '@/stores/work'
 import { useTodoStore } from '@/stores/todo'
 import { useDiaryStore } from '@/stores/diary'
 import { useExpenseStore } from '@/stores/expense'
-import { usePhotoStore } from '@/stores/photo'
 import HeroSection from '@/components/dashboard/HeroSection.vue'
 
 const router = useRouter()
@@ -17,7 +16,6 @@ const workStore = useWorkStore()
 const todoStore = useTodoStore()
 const diaryStore = useDiaryStore()
 const expenseStore = useExpenseStore()
-const photoStore = usePhotoStore()
 
 const ready = ref(false)
 
@@ -35,7 +33,6 @@ onMounted(async () => {
       { load: () => todoStore.todos.length ? Promise.resolve() : todoStore.loadTodos() },
       { load: () => diaryStore.diaries.length ? Promise.resolve() : diaryStore.loadDiaries() },
       { load: () => expenseStore.expenses.length ? Promise.resolve() : expenseStore.loadExpenses() },
-      { load: () => photoStore.photos.length ? Promise.resolve() : photoStore.loadPhotos() },
     ]
     await Promise.allSettled(stores.map((s) => s.load()))
   }
@@ -63,10 +60,6 @@ const todayExpenseTotal = computed(() => {
   return Math.round(list.reduce((s, e) => s + (Number(e.amount) || 0), 0) * 100) / 100
 })
 
-const todayPhotoCount = computed(() =>
-  photoStore.photos.filter((p) => p.photo_date === today.value).length,
-)
-
 // ==========================================
 // Labels
 // ==========================================
@@ -85,7 +78,7 @@ const quickActions = [
   { id: 'diary',    label: '写日记',   icon: 'pen',       route: '/diary/new' },
   { id: 'schedule', label: '课程表',   icon: 'calendar',  route: '/work' },
   { id: 'todo',     label: '待办清单', icon: 'checklist', route: '/todo' },
-  { id: 'students', label: '学生档案', icon: 'people',    route: '/location' },
+
   { id: 'expense',  label: '支出记录', icon: 'expense',   route: '/expense' },
   { id: 'income',   label: '收入记录', icon: 'income',    route: '/expense/new' },
   { id: 'events',   label: '大事记',   icon: 'star',      route: '/memory' },
@@ -177,7 +170,7 @@ function getTodayDisplay() {
           </div>
           <div v-if="ready" class="today-card__stats">
             <div class="today-card__stat"><span class="today-card__stat-num">{{ todayDiaryCount }}</span><span class="today-card__stat-label">日记</span></div>
-            <div class="today-card__stat"><span class="today-card__stat-num">{{ todayPhotoCount }}</span><span class="today-card__stat-label">照片</span></div>
+
             <div class="today-card__stat"><span class="today-card__stat-num">{{ pendingTodos.length }}</span><span class="today-card__stat-label">待办</span></div>
             <div class="today-card__stat"><span class="today-card__stat-num">¥{{ todayExpenseTotal }}</span><span class="today-card__stat-label">花费</span></div>
           </div>

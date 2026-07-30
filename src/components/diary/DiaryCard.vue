@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Diary } from '@/repositories/DiaryRepository'
+import { AppCard } from '@/components/ui'
 
 defineProps<{
   diary: Diary
@@ -26,39 +27,40 @@ function formatWeekday(dateStr: string): string {
 </script>
 
 <template>
-  <article class="dc" @click="emit('click', diary.id)">
-    <!-- Date block -->
-    <div class="dc__date">
-      <span class="dc__date-day">{{ formatDate(diary.diary_date).month }}</span>
-      <span class="dc__date-month">{{ formatDate(diary.diary_date).day }}</span>
-      <span class="dc__date-week">{{ formatWeekday(diary.diary_date) }}</span>
-    </div>
-
-    <!-- Body -->
-    <div class="dc__body">
-      <h3 class="dc__title">{{ diary.title || '无标题' }}</h3>
-      <p v-if="diary.content" class="dc__excerpt">{{ excerpt(diary.content) }}</p>
-
-      <!-- Tags -->
-      <div v-if="tags && tags.length" class="dc__tags">
-        <span v-for="t in tags.slice(0, 3)" :key="t.id" class="dc__tag" :style="{ color: t.color, background: t.color + '14' }">
-          {{ t.name }}
-        </span>
-        <span v-if="tags.length > 3" class="dc__tag-more">+{{ tags.length - 3 }}</span>
+  <AppCard hoverable class="dc" @click="emit('click', diary.id)">
+    <div class="dc__inner">
+      <!-- Date block -->
+      <div class="dc__date">
+        <span class="dc__date-month">{{ formatDate(diary.diary_date).month }}</span>
+        <span class="dc__date-day">{{ formatDate(diary.diary_date).day }}</span>
+        <span class="dc__date-week">{{ formatWeekday(diary.diary_date) }}</span>
       </div>
+
+      <!-- Body -->
+      <div class="dc__body">
+        <h3 class="dc__title">{{ diary.title || '无标题' }}</h3>
+        <p v-if="diary.content" class="dc__excerpt">{{ excerpt(diary.content) }}</p>
+
+        <!-- Tags -->
+        <div v-if="tags && tags.length" class="dc__tags">
+          <span v-for="t in tags.slice(0, 3)" :key="t.id" class="dc__tag" :style="{ color: t.color, background: t.color + '14' }">
+            {{ t.name }}
+          </span>
+          <span v-if="tags.length > 3" class="dc__tag-more">+{{ tags.length - 3 }}</span>
+        </div>
+      </div>
+
+      <!-- Thumbnail -->
+      <img v-if="thumbnail" :src="thumbnail" class="dc__thumb" alt="" loading="lazy" />
+
+      <!-- Arrow -->
+      <svg class="dc__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
     </div>
-
-    <!-- Thumbnail -->
-    <img v-if="thumbnail" :src="thumbnail" class="dc__thumb" alt="" loading="lazy" />
-
-    <!-- Arrow -->
-    <svg class="dc__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-  </article>
+  </AppCard>
 </template>
 
 <style scoped>
-.dc { display:flex;align-items:center;gap:14px;padding:16px 18px;background:#fff;border-radius:var(--radius-card);border:1px solid var(--color-border-light);cursor:pointer;transition:all .15s; }
-.dc:hover { border-color:transparent;box-shadow:var(--shadow-card);transform:translateY(-1px); }
+.dc__inner { display:flex;align-items:center;gap:14px; }
 
 /* Date block */
 .dc__date { display:flex;flex-direction:column;align-items:center;min-width:52px;flex-shrink:0; }
@@ -79,7 +81,7 @@ function formatWeekday(dateStr: string): string {
 .dc__arrow { color:var(--color-text-tertiary);flex-shrink:0;opacity:.3; }
 
 @media (max-width:500px) {
-  .dc { padding:14px;gap:10px; }
+  .dc__inner { gap:10px; }
   .dc__date { min-width:44px; }
   .dc__date-day { font-size:20px; }
   .dc__thumb { width:44px;height:44px; }

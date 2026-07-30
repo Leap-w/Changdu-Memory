@@ -6,8 +6,6 @@ const timeStore = useTimeStore()
 
 defineProps<{
   diaryCount: number
-  photoCount: number
-  locationCount: number
   expenseTotal: number
   workCount: number
 }>()
@@ -28,16 +26,6 @@ const projectYear = timeStore.profile?.start_date?.substring(0, 4) || new Date()
           <span class="stat-item__label">日记</span>
         </div>
         <div class="stat-item">
-          <span class="stat-item__icon">📷</span>
-          <span class="stat-item__value">{{ photoCount }}</span>
-          <span class="stat-item__label">照片</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-item__icon">📍</span>
-          <span class="stat-item__value">{{ locationCount }}</span>
-          <span class="stat-item__label">地点</span>
-        </div>
-        <div class="stat-item">
           <span class="stat-item__icon">📋</span>
           <span class="stat-item__value">{{ workCount }}</span>
           <span class="stat-item__label">工作</span>
@@ -56,7 +44,7 @@ const projectYear = timeStore.profile?.start_date?.substring(0, 4) || new Date()
 .overview-card {
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
-  background: linear-gradient(135deg, #5E81AC 0%, #81A1C1 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
   color: #fff;
 }
 

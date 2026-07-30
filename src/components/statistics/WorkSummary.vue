@@ -100,7 +100,7 @@ const periodLabels: Record<string, string> = {
 .work-chip {
   padding: 3px 10px;
   border-radius: 12px;
-  background: rgba(79, 142, 247, 0.06);
+  background: var(--color-primary-bg);
   font-size: var(--font-caption);
   color: var(--color-text-primary);
 }

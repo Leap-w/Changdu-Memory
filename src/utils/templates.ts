@@ -31,11 +31,17 @@ export const TEMPLATES: Record<string, TemplateDef> = {
     headers: ['date', 'category', 'amount', 'description'],
     exampleRow: ['2026-07-29', 'food', 42.5, '午餐'],
   },
-  locations: {
-    label: '地点模板',
-    fileName: '地点导入模板.xlsx',
-    headers: ['name', 'type', 'date', 'address', 'description'],
-    exampleRow: ['昌都第一中学', 'school', '2026-07-20', '西藏昌都市卡若区', '支教学校'],
+  students: {
+    label: '学生档案模板',
+    fileName: '学生导入模板.xlsx',
+    headers: ['name', 'class_name', 'role', 'notes'],
+    exampleRow: ['张三', '三年三班', '班长', '喜欢画画，数学需要加强'],
+  },
+  schedules: {
+    label: '课程表模板',
+    fileName: '课程表导入模板.xlsx',
+    headers: ['course_name', 'class_name', 'day_of_week', 'start_time', 'end_time', 'location', 'notes'],
+    exampleRow: ['英语', '三年级', 3, '08:00', '08:45', '教学楼301', ''],
   },
   todos: {
     label: '待办模板',

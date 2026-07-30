@@ -62,7 +62,7 @@ function formatDate(dateStr: string): string {
 
 function getImgUrl(p: DiaryPhoto) { return getDiaryPhotoUrl(p) }
 function getTagName(id: string) { return tagStore.tags.find((t) => t.id === id)?.name || '' }
-function getTagColor(id: string) { return tagStore.tags.find((t) => t.id === id)?.color || '#5E81AC' }
+function getTagColor(id: string) { return tagStore.tags.find((t) => t.id === id)?.color || '#4A8C94' }
 
 function openViewer(i: number) { viewerIndex.value = i }
 function closeViewer() { viewerIndex.value = -1 }

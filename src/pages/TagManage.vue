@@ -19,7 +19,7 @@ const tagStore = useTagStore()
 const message = useMessage()
 
 const newTagName = ref('')
-const newTagColor = ref('#5E81AC')
+const newTagColor = ref('#4A8C94')
 
 onMounted(() => {
   tagStore.loadTags()
@@ -34,7 +34,7 @@ async function handleCreate() {
   try {
     await tagStore.addTag(name, newTagColor.value)
     newTagName.value = ''
-    newTagColor.value = '#5E81AC'
+    newTagColor.value = '#4A8C94'
     message.success('标签已创建')
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : '创建失败'

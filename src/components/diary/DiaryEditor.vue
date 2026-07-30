@@ -27,7 +27,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  submit: [data: { title: string; content: string; diary_date: string; tag_ids: string[] }]
+  submit: [data: { title: string; content: string; diary_date: string; tag_ids: string[]; pendingImages?: File[] }]
   cancel: []
 }>()
 
@@ -66,7 +66,7 @@ function applyTemplate(key: string) {
 // Tags (preset + custom)
 // ==========================================
 const presetTags = ['教学', '学生', '生活', '培训', '活动', '旅行', '家访', '会议', '摄影', '美食']
-const presetTagColors = ['#5E81AC', '#D08770', '#6B9E85', '#8E7CB5', '#BF616A', '#6B9E85', '#5E81AC', '#D08770', '#BF616A', '#E8B04C']
+const presetTagColors = ['#4A8C94', '#D08770', '#6B9E85', '#8E7CB5', '#BF616A', '#6B9E85', '#4A8C94', '#D08770', '#BF616A', '#E8B04C']
 
 const customTagInput = ref('')
 const showCustomTag = ref(false)
@@ -93,7 +93,7 @@ async function addCustomTag() {
     try { await tagStore.loadTags() } catch { return }
   }
   try {
-    const tag = await tagStore.addTag(name, '#5E81AC')
+    const tag = await tagStore.addTag(name, '#4A8C94')
     localTagIds.value.push(tag.id)
     customTagInput.value = ''
     showCustomTag.value = false
@@ -106,6 +106,8 @@ async function addCustomTag() {
 const images = ref<DiaryPhoto[]>([])
 const uploading = ref(false)
 const MAX_IMAGES = 9
+const pendingImages = ref<File[]>([])
+const previewUrls = ref<string[]>([])
 
 // Load existing images in edit mode
 watch(() => props.diaryId, async (id) => {
@@ -124,9 +126,15 @@ async function handleImageUpload(e: Event) {
   // If this is a new diary, we need a diary ID first — store images temporarily
   // For now, only support upload in edit mode
   if (!props.diaryId) {
-    uploading.value = false
-    return
-  }
+      // 新建模式：缓存图片，稍后与日记一起创建
+      for (let i = 0; i < files.length && pendingImages.value.length < MAX_IMAGES; i++) {
+        pendingImages.value.push(files[i])
+        previewUrls.value.push(URL.createObjectURL(files[i]))
+      }
+      uploading.value = false
+      input.value = ''
+      return
+    }
 
   for (let i = 0; i < files.length && images.value.length < MAX_IMAGES; i++) {
     try {
@@ -168,6 +176,7 @@ function handleSubmit() {
     content: localContent.value,
     diary_date: localDate.value,
     tag_ids: [...localTagIds.value],
+    pendingImages: pendingImages.value.length > 0 ? [...pendingImages.value] : undefined,
   })
 }
 </script>
@@ -215,17 +224,21 @@ function handleSubmit() {
 
     <!-- ====== Images ====== -->
     <div class="de__section">
-      <label class="de__label">图片（{{ images.length }}/{{ MAX_IMAGES }}）</label>
+      <label class="de__label">图片（{{ images.length + previewUrls.length }}/{{ MAX_IMAGES }}）</label>
       <div class="de__images">
         <div v-for="(p, i) in images" :key="p.id" class="de__img-item" @click="openViewer(i)">
           <img :src="getImageUrl(p)" class="de__img-thumb" alt="" />
           <button class="de__img-del" @click.stop="removeImage(p)">×</button>
         </div>
-        <label v-if="canUploadMore && diaryId" class="de__img-add" :class="{ loading: uploading }">
+        <!-- 预缓存图片预览 -->
+        <div v-for="(url, i) in previewUrls" :key="'p'+i" class="de__img-item">
+          <img :src="url" class="de__img-thumb" alt="" />
+          <button class="de__img-del" @click.stop="pendingImages.splice(i,1); previewUrls.splice(i,1)">×</button>
+        </div>
+        <label v-if="canUploadMore" class="de__img-add" :class="{ loading: uploading }">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           <input type="file" accept="image/*" multiple hidden @change="handleImageUpload" />
         </label>
-        <span v-if="!diaryId" class="de__img-hint">保存日记后即可添加图片</span>
       </div>
     </div>
 

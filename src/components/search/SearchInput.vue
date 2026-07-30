@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { NInput } from 'naive-ui'
+import { AppIcon } from '@/components/ui'
 
 const props = defineProps<{
   modelValue: string
@@ -40,7 +41,7 @@ function onInput(val: string) {
     @input="onInput"
   >
     <template #prefix>
-      🔍
+      <AppIcon name="search" :size="18" />
     </template>
   </NInput>
 </template>

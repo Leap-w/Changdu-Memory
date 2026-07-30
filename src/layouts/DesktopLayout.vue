@@ -141,12 +141,12 @@ onUnmounted(() => {
 }
 
 .sidebar-item:hover {
-  background: rgba(79, 142, 247, 0.08);
+  background: var(--color-primary-bg);
   color: var(--color-primary);
 }
 
 .sidebar-item.active {
-  background: rgba(79, 142, 247, 0.12);
+  background: var(--color-primary-bg-hover);
   color: var(--color-primary);
   font-weight: 600;
 }

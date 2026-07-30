@@ -92,7 +92,7 @@ function handleCreate(label: string) {
         :key="tagId"
         :bordered="false"
         :color="{
-          color: tagStore.tags.find((t) => t.id === tagId)?.color || '#5E81AC',
+          color: tagStore.tags.find((t) => t.id === tagId)?.color || '#4A8C94',
           textColor: '#fff',
         }"
         closable

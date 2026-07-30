@@ -16,7 +16,7 @@ export async function fetchTags(): Promise<Tag[]> {
 }
 
 /** 创建新标签 */
-export async function createTag(name: string, color: string = '#5E81AC'): Promise<Tag> {
+export async function createTag(name: string, color: string = '#4A8C94'): Promise<Tag> {
   const user = (await supabase.auth.getUser()).data.user
   if (!user) throw new Error('未登录')
 
@@ -73,74 +73,9 @@ export async function setDiaryTags(diaryId: string, tagIds: string[]): Promise<v
   }
 }
 
-// ====== 照片标签关联 ======
-
-export async function fetchPhotoTagIds(photoId: string): Promise<string[]> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
-    .from('photo_tags')
-    .select('tag_id')
-    .eq('photo_id', photoId)
-
-  if (error) throw error
-  return (data ?? []).map((r: { tag_id: string }) => r.tag_id)
-}
-
-export async function setPhotoTags(photoId: string, tagIds: string[]): Promise<void> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = supabase as any
-
-  await db.from('photo_tags').delete().eq('photo_id', photoId)
-
-  if (tagIds.length > 0) {
-    const rows = tagIds.map((tagId) => ({ photo_id: photoId, tag_id: tagId }))
-    const { error } = await db.from('photo_tags').insert(rows)
-    if (error) throw error
-  }
-}
-
 // ====== 全量表查询（统计用） ======
 
- 
 export async function fetchAllDiaryTags(): Promise<{ diary_id: string; tag_id: string }[]> {
   const { data } = await (supabase as any).from('diary_tags').select('diary_id,tag_id')
   return (data ?? [])
-}
-
- 
-export async function fetchAllPhotoTags(): Promise<{ photo_id: string; tag_id: string }[]> {
-  const { data } = await (supabase as any).from('photo_tags').select('photo_id,tag_id')
-  return (data ?? [])
-}
-
- 
-export async function fetchAllLocationTags(): Promise<{ location_id: string; tag_id: string }[]> {
-  const { data } = await (supabase as any).from('location_tags').select('location_id,tag_id')
-  return (data ?? [])
-}
-
-// ====== 地点标签关联 ======
-
-export async function fetchLocationTagIds(locationId: string): Promise<string[]> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
-    .from('location_tags')
-    .select('tag_id')
-    .eq('location_id', locationId)
-
-  if (error) throw error
-  return (data ?? []).map((r: { tag_id: string }) => r.tag_id)
-}
-
-export async function setLocationTags(locationId: string, tagIds: string[]): Promise<void> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = supabase as any
-
-  await db.from('location_tags').delete().eq('location_id', locationId)
-
-  if (tagIds.length > 0) {
-    const rows = tagIds.map((tagId) => ({ location_id: locationId, tag_id: tagId }))
-    const { error } = await db.from('location_tags').insert(rows)
-    if (error) throw error
-  }
 }

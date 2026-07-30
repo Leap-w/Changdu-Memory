@@ -38,7 +38,7 @@ export default defineConfig({
         name: '昌都记忆 Changdu Memory',
         short_name: '昌都记忆',
         description: '记录在西藏昌都的一年支教生活',
-        theme_color: '#5E81AC',
+        theme_color: '#4A8C94',
         background_color: '#F8FAFC',
         display: 'standalone',
         icons: [

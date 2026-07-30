@@ -113,7 +113,7 @@ function onCheck() {
 
 .todo-card__category {
   color: var(--color-text-secondary);
-  background: rgba(79, 142, 247, 0.08);
+  background: var(--color-primary-bg);
   padding: 1px 8px;
   border-radius: 4px;
 }

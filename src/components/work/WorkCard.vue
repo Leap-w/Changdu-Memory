@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { WorkPlan } from '@/repositories/WorkRepository'
-import { NCard } from 'naive-ui'
+import { AppCard } from '@/components/ui'
 
 defineProps<{
   work: WorkPlan
@@ -17,8 +17,8 @@ const periodLabels: Record<string, string> = {
 }
 
 const periodColors: Record<string, string> = {
-  morning: '#5E81AC',
-  afternoon: '#F59E0B',
+  morning: '#4A8C94',
+  afternoon: '#E8B04C',
   evening: '#8B5CF6',
 }
 
@@ -32,7 +32,7 @@ const categoryLabels: Record<string, string> = {
 </script>
 
 <template>
-  <NCard class="work-card" hoverable @click="emit('click', work.id)">
+  <AppCard hoverable class="work-card" @click="emit('click', work.id)">
     <div class="work-card__inner">
       <div
         class="work-card__period"
@@ -55,19 +55,11 @@ const categoryLabels: Record<string, string> = {
         </div>
       </div>
     </div>
-  </NCard>
+  </AppCard>
 </template>
 
 <style scoped>
-.work-card {
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
-}
-
-.work-card :deep(.n-card__content) {
-  padding: 12px 16px;
-}
-
+/* AppCard provides base card styling; only inner layout needed */
 .work-card__inner {
   display: flex;
   align-items: flex-start;

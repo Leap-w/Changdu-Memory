@@ -79,14 +79,14 @@ function formatMonth(month: string): string {
 .trend-bar-row__track {
   flex: 1;
   height: 18px;
-  background: rgba(79, 142, 247, 0.08);
+  background: rgba(74, 140, 148, 0.08);
   border-radius: 9px;
   overflow: hidden;
 }
 
 .trend-bar-row__fill {
   height: 100%;
-  background: linear-gradient(90deg, #5E81AC, #81A1C1);
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-dark));
   border-radius: 9px;
   min-width: 4px;
   transition: width 0.4s ease;
