@@ -132,7 +132,7 @@ export function getTagUsageCount(
   return tags
     .map((t) => ({
       name: String(t.name),
-      color: String(t.color || '#4F8EF7'),
+      color: String(t.color || '#5E81AC'),
       count: countMap.get(String(t.id)) || 0,
     }))
     .filter((t) => t.count > 0)

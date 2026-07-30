@@ -17,15 +17,16 @@ const periodLabels: Record<string, string> = {
 }
 
 const periodColors: Record<string, string> = {
-  morning: '#4F8EF7',
+  morning: '#5E81AC',
   afternoon: '#F59E0B',
   evening: '#8B5CF6',
 }
 
 const categoryLabels: Record<string, string> = {
-  teaching: '教学',
   meeting: '会议',
+  exam_supervision: '监考',
   training: '培训',
+  activity: '活动',
   other: '其他',
 }
 </script>

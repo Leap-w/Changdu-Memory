@@ -21,7 +21,7 @@ $$ LANGUAGE plpgsql SET search_path = '';
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, nickname) VALUES (NEW.id, '新用户');
+  INSERT INTO public.profiles (id, nickname, bio) VALUES (NEW.id, '新用户', '');
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   id          UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   nickname    TEXT DEFAULT '新用户',
   avatar_url  TEXT,
+  bio         TEXT DEFAULT '',
   created_at  TIMESTAMPTZ DEFAULT now(),
   updated_at  TIMESTAMPTZ DEFAULT now()
 );
@@ -378,9 +379,194 @@ CREATE POLICY "location_tags_delete" ON public.location_tags FOR DELETE
 CREATE INDEX IF NOT EXISTS idx_location_tags_location ON public.location_tags(location_id);
 
 -- ============================================================
+-- 8b. diary_photos（日记照片）— V5.1 新增
+-- ============================================================
+-- 依赖: auth.users, diaries
+
+CREATE TABLE IF NOT EXISTS public.diary_photos (
+  id           UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  diary_id     UUID NOT NULL REFERENCES public.diaries(id) ON DELETE CASCADE,
+  storage_path TEXT NOT NULL,
+  image_url    TEXT,
+  sort_order   INTEGER DEFAULT 0,
+  created_at   TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE public.diary_photos ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "diary_photos_select" ON public.diary_photos FOR SELECT
+  USING (EXISTS (
+    SELECT 1 FROM public.diaries d WHERE d.id = diary_id AND d.user_id = auth.uid()
+  ));
+CREATE POLICY "diary_photos_insert" ON public.diary_photos FOR INSERT
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM public.diaries d WHERE d.id = diary_id AND d.user_id = auth.uid()
+  ));
+CREATE POLICY "diary_photos_delete" ON public.diary_photos FOR DELETE
+  USING (EXISTS (
+    SELECT 1 FROM public.diaries d WHERE d.id = diary_id AND d.user_id = auth.uid()
+  ));
+
+CREATE INDEX IF NOT EXISTS idx_diary_photos_diary ON public.diary_photos(diary_id);
+
+-- ============================================================
+-- 1b. profiles 添加 bio 字段 — V5.1
+-- ============================================================
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS bio TEXT DEFAULT '';
+
+-- ============================================================
+-- 10. schedules（课程表）— V5.1 新增
+-- ============================================================
+-- 依赖: auth.users
+
+CREATE TABLE IF NOT EXISTS public.schedules (
+  id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  course_name TEXT NOT NULL,
+  class_name  TEXT NOT NULL DEFAULT '',
+  day_of_week SMALLINT NOT NULL CHECK (day_of_week BETWEEN 1 AND 7),
+  start_time  TEXT NOT NULL,
+  end_time    TEXT NOT NULL,
+  location    TEXT DEFAULT '',
+  notes       TEXT DEFAULT '',
+  created_at  TIMESTAMPTZ DEFAULT now(),
+  updated_at  TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TRIGGER set_schedules_updated_at
+  BEFORE UPDATE ON public.schedules
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+ALTER TABLE public.schedules ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "schedules_select" ON public.schedules FOR SELECT  USING (auth.uid() = user_id);
+CREATE POLICY "schedules_insert" ON public.schedules FOR INSERT  WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "schedules_update" ON public.schedules FOR UPDATE  USING (auth.uid() = user_id);
+CREATE POLICY "schedules_delete" ON public.schedules FOR DELETE  USING (auth.uid() = user_id);
+
+CREATE INDEX IF NOT EXISTS idx_schedules_user_dow ON public.schedules(user_id, day_of_week);
+
+-- ============================================================
+-- 11. students（学生档案）— V5.1 新增
+-- ============================================================
+-- 依赖: auth.users
+
+CREATE TABLE IF NOT EXISTS public.students (
+  id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  name        TEXT NOT NULL,
+  class_name  TEXT NOT NULL DEFAULT '',
+  role        TEXT DEFAULT '',
+  notes       TEXT DEFAULT '',
+  created_at  TIMESTAMPTZ DEFAULT now(),
+  updated_at  TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TRIGGER set_students_updated_at
+  BEFORE UPDATE ON public.students
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "students_select" ON public.students FOR SELECT  USING (auth.uid() = user_id);
+CREATE POLICY "students_insert" ON public.students FOR INSERT  WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "students_update" ON public.students FOR UPDATE  USING (auth.uid() = user_id);
+CREATE POLICY "students_delete" ON public.students FOR DELETE  USING (auth.uid() = user_id);
+
+CREATE INDEX IF NOT EXISTS idx_students_user_class ON public.students(user_id, class_name);
+
+-- ============================================================
+-- 12. work_plans 分类升级 — V5.1
+-- ============================================================
+-- 将 teaching 分类的记录迁移到 other
+UPDATE public.work_plans SET category = 'other' WHERE category = 'teaching';
+
+-- 删除旧约束，添加新约束
+ALTER TABLE public.work_plans DROP CONSTRAINT IF EXISTS work_plans_category_check;
+ALTER TABLE public.work_plans ADD CONSTRAINT work_plans_category_check
+  CHECK (category IN ('meeting', 'exam_supervision', 'training', 'activity', 'other'));
+
+-- ============================================================
+-- 13. expenses 升级为账本 — V5.1
+-- ============================================================
+-- 添加 type 字段(income/expense)，更新分类约束
+ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS type TEXT DEFAULT 'expense';
+
+-- 迁移完成后设置 NOT NULL
+ALTER TABLE public.expenses ALTER COLUMN type SET NOT NULL;
+
+-- 删除旧约束，添加新约束
+ALTER TABLE public.expenses DROP CONSTRAINT IF EXISTS expenses_category_check;
+ALTER TABLE public.expenses ADD CONSTRAINT expenses_category_check
+  CHECK (category IN (
+    -- 支出分类
+    'food', 'transport', 'shopping', 'accommodation', 'study', 'entertainment', 'medical', 'other',
+    -- 收入分类
+    'salary', 'subsidy', 'bonus', 'part_time'
+  ));
+
+ALTER TABLE public.expenses ADD CONSTRAINT expenses_type_check
+  CHECK (type IN ('income', 'expense'));
+
+-- ============================================================
+-- 14. assets（资产）— V5.1 新增
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.assets (
+  id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  name        TEXT NOT NULL,
+  amount      NUMERIC(12,2) NOT NULL DEFAULT 0,
+  sort_order  INTEGER DEFAULT 0,
+  created_at  TIMESTAMPTZ DEFAULT now(),
+  updated_at  TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TRIGGER set_assets_updated_at
+  BEFORE UPDATE ON public.assets
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+ALTER TABLE public.assets ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "assets_select" ON public.assets FOR SELECT  USING (auth.uid() = user_id);
+CREATE POLICY "assets_insert" ON public.assets FOR INSERT  WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "assets_update" ON public.assets FOR UPDATE  USING (auth.uid() = user_id);
+CREATE POLICY "assets_delete" ON public.assets FOR DELETE  USING (auth.uid() = user_id);
+
+CREATE INDEX IF NOT EXISTS idx_assets_user ON public.assets(user_id);
+
+-- ============================================================
+-- 15. welfare_items（福利）— V5.1 新增
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.welfare_items (
+  id              UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id         UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  title           TEXT NOT NULL,
+  category        TEXT NOT NULL DEFAULT 'material'
+                  CHECK (category IN ('school_welfare', 'material', 'coupon', 'gift', 'other')),
+  description     TEXT DEFAULT '',
+  value_estimate  NUMERIC(10,2) DEFAULT 0,
+  received_date   DATE DEFAULT CURRENT_DATE,
+  created_at      TIMESTAMPTZ DEFAULT now(),
+  updated_at      TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TRIGGER set_welfare_items_updated_at
+  BEFORE UPDATE ON public.welfare_items
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+ALTER TABLE public.welfare_items ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "welfare_items_select" ON public.welfare_items FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "welfare_items_insert" ON public.welfare_items FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "welfare_items_update" ON public.welfare_items FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "welfare_items_delete" ON public.welfare_items FOR DELETE USING (auth.uid() = user_id);
+
+CREATE INDEX IF NOT EXISTS idx_welfare_items_user ON public.welfare_items(user_id, received_date DESC);
+
+-- ============================================================
 -- 完成
 -- ============================================================
--- 总计: 9 张数据表 + 3 张关联表 = 12 张表
--- 总计: 60+ 条 RLS Policy
--- 总计: 17 个索引
+-- 总计: 12 张数据表 + 3 张关联表 = 15 张表
+-- 总计: 80+ 条 RLS Policy
+-- 总计: 21 个索引
 -- ============================================================

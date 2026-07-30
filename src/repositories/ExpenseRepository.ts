@@ -33,18 +33,18 @@ export async function fetchTodayExpenses(): Promise<Expense[]> {
 }
 
 export async function createExpense(
-  fields: Pick<ExpenseInsert, 'amount' | 'category' | 'description' | 'expense_date'>,
+  fields: Pick<ExpenseInsert, 'amount' | 'type' | 'category' | 'description' | 'expense_date'>,
 ): Promise<Expense> {
   const user = (await supabase.auth.getUser()).data.user
   if (!user) throw new Error('未登录')
   const { data, error } = await db.from('expenses')
-    .insert({ user_id: user.id, ...fields }).select('*').single()
+    .insert({ user_id: user.id, type: fields.type || 'expense', ...fields }).select('*').single()
   if (error) throw error
   return data as Expense
 }
 
 export async function updateExpense(
-  id: string, fields: Pick<ExpenseUpdate, 'amount' | 'category' | 'description' | 'expense_date'>,
+  id: string, fields: Pick<ExpenseUpdate, 'amount' | 'type' | 'category' | 'description' | 'expense_date'>,
 ): Promise<Expense> {
   const { data, error } = await db.from('expenses')
     .update({ ...fields, updated_at: new Date().toISOString() }).eq('id', id).select('*').single()

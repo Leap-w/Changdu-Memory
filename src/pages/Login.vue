@@ -164,7 +164,7 @@ function toggleMode() {
   min-height: 100vh;
   min-height: 100dvh;
   padding: var(--spacing-page);
-  background: linear-gradient(160deg, #e8f0fe 0%, var(--color-bg) 50%, #e8f5e9 100%);
+  background: linear-gradient(160deg, #E8EDF4 0%, var(--color-bg) 50%, #EDEFEA 100%);
 }
 
 .login-container {

@@ -1,73 +1,24 @@
 <script setup lang="ts">
-import { NCard } from 'naive-ui'
-
-/** 静态寄语（未来可替换为 AI 生成的每日寄语） */
-const quotes = [
-  '愿这一年的每一天，\n都值得被记录。',
-  '高原的每一天，\n都在悄悄改变着什么。',
-  '教育是一棵树摇动另一棵树，\n一朵云推动另一朵云。',
-  '最好的时光，\n就是现在。',
-  '记录，\n是给未来的自己最好的礼物。',
-]
+import { getDailyQuote } from '@/utils/quotes'
 
 const today = new Date()
-const dayOfYear = Math.floor(
-  (today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) /
-    (1000 * 60 * 60 * 24),
-)
-const dailyQuote = quotes[dayOfYear % quotes.length]
+const dailyQuote = getDailyQuote(today)
 </script>
 
 <template>
-  <NCard class="quote-card">
-    <div class="quote-card__inner">
-      <div class="quote-card__icon">
-        💭
-      </div>
-      <p class="quote-card__text">
-        {{ dailyQuote }}
-      </p>
-      <p class="quote-card__hint">
-        每日寄语 · AI 版即将上线
-      </p>
+  <div class="qc">
+    <div class="qc__inner">
+      <span class="qc__icon">💭</span>
+      <p class="qc__text">{{ dailyQuote }}</p>
+      <span class="qc__hint">每日寄语</span>
     </div>
-  </NCard>
+  </div>
 </template>
 
 <style scoped>
-.quote-card {
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
-  background: linear-gradient(135deg, #fff 0%, #f8fafd 100%);
-}
-
-.quote-card :deep(.n-card__content) {
-  padding: 0;
-}
-
-.quote-card__inner {
-  padding: 24px;
-  text-align: center;
-}
-
-.quote-card__icon {
-  font-size: 28px;
-  margin-bottom: 12px;
-}
-
-.quote-card__text {
-  font-size: 18px;
-  line-height: 1.8;
-  color: var(--color-text-primary);
-  white-space: pre-line;
-  margin: 0 0 16px;
-  font-weight: 500;
-}
-
-.quote-card__hint {
-  font-size: var(--font-caption);
-  color: var(--color-text-secondary);
-  margin: 0;
-  opacity: 0.5;
-}
+.qc { background:#fff;border-radius:var(--radius-card);border:1px solid var(--color-border-light);overflow:hidden; }
+.qc__inner { padding:24px 20px;text-align:center; }
+.qc__icon { font-size:24px;display:block;margin-bottom:10px;opacity:.6; }
+.qc__text { font-size:17px;line-height:1.8;color:var(--color-text-primary);margin:0 0 14px;font-weight:500; }
+.qc__hint { font-size:11px;color:var(--color-text-tertiary);opacity:.5;letter-spacing:1px;text-transform:uppercase; }
 </style>

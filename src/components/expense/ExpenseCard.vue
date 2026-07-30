@@ -1,109 +1,45 @@
 <script setup lang="ts">
 import type { Expense } from '@/repositories/ExpenseRepository'
-import { NCard } from 'naive-ui'
 
-defineProps<{
-  expense: Expense
-}>()
+defineProps<{ expense: Expense }>()
+const emit = defineEmits<{ click: [id: string] }>()
 
-const emit = defineEmits<{
-  click: [id: string]
-}>()
-
-const categoryLabels: Record<string, string> = {
-  food: '饮食',
-  transport: '交通',
-  daily: '日用品',
-  study: '学习',
-  medical: '医疗',
+const labels: Record<string, string> = {
+  food: '餐饮', transport: '交通', shopping: '购物', accommodation: '住宿',
+  study: '学习', entertainment: '娱乐', medical: '医疗',
+  salary: '工资', subsidy: '补贴', bonus: '奖金', part_time: '兼职',
   other: '其他',
 }
 
-const categoryIcons: Record<string, string> = {
-  food: '🍜',
-  transport: '🚌',
-  daily: '🛒',
-  study: '📚',
-  medical: '💊',
-  other: '📦',
+const icons: Record<string, string> = {
+  food:'🍜', transport:'🚌', shopping:'🛒', accommodation:'🏠', study:'📚', entertainment:'🎮', medical:'💊',
+  salary:'💰', subsidy:'🎁', bonus:'🏆', part_time:'💼',
+  other:'📦',
 }
 
-function formatAmount(amount: number): string {
-  return `¥${amount.toFixed(2)}`
-}
+function fmt(n: number) { return `¥${Number(n).toFixed(2)}` }
 </script>
 
 <template>
-  <NCard class="expense-card" hoverable @click="emit('click', expense.id)">
-    <div class="expense-card__inner">
-      <div class="expense-card__icon">
-        {{ categoryIcons[expense.category] || '📦' }}
-      </div>
-      <div class="expense-card__body">
-        <span class="expense-card__category">
-          {{ categoryLabels[expense.category] || expense.category }}
-        </span>
-        <span
-          v-if="expense.description"
-          class="expense-card__desc"
-        >
-          {{ expense.description }}
-        </span>
-      </div>
-      <div class="expense-card__amount">
-        {{ formatAmount(expense.amount) }}
-      </div>
+  <div class="ec" @click="emit('click', expense.id)">
+    <span class="ec__icon">{{ icons[expense.category] || '📦' }}</span>
+    <div class="ec__body">
+      <span class="ec__label">{{ labels[expense.category] || expense.category }}</span>
+      <span v-if="expense.description" class="ec__desc">{{ expense.description }}</span>
     </div>
-  </NCard>
+    <span class="ec__amt" :class="{ 'ec__amt--in': expense.type === 'income' }">
+      {{ expense.type === 'income' ? '+' : '-' }}{{ fmt(expense.amount) }}
+    </span>
+  </div>
 </template>
 
 <style scoped>
-.expense-card {
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
-}
-
-.expense-card :deep(.n-card__content) {
-  padding: 12px 16px;
-}
-
-.expense-card__inner {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.expense-card__icon {
-  font-size: 28px;
-  flex-shrink: 0;
-}
-
-.expense-card__body {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.expense-card__category {
-  font-size: var(--font-content);
-  color: var(--color-text-primary);
-  font-weight: 500;
-}
-
-.expense-card__desc {
-  font-size: var(--font-caption);
-  color: var(--color-text-secondary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.expense-card__amount {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--color-text-primary);
-  flex-shrink: 0;
-}
+.ec { display:flex;align-items:center;gap:12px;padding:14px 16px;background:#fff;border-radius:var(--radius-md);cursor:pointer;transition:all .15s;border:1px solid var(--color-border-light); }
+.ec:hover { box-shadow:var(--shadow-sm);border-color:transparent; }
+.ec__icon { font-size:26px;flex-shrink:0; }
+.ec__body { flex:1;min-width:0;display:flex;flex-direction:column;gap:2px; }
+.ec__label { font-size:15px;color:var(--color-text-primary);font-weight:500; }
+.ec__desc { font-size:12px;color:var(--color-text-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.ec__amt { font-size:17px;font-weight:700;color:var(--color-text-primary);flex-shrink:0; }
+.ec__amt--in { color:#6B9E85; }
 </style>

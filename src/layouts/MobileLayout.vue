@@ -9,7 +9,6 @@ const appStore = useAppStore()
 
 const navItems = [
   { path: '/', label: '首页', icon: '🏠' },
-  { path: '/todo', label: '待办', icon: '✅' },
   { path: '/work', label: '工作', icon: '📋' },
   { path: '/diary', label: '日记', icon: '📖' },
   { path: '/profile', label: '我的', icon: '👤' },

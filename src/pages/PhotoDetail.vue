@@ -208,7 +208,7 @@ onMounted(() => {
               :key="tid"
               :bordered="false"
               :color="{
-                color: tagStore.tags.find((t) => t.id === tid)?.color || '#4F8EF7',
+                color: tagStore.tags.find((t) => t.id === tid)?.color || '#5E81AC',
                 textColor: '#fff',
               }"
               size="small"

@@ -52,7 +52,7 @@ const importHandlers: Record<string, (rows: any[]) => Promise<number>> = {
     let count = 0
     for (const row of r) {
       try {
-        await expenseStore.addExpense({ amount: row.amount, category: row.category, description: row.description || '', expense_date: row.expense_date })
+        await expenseStore.addExpense({ amount: row.amount, type: 'expense', category: row.category, description: row.description || '', expense_date: row.expense_date })
         count++
       } catch { /* skip */ }
     }

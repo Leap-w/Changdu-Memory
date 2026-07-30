@@ -29,9 +29,7 @@ onMounted(async () => {
       const diary = await diaryStore.getDiaryById(diaryId.value)
       if (diary) {
         let tagIds: string[] = []
-        try {
-          tagIds = await fetchDiaryTagIds(diaryId.value)
-        } catch { /* ignore */ }
+        try { tagIds = await fetchDiaryTagIds(diaryId.value) } catch { /* ignore */ }
         existingDiary.value = {
           title: diary.title ?? '',
           content: diary.content ?? '',
@@ -42,12 +40,8 @@ onMounted(async () => {
         message.error('日记不存在')
         router.push('/diary')
       }
-    } catch {
-      message.error('加载失败')
-      router.push('/diary')
-    } finally {
-      loading.value = false
-    }
+    } catch { message.error('加载失败'); router.push('/diary') }
+    finally { loading.value = false }
   }
 })
 
@@ -64,22 +58,15 @@ async function handleSubmit(data: { title: string; content: string; diary_date: 
       message.success('日记已创建')
       router.push(`/diary/${diary.id}`)
     }
-  } catch {
-    message.error('保存失败')
-  }
+  } catch { message.error('保存失败') }
 }
 
-function handleCancel() {
-  router.back()
-}
+function handleCancel() { router.back() }
 </script>
 
 <template>
   <div class="diary-edit-page">
-    <h1 class="diary-edit-page__title">
-      {{ isEdit ? '编辑日记' : '写日记' }}
-    </h1>
-
+    <h1 class="diary-edit-page__title">{{ isEdit ? '编辑日记' : '写日记' }}</h1>
     <NSpin :show="loading">
       <DiaryEditor
         v-if="!loading"
@@ -87,6 +74,7 @@ function handleCancel() {
         :content="existingDiary?.content"
         :diary-date="existingDiary?.diary_date"
         :tag-ids="existingDiary?.tag_ids"
+        :diary-id="diaryId"
         :loading="diaryStore.loading"
         :submit-label="isEdit ? '保存' : '创建'"
         @submit="handleSubmit"
@@ -97,16 +85,6 @@ function handleCancel() {
 </template>
 
 <style scoped>
-.diary-edit-page {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: var(--spacing-page);
-}
-
-.diary-edit-page__title {
-  font-size: var(--font-title);
-  font-weight: 700;
-  color: var(--color-text-primary);
-  margin: 0 0 24px;
-}
+.diary-edit-page { max-width:720px;margin:0 auto;padding:var(--spacing-page); }
+.diary-edit-page__title { font-size:var(--font-title);font-weight:700;color:var(--color-text-primary);margin:0 0 24px; }
 </style>

@@ -16,7 +16,7 @@ export async function fetchTags(): Promise<Tag[]> {
 }
 
 /** 创建新标签 */
-export async function createTag(name: string, color: string = '#4F8EF7'): Promise<Tag> {
+export async function createTag(name: string, color: string = '#5E81AC'): Promise<Tag> {
   const user = (await supabase.auth.getUser()).data.user
   if (!user) throw new Error('未登录')
 

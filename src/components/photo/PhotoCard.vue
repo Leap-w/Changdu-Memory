@@ -1,108 +1,34 @@
 <script setup lang="ts">
 import type { PhotoRecord } from '@/repositories/PhotoRepository'
 import { usePhotoStore } from '@/stores/photo'
-import { NCard, NTag } from 'naive-ui'
 
 const photoStore = usePhotoStore()
 
-const props = defineProps<{
-  photo: PhotoRecord
-}>()
+const props = defineProps<{ photo: PhotoRecord }>()
+const emit = defineEmits<{ click: [id: string] }>()
 
-const emit = defineEmits<{
-  click: [id: string]
-}>()
-
-const categoryLabels: Record<string, string> = {
-  school: '学校',
-  life: '生活',
-  travel: '旅行',
-  people: '人物',
-  other: '其他',
+const labels: Record<string, string> = {
+  school: '教学', people: '学生', life: '生活', travel: '旅行', other: '活动',
 }
 
 const imageUrl = photoStore.getPhotoDisplayUrl(props.photo)
 </script>
 
 <template>
-  <NCard class="photo-card" hoverable @click="emit('click', photo.id)">
-    <div class="photo-card__image-wrapper">
-      <img
-        :src="imageUrl"
-        :alt="photo.title || '照片'"
-        class="photo-card__image"
-        loading="lazy"
-      />
+  <div class="pc" @click="emit('click', photo.id)">
+    <img :src="imageUrl" :alt="photo.title || ''" class="pc__img" loading="lazy" />
+    <div class="pc__overlay">
+      <span class="pc__label">{{ labels[photo.category] || photo.category }}</span>
+      <span class="pc__date">{{ photo.photo_date }}</span>
     </div>
-    <div class="photo-card__info">
-      <span class="photo-card__title">
-        {{ photo.title || '未命名' }}
-      </span>
-      <div class="photo-card__meta">
-        <NTag :bordered="false" size="tiny">
-          {{ categoryLabels[photo.category] || photo.category }}
-        </NTag>
-        <span class="photo-card__date">{{ photo.photo_date }}</span>
-      </div>
-    </div>
-  </NCard>
+  </div>
 </template>
 
 <style scoped>
-.photo-card {
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
-  overflow: hidden;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.photo-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
-}
-
-.photo-card :deep(.n-card__content) {
-  padding: 0;
-}
-
-.photo-card__image-wrapper {
-  width: 100%;
-  aspect-ratio: 1;
-  overflow: hidden;
-  background: #f0f2f5;
-}
-
-.photo-card__image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.photo-card__info {
-  padding: 10px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.photo-card__title {
-  font-size: var(--font-secondary);
-  font-weight: 500;
-  color: var(--color-text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.photo-card__meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.photo-card__date {
-  font-size: var(--font-caption);
-  color: var(--color-text-secondary);
-}
+.pc { position:relative;border-radius:var(--radius-md);overflow:hidden;cursor:pointer;break-inside:avoid;margin-bottom:12px;transition:transform .15s; }
+.pc:hover { transform:translateY(-2px); }
+.pc__img { width:100%;display:block;border-radius:var(--radius-md); }
+.pc__overlay { position:absolute;bottom:0;left:0;right:0;padding:10px 12px;background:linear-gradient(transparent,rgba(0,0,0,.45));display:flex;justify-content:space-between;align-items:flex-end; }
+.pc__label { font-size:11px;color:#fff;font-weight:600;background:rgba(255,255,255,.2);padding:2px 8px;border-radius:4px;backdrop-filter:blur(4px); }
+.pc__date { font-size:11px;color:rgba(255,255,255,.7); }
 </style>

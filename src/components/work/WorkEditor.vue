@@ -52,9 +52,10 @@ const periodOptions = [
 ]
 
 const categoryOptions = [
-  { label: '📚 教学', value: 'teaching' },
   { label: '💬 会议', value: 'meeting' },
-  { label: '📝 培训', value: 'training' },
+  { label: '📝 监考', value: 'exam_supervision' },
+  { label: '📚 培训', value: 'training' },
+  { label: '🎉 活动', value: 'activity' },
   { label: '📦 其他', value: 'other' },
 ]
 

@@ -9,13 +9,23 @@ import {
   getCurrentSession,
 } from '@/services/supabase'
 
+interface Profile {
+  nickname: string | null
+  avatar_url: string | null
+  bio: string | null
+}
+
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const session = ref<Session | null>(null)
+  const profile = ref<Profile>({ nickname: null, avatar_url: null, bio: null })
   const loading = ref(false)
   const error = ref<string | null>(null)
 
   const isLoggedIn = computed(() => !!session.value)
+
+  const displayName = computed(() => profile.value.nickname || user.value?.email?.split('@')[0] || '用户')
+  const displayBio = computed(() => profile.value.bio || '')
 
   /** 注册 */
   async function register(email: string, password: string) {
@@ -72,7 +82,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  /** 初始化：检查已有 Session */
+  /** 初始化：检查已有 Session + 加载 profile */
   async function initialize() {
     loading.value = true
     try {
@@ -80,6 +90,7 @@ export const useAuthStore = defineStore('auth', () => {
       if (currentSession) {
         session.value = currentSession
         user.value = currentSession.user
+        await loadProfile()
       }
     } catch {
       // 无 session，忽略
@@ -88,26 +99,63 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     // 监听认证状态变化
-    supabase.auth.onAuthStateChange((event, newSession) => {
+    supabase.auth.onAuthStateChange(async (event, newSession) => {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         session.value = newSession
         user.value = newSession?.user ?? null
+        await loadProfile()
       } else if (event === 'SIGNED_OUT') {
         user.value = null
         session.value = null
+        profile.value = { nickname: null, avatar_url: null, bio: null }
       }
     })
   }
 
+  /** 加载 profile */
+  async function loadProfile() {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const s = supabase as any
+      const { data, error } = await s
+        .from('profiles')
+        .select('nickname, avatar_url, bio')
+        .single()
+      if (error) return
+      if (data) {
+        profile.value = {
+          nickname: data.nickname ?? null,
+          avatar_url: data.avatar_url ?? null,
+          bio: data.bio ?? null,
+        }
+      }
+    } catch { /* ignore */ }
+  }
+
+  /** 更新 profile */
+  async function updateProfile(fields: { nickname?: string | null; bio?: string | null }) {
+    loading.value = true
+    error.value = null
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const s = supabase as any
+      const { error: err } = await s
+        .from('profiles')
+        .update({ ...fields, updated_at: new Date().toISOString() })
+        .eq('id', user.value?.id)
+      if (err) throw err
+      if (fields.nickname !== undefined) profile.value.nickname = fields.nickname ?? null
+      if (fields.bio !== undefined) profile.value.bio = fields.bio ?? null
+    } catch (err: unknown) {
+      error.value = err instanceof Error ? err.message : '更新失败'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
-    user,
-    session,
-    loading,
-    error,
-    isLoggedIn,
-    login,
-    register,
-    logout,
-    initialize,
+    user, session, profile, loading, error, isLoggedIn, displayName, displayBio,
+    login, register, logout, initialize, loadProfile, updateProfile,
   }
 })

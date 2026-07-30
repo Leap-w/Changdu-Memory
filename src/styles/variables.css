@@ -1,49 +1,90 @@
 :root {
-  /* === 昌都记忆主题色 === */
+  /* === 昌都记忆 v5.1 主题色 === */
 
-  /* 主色 - 高原蓝 */
-  --color-primary: #4F8EF7;
-  --color-primary-light: #7AADFF;
-  --color-primary-dark: #3B6FCC;
+  /* 主色 - 高原蓝灰 */
+  --color-primary: #5E81AC;
+  --color-primary-light: #81A1C1;
+  --color-primary-dark: #4C6A8E;
+  --color-primary-bg: rgba(94, 129, 172, 0.06);
+  --color-primary-bg-hover: rgba(94, 129, 172, 0.10);
+  --color-primary-bg-active: rgba(94, 129, 172, 0.14);
 
-  /* 辅助色 - 草原绿 */
-  --color-secondary: #57B894;
-  --color-secondary-light: #7DCFA8;
-  --color-secondary-dark: #3D9A72;
+  /* 辅助色 - 暖红点缀 */
+  --color-accent: #BF616A;
+  --color-accent-soft: #D08770;
 
-  /* 警告色 */
-  --color-warning: #F59E0B;
+  /* 辅助色 - 草原绿（保留兼容） */
+  --color-secondary: #6B9E85;
+  --color-secondary-light: #8DB5A2;
+  --color-secondary-dark: #527A65;
 
-  /* 错误色 */
-  --color-error: #EF4444;
+  /* 警告 & 错误 */
+  --color-warning: #E8B04C;
+  --color-error: #BF616A;
 
-  /* 背景 */
-  --color-bg: #F7F9FC;
+  /* 背景系统 */
+  --color-bg: #F8FAFC;
   --color-bg-white: #FFFFFF;
+  --color-bg-card: #FFFFFF;
+  --color-bg-warm: #F5F0EB;
 
-  /* 文字 */
-  --color-text-primary: #1F2937;
-  --color-text-secondary: #6B7280;
+  /* 文字系统 */
+  --color-text-primary: #2E3440;
+  --color-text-secondary: #6B7B8D;
+  --color-text-tertiary: #9CA3AF;
+  --color-text-inverse: #FFFFFF;
 
-  /* 圆角 */
+  /* 边框 */
+  --color-border: rgba(0, 0, 0, 0.06);
+  --color-border-light: rgba(0, 0, 0, 0.04);
+
+  /* 圆角系统 */
+  --radius-sm: 8px;
+  --radius-md: 12px;
   --radius-card: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
   --radius-button: 12px;
   --radius-input: 12px;
+  --radius-full: 9999px;
 
-  /* 间距 */
-  --spacing-page: 24px;
+  /* 间距系统 */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
   --spacing-card: 16px;
+  --spacing-lg: 20px;
+  --spacing-page: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 40px;
+  --spacing-3xl: 48px;
 
-  /* 阴影 */
-  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.06);
+  /* 阴影系统 */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.06);
 
-  /* 字体大小 */
+  /* 字体系统 */
+  --font-display: 36px;
   --font-title: 28px;
   --font-card-title: 20px;
   --font-content: 16px;
   --font-secondary: 14px;
   --font-caption: 12px;
 
-  /* 动画 */
+  /* 行高 */
+  --leading-tight: 1.2;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.7;
+
+  /* 过渡 */
+  --transition-fast: 150ms ease;
   --transition-normal: 300ms ease;
+  --transition-slow: 400ms ease;
+
+  /* 毛玻璃 */
+  --glass-bg: rgba(255, 255, 255, 0.15);
+  --glass-border: rgba(255, 255, 255, 0.22);
+  --glass-blur: 24px;
 }

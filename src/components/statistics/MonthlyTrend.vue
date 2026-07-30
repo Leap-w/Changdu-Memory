@@ -86,7 +86,7 @@ function formatMonth(month: string): string {
 
 .trend-bar-row__fill {
   height: 100%;
-  background: linear-gradient(90deg, #4F8EF7, #7AADFF);
+  background: linear-gradient(90deg, #5E81AC, #81A1C1);
   border-radius: 9px;
   min-width: 4px;
   transition: width 0.4s ease;

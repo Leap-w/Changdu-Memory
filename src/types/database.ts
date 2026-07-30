@@ -6,6 +6,7 @@ export interface Database {
           id: string
           nickname: string | null
           avatar_url: string | null
+          bio: string | null
           created_at: string
           updated_at: string
         }
@@ -13,12 +14,14 @@ export interface Database {
           id: string
           nickname?: string | null
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string
           updated_at?: string
         }
         Update: {
           nickname?: string | null
           avatar_url?: string | null
+          bio?: string | null
           updated_at?: string
         }
       }
@@ -87,44 +90,83 @@ export interface Database {
           updated_at?: string
         }
       }
-      work_plans: {
-        Row: {
-          id: string
-          user_id: string
-          work_date: string
-          title: string
-          period: string
-          content: string | null
-          category: string
-          created_at: string
-          updated_at: string
-          deleted_at: string | null
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          work_date?: string
-          title: string
-          period?: string
-          content?: string | null
-          category?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          work_date?: string
-          title?: string
-          period?: string
-          content?: string | null
-          category?: string
-          updated_at?: string
-        }
-      }
-      expenses: {
+	      work_plans: {
+	        Row: {
+	          id: string
+	          user_id: string
+	          work_date: string
+	          title: string
+	          period: string
+	          content: string | null
+	          category: string
+	          created_at: string
+	          updated_at: string
+	          deleted_at: string | null
+	        }
+	        Insert: {
+	          id?: string
+	          user_id: string
+	          work_date?: string
+	          title: string
+	          period?: string
+	          content?: string | null
+	          category?: string
+	          created_at?: string
+	          updated_at?: string
+	        }
+	        Update: {
+	          work_date?: string
+	          title?: string
+	          period?: string
+	          content?: string | null
+	          category?: string
+	          updated_at?: string
+	        }
+	      }
+	      schedules: {
+	        Row: {
+	          id: string
+	          user_id: string
+	          course_name: string
+	          class_name: string
+	          day_of_week: number
+	          start_time: string
+	          end_time: string
+	          location: string | null
+	          notes: string | null
+	          created_at: string
+	          updated_at: string
+	        }
+	        Insert: {
+	          id?: string
+	          user_id: string
+	          course_name: string
+	          class_name?: string
+	          day_of_week: number
+	          start_time: string
+	          end_time: string
+	          location?: string | null
+	          notes?: string | null
+	          created_at?: string
+	          updated_at?: string
+	        }
+	        Update: {
+	          course_name?: string
+	          class_name?: string
+	          day_of_week?: number
+	          start_time?: string
+	          end_time?: string
+	          location?: string | null
+	          notes?: string | null
+	          updated_at?: string
+	        }
+	      }
+	      expenses: {
         Row: {
           id: string
           user_id: string
           amount: number
+          type: string
           category: string
           description: string | null
           expense_date: string
@@ -134,6 +176,7 @@ export interface Database {
         }
         Insert: {
           id?: string
+          type?: string
           user_id: string
           amount: number
           category?: string
@@ -143,6 +186,7 @@ export interface Database {
           updated_at?: string
         }
         Update: {
+          type?: string
           amount?: number
           category?: string
           description?: string | null
@@ -346,6 +390,35 @@ export interface Database {
           tag_id?: string
         }
       }
+      students: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          class_name: string
+          role: string | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          class_name?: string
+          role?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          name?: string
+          class_name?: string
+          role?: string | null
+          notes?: string | null
+          updated_at?: string
+        }
+      }
       contacts: {
         Row: {
           id: string
@@ -395,7 +468,66 @@ export interface Database {
           sync_enabled?: boolean
           updated_at?: string
         }
-      }
+      },
+      assets: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          amount: number
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          amount?: number
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          name?: string
+          amount?: number
+          sort_order?: number
+          updated_at?: string
+        }
+      },
+      welfare_items: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          category: string
+          description: string | null
+          value_estimate: number
+          received_date: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title: string
+          category?: string
+          description?: string | null
+          value_estimate?: number
+          received_date?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          title?: string
+          category?: string
+          description?: string | null
+          value_estimate?: number
+          received_date?: string
+          updated_at?: string
+        }
+        }
+
     }
   }
 }

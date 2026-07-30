@@ -116,7 +116,7 @@ onMounted(() => {
               :percentage="timeStore.progress"
               :height="10"
               :border-radius="5"
-              :color="'#4F8EF7'"
+              :color="'#5E81AC'"
               :rail-color="'rgba(79, 142, 247, 0.12)'"
               :show-text="false"
             />
@@ -236,7 +236,7 @@ onMounted(() => {
 .countdown-card {
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
-  background: linear-gradient(135deg, #4F8EF7 0%, #6BA3FF 100%);
+  background: linear-gradient(135deg, #5E81AC 0%, #81A1C1 100%);
   color: #fff;
 }
 

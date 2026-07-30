@@ -75,11 +75,11 @@ const locationOptions = computed(() => [
 ])
 
 const categoryOptions = [
-  { label: '🏫 学校', value: 'school' },
+  { label: '📚 教学', value: 'school' },
+  { label: '👤 学生', value: 'people' },
   { label: '🏠 生活', value: 'life' },
-  { label: '🏔️ 旅行', value: 'travel' },
-  { label: '👤 人物', value: 'people' },
-  { label: '📦 其他', value: 'other' },
+  { label: '✈️ 旅行', value: 'travel' },
+  { label: '🎉 活动', value: 'other' },
 ]
 
 async function handleSubmit() {

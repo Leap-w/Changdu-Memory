@@ -69,7 +69,7 @@ function goToTimeCenter() {
 <style scoped>
 .time-card {
   border-radius: var(--radius-card);
-  background: linear-gradient(135deg, #4F8EF7 0%, #6BA3FF 100%);
+  background: linear-gradient(135deg, #5E81AC 0%, #81A1C1 100%);
   color: #fff;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;

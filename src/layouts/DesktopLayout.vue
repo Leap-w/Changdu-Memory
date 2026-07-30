@@ -9,16 +9,11 @@ const appStore = useAppStore()
 
 const navItems = [
   { path: '/', label: '首页', icon: '🏠' },
-  { path: '/time-center', label: '时光中心', icon: '⏰' },
-  { path: '/todo', label: '待办', icon: '✅' },
   { path: '/work', label: '工作', icon: '📋' },
-  { path: '/expense', label: '花费', icon: '💰' },
   { path: '/diary', label: '日记', icon: '📖' },
-  { path: '/location', label: '地点', icon: '🗺️' },
-  { path: '/photo', label: '照片', icon: '📷' },
-  { path: '/memory', label: '记忆', icon: '📜' },
+  { path: '/time-center', label: '时光中心', icon: '⏰' },
+  { path: '/expense', label: '账本', icon: '💰' },
   { path: '/profile', label: '我的', icon: '👤' },
-  { path: '/settings', label: '设置', icon: '⚙️' },
 ]
 
 function navigateTo(path: string) {
