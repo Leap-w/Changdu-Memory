@@ -53,28 +53,56 @@ function handleSubmit() {
   <div class="todo-editor">
     <div class="editor-field">
       <label class="editor-label">待办内容 <span class="required">*</span></label>
-      <input v-model="localTitle" class="editor-input" placeholder="记录要做的事..." maxlength="100" />
+      <input
+        v-model="localTitle"
+        class="editor-input"
+        placeholder="记录要做的事..."
+        maxlength="100"
+      />
     </div>
     <div class="editor-field">
       <label class="editor-label">备注（选填）</label>
-      <textarea v-model="localDesc" class="editor-textarea" placeholder="补充说明..." rows="3" maxlength="500"></textarea>
+      <textarea
+        v-model="localDesc"
+        class="editor-textarea"
+        placeholder="补充说明..."
+        rows="3"
+        maxlength="500"
+      />
     </div>
     <div class="editor-field">
       <label class="editor-label">日期</label>
-      <NDatePicker v-model:value="localDate" type="date" size="large" style="width:100%" />
+      <NDatePicker
+        v-model:value="localDate"
+        type="date"
+        size="large"
+        style="width:100%"
+      />
     </div>
     <div class="editor-row">
       <div class="editor-field editor-field--half">
         <label class="editor-label">截止日期（可选）</label>
-        <NDatePicker v-model:value="localDeadlineDate" type="date" size="large" style="width:100%" />
+        <NDatePicker
+          v-model:value="localDeadlineDate"
+          type="date"
+          size="large"
+          style="width:100%"
+        />
       </div>
       <div class="editor-field editor-field--half">
         <label class="editor-label">截止时间（可选）</label>
-        <NTimePicker v-model:value="localDeadlineTime" format="HH:mm" size="large" style="width:100%" />
+        <NTimePicker
+          v-model:value="localDeadlineTime"
+          format="HH:mm"
+          size="large"
+          style="width:100%"
+        />
       </div>
     </div>
     <div class="editor-actions">
-      <button class="editor-btn editor-btn--cancel" @click="emit('cancel')">取消</button>
+      <button class="editor-btn editor-btn--cancel" @click="emit('cancel')">
+        取消
+      </button>
       <button class="editor-btn editor-btn--save" :disabled="loading" @click="handleSubmit">
         {{ loading ? '保存中…' : submitLabel }}
       </button>

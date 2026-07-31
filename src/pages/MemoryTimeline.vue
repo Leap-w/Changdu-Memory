@@ -4,17 +4,10 @@ import { useMemoryStore } from '@/stores/memory'
 import { useAuthStore } from '@/stores/auth'
 import { uploadMemoryPhoto, deleteMemoryPhoto } from '@/repositories/MemoryPhotoRepository'
 import type { MemoryPhoto } from '@/repositories/MemoryPhotoRepository'
+import { AppCard, AppIcon } from '@/components/ui'
 import {
-  NButton,
-  NModal,
-  NForm,
-  NFormItem,
-  NInput,
-  NDatePicker,
-  NSelect,
-  NPopconfirm,
-  NSpin,
-  useMessage,
+  NButton, NModal, NForm, NFormItem, NInput,
+  NDatePicker, NSelect, NSpin, useMessage,
 } from 'naive-ui'
 import type { Memory } from '@/repositories/MemoryRepository'
 
@@ -26,14 +19,14 @@ const ready = ref(false)
 const activeType = ref<string>('all')
 
 // ==========================================
-// Category mapping
+// Category mapping (no emoji)
 // ==========================================
-const typeMap: Record<string, { label: string; icon: string; color: string }> = {
-  school:    { label: '教学',     icon: '📚', color: '#4A8C94' },
-  activity:  { label: '活动',     icon: '🎉', color: '#D08770' },
-  travel:    { label: '旅行',     icon: '🏔️', color: '#6B9E85' },
-  life:      { label: '生活',     icon: '☕', color: '#8E7CB5' },
-  important: { label: '重要事件', icon: '⭐', color: '#C2676A' },
+const typeMap: Record<string, { label: string; icon: string; color: string; bgColor: string }> = {
+  school:    { label: '教学', icon: 'book', color: '#4B8F8C', bgColor: 'rgba(75,143,140,0.1)' },
+  activity:  { label: '活动', icon: 'star', color: '#D08770', bgColor: 'rgba(208,135,112,0.1)' },
+  travel:    { label: '旅行', icon: 'pin', color: '#6B9E85', bgColor: 'rgba(107,158,133,0.1)' },
+  life:      { label: '生活', icon: 'check', color: '#8E7CB5', bgColor: 'rgba(142,124,181,0.1)' },
+  important: { label: '重要', icon: 'heart', color: '#C2676A', bgColor: 'rgba(194,103,106,0.1)' },
 }
 
 const typeKeys = Object.keys(typeMap)
@@ -42,10 +35,7 @@ const typeKeys = Object.keys(typeMap)
 // Data loading
 // ==========================================
 onMounted(async () => {
-  if (!authStore.isLoggedIn) {
-    ready.value = true
-    return
-  }
+  if (!authStore.isLoggedIn) { ready.value = true; return }
   if (memoryStore.memories.length === 0) {
     try { await memoryStore.loadMemories() } catch { /* ignore */ }
   }
@@ -76,8 +66,8 @@ const groupedByMonth = computed(() => {
 // ==========================================
 const showModal = ref(false)
 const editId = ref<string | null>(null)
-const modalTitle = computed(() => (editId.value ? '编辑大事记' : '添加大事记'))
-const saveLabel = computed(() => (editId.value ? '保存修改' : '添加'))
+const modalTitle = computed(() => editId.value ? '编辑大事记' : '添加大事记')
+const saveLabel = computed(() => editId.value ? '保存修改' : '添加')
 const modalLoading = ref(false)
 
 const form = ref({
@@ -87,12 +77,23 @@ const form = ref({
   category: 'life',
 })
 
-// 编辑时已有照片
 const existingPhotos = ref<MemoryPhoto[]>([])
-// 新上传的文件列表（预览用）
 const pendingFiles = ref<{ file: File; previewUrl: string }[]>([])
-// 上传中状态
 const photoUploading = ref(false)
+
+// Fullscreen image viewer
+const viewerIndex = ref(-1)
+const viewerPhotos = ref<{ url: string }[]>([])
+const viewerOpen = computed(() => viewerIndex.value >= 0)
+
+function openViewer(photos: { url: string }[], index: number) {
+  viewerPhotos.value = photos
+  viewerIndex.value = index
+}
+
+function closeViewer() {
+  viewerIndex.value = -1
+}
 
 function openCreate() {
   editId.value = null
@@ -122,10 +123,7 @@ function handleFileSelect(e: Event) {
   for (let i = 0; i < files.length; i++) {
     const file = files[i]
     if (!file.type.startsWith('image/')) continue
-    pendingFiles.value.push({
-      file,
-      previewUrl: URL.createObjectURL(file),
-    })
+    pendingFiles.value.push({ file, previewUrl: URL.createObjectURL(file) })
   }
   input.value = ''
 }
@@ -141,28 +139,18 @@ async function removeExistingPhoto(photo: MemoryPhoto) {
     memoryStore.removePhotoFromMemory(photo.memory_id, photo.id)
     existingPhotos.value = existingPhotos.value.filter((p) => p.id !== photo.id)
     message.success('图片已删除')
-  } catch {
-    message.error('删除图片失败')
-  }
+  } catch { message.error('删除图片失败') }
 }
 
 async function handleSave() {
-  if (!form.value.title.trim()) {
-    message.warning('请输入标题')
-    return
-  }
-  if (!form.value.event_date) {
-    message.warning('请选择日期')
-    return
-  }
+  if (!form.value.title.trim()) { message.warning('请输入标题'); return }
+  if (!form.value.event_date) { message.warning('请选择日期'); return }
   modalLoading.value = true
   try {
     const dateStr = new Date(form.value.event_date).toISOString().split('T')[0]
-    // 收集现有照片的 URL
     const existingUrls = existingPhotos.value.map((p) => p.url)
 
     let memoryId: string
-
     if (editId.value) {
       await memoryStore.editMemory(editId.value, {
         title: form.value.title.trim(),
@@ -185,7 +173,6 @@ async function handleSave() {
       message.success('已添加')
     }
 
-    // 上传新图片
     if (pendingFiles.value.length > 0) {
       photoUploading.value = true
       const uploaded: MemoryPhoto[] = []
@@ -200,7 +187,6 @@ async function handleSave() {
       }
       photoUploading.value = false
     }
-
     showModal.value = false
   } catch (err: unknown) {
     message.error(err instanceof Error ? err.message : '操作失败')
@@ -210,12 +196,9 @@ async function handleSave() {
 }
 
 async function handleDelete(id: string) {
-  try {
-    await memoryStore.removeMemory(id)
-    message.success('已删除')
-  } catch {
-    message.error('删除失败')
-  }
+  if (!confirm('确定删除这条大事记？')) return
+  try { await memoryStore.removeMemory(id); message.success('已删除') }
+  catch { message.error('删除失败') }
 }
 
 // ==========================================
@@ -237,24 +220,33 @@ function formatWeekday(dateStr: string): string {
 }
 
 function getType(category: string) {
-  return typeMap[category] || { label: category, icon: '📍', color: '#6B7B8D' }
+  return typeMap[category] || { label: category, icon: 'grid', color: '#6B7B8D', bgColor: 'rgba(107,123,141,0.1)' }
 }
+
 </script>
 
 <template>
   <div class="tl">
-    <!-- Header -->
-    <div class="tl__hero">
-      <h1 class="tl__title">大事记</h1>
-      <p class="tl__sub">记录在昌都的每一个重要时刻</p>
-      <NButton type="primary" size="small" @click="openCreate">+ 添加大事记</NButton>
+    <!-- ====== Page header ====== -->
+    <div class="tl__header">
+      <div class="tl__header-left">
+        <h1 class="tl__title">
+          大事记
+        </h1>
+        <p class="tl__subtitle">
+          记录在昌都的每一个重要时刻
+        </p>
+      </div>
+      <button class="tl__create-btn" @click="openCreate">
+        <AppIcon name="plus" size="16" /> 记录新瞬间
+      </button>
     </div>
 
-    <!-- Type filter -->
-    <div class="tl__types">
+    <!-- ====== Category filter ====== -->
+    <div class="tl__filters">
       <button
-        class="tl__type-btn"
-        :class="{ active: activeType === 'all' }"
+        class="tl__filter-btn"
+        :class="{ 'tl__filter-btn--active': activeType === 'all' }"
         @click="activeType = 'all'"
       >
         全部
@@ -262,9 +254,8 @@ function getType(category: string) {
       <button
         v-for="key in typeKeys"
         :key="key"
-        class="tl__type-btn"
-        :class="{ active: activeType === key }"
-        :style="activeType === key ? { background: typeMap[key].color, borderColor: typeMap[key].color, color: '#fff' } : {}"
+        class="tl__filter-btn"
+        :class="{ 'tl__filter-btn--active': activeType === key }"
         @click="activeType = key"
       >
         {{ typeMap[key].label }}
@@ -273,101 +264,135 @@ function getType(category: string) {
 
     <!-- Loading -->
     <NSpin :show="!ready">
-      <!-- Empty -->
+      <!-- Empty state -->
       <div v-if="ready && memoryStore.memories.length === 0" class="tl__empty">
-        <div class="tl__empty-icon">📜</div>
-        <p>还没有大事记，点击上方按钮添加第一件事</p>
+        <div class="tl__empty-icon">
+          <AppIcon name="star" size="48" color="var(--color-text-tertiary)" />
+        </div>
+        <p class="tl__empty-title">
+          还没有大事记
+        </p>
+        <p class="tl__empty-desc">
+          点击上方按钮，记录支教旅程中的第一次
+        </p>
+        <button class="tl__empty-btn" @click="openCreate">
+          <AppIcon name="plus" size="16" /> 添加大事记
+        </button>
       </div>
 
       <!-- No results after filter -->
       <div v-else-if="ready && filtered.length === 0" class="tl__empty">
-        <div class="tl__empty-icon">🔍</div>
-        <p>该分类下暂无事件</p>
+        <p class="tl__empty-title">
+          该分类下暂无事件
+        </p>
       </div>
 
       <!-- Timeline -->
       <div v-else class="tl__timeline">
         <div v-for="group in groupedByMonth" :key="group.month" class="tl__group">
-          <h2 class="tl__g-mo">{{ formatMonth(group.month) }}</h2>
+          <h2 class="tl__g-month">
+            {{ formatMonth(group.month) }}
+          </h2>
 
           <div class="tl__events">
             <div
-              v-for="(event, ei) in group.items"
+              v-for="event in group.items"
               :key="event.id"
               class="tl__event"
-              :class="{ 'tl__event--alt': ei % 2 === 1 }"
             >
-              <!-- Dot -->
+              <!-- Gutter dot -->
               <div class="tl__event-gutter">
-                <div class="tl__event-dot" :style="{ background: getType(event.category).color }" />
+                <div
+                  class="tl__event-dot"
+                  :style="{ background: getType(event.category).color }"
+                />
+                <div class="tl__event-line" />
               </div>
 
               <!-- Card -->
-              <div class="tl__card" :class="{ 'tl__card--alt': ei % 2 === 1 }">
-                <div class="tl__card-date">
+              <AppCard hoverable class="tl__card">
+                <div class="tl__card-head">
                   <span class="tl__card-day">{{ formatDay(event.event_date) }}</span>
                   <span class="tl__card-wd">{{ formatWeekday(event.event_date) }}</span>
                   <span
-                    class="tl__card-type"
-                    :style="{ color: getType(event.category).color, background: getType(event.category).color + '14' }"
+                    class="tl__card-cat"
+                    :style="{
+                      color: getType(event.category).color,
+                      background: getType(event.category).bgColor,
+                    }"
                   >
-                    {{ getType(event.category).icon }} {{ getType(event.category).label }}
+                    <AppIcon :name="getType(event.category).icon" size="11" />
+                    {{ getType(event.category).label }}
                   </span>
                 </div>
 
-                <h3 class="tl__card-title">{{ event.title }}</h3>
+                <h3 class="tl__card-title">
+                  {{ event.title }}
+                </h3>
 
                 <p v-if="event.content" class="tl__card-desc">
-                  {{ event.content.length > 120 ? event.content.slice(0, 120) + '…' : event.content }}
+                  {{ event.content.length > 140 ? event.content.slice(0, 140) + '…' : event.content }}
                 </p>
 
-                <!-- Photos from memory_photos table -->
-                <div v-if="memoryStore.getPhotosForMemory(event.id).length" class="tl__card-photos">
+                <!-- Photos -->
+                <div
+                  v-if="memoryStore.getPhotosForMemory(event.id).length"
+                  class="tl__card-photos"
+                >
                   <img
                     v-for="(photo, pi) in memoryStore.getPhotosForMemory(event.id).slice(0, 4)"
                     :key="pi"
                     :src="photo.url"
                     class="tl__card-photo"
-                    :class="{ 'tl__card-photo--more': pi === 3 && memoryStore.getPhotosForMemory(event.id).length > 4 }"
+                    :class="{
+                      'tl__card-photo--more': pi === 3 && memoryStore.getPhotosForMemory(event.id).length > 4,
+                    }"
                     loading="lazy"
                     alt=""
+                    @click.stop="openViewer(memoryStore.getPhotosForMemory(event.id).map(p => ({ url: p.url })), pi)"
                   />
                 </div>
-                <!-- Fallback: URL photos from legacy data -->
                 <div v-else-if="event.image_urls && event.image_urls.length" class="tl__card-photos">
                   <img
                     v-for="(url, pi) in event.image_urls.slice(0, 4)"
                     :key="pi"
                     :src="url"
                     class="tl__card-photo"
-                    :class="{ 'tl__card-photo--more': pi === 3 && event.image_urls.length > 4 }"
+                    :class="{
+                      'tl__card-photo--more': pi === 3 && event.image_urls.length > 4,
+                    }"
                     loading="lazy"
                     alt=""
+                    @click.stop="openViewer(event.image_urls.map((u: string) => ({ url: u })), pi)"
                   />
                 </div>
 
                 <!-- Actions -->
                 <div class="tl__card-actions">
-                  <NButton text size="tiny" @click.stop="openEdit(event)">编辑</NButton>
-                  <NPopconfirm @positive-click="handleDelete(event.id)">
-                    <template #trigger>
-                      <NButton text size="tiny" type="error" @click.stop>删除</NButton>
-                    </template>
-                    确定删除「{{ event.title }}」？
-                  </NPopconfirm>
+                  <button class="tl__card-act" @click.stop="openEdit(event)">
+                    <AppIcon name="pen" size="12" /> 编辑
+                  </button>
+                  <button
+                    class="tl__card-act tl__card-act--del"
+                    @click.stop="handleDelete(event.id)"
+                  >
+                    <AppIcon name="trash" size="12" /> 删除
+                  </button>
                 </div>
-              </div>
+              </AppCard>
             </div>
           </div>
         </div>
       </div>
     </NSpin>
 
-    <!-- Footer -->
-    <p class="tl__footer">昌都记忆 · 大事记</p>
-
     <!-- ====== Add/Edit Modal ====== -->
-    <NModal v-model:show="showModal" preset="card" :title="modalTitle" style="max-width: 480px">
+    <NModal
+      v-model:show="showModal"
+      preset="card"
+      :title="modalTitle"
+      style="max-width: 480px"
+    >
       <NForm label-placement="top">
         <NFormItem label="标题" required>
           <NInput v-model:value="form.title" placeholder="事件标题" maxlength="100" />
@@ -378,7 +403,10 @@ function getType(category: string) {
         <NFormItem label="分类">
           <NSelect
             v-model:value="form.category"
-            :options="typeKeys.map((k) => ({ label: typeMap[k].icon + ' ' + typeMap[k].label, value: k }))"
+            :options="typeKeys.map((k) => ({
+              label: typeMap[k].label,
+              value: k,
+            }))"
           />
         </NFormItem>
         <NFormItem label="描述">
@@ -393,135 +421,551 @@ function getType(category: string) {
         <!-- Image upload -->
         <NFormItem label="图片">
           <div class="tl__photo-section">
-            <!-- Existing photos -->
             <div v-if="existingPhotos.length" class="tl__photo-grid">
               <div v-for="photo in existingPhotos" :key="photo.id" class="tl__photo-item">
                 <img :src="photo.url" alt="" class="tl__photo-thumb" />
-                <button class="tl__photo-remove" title="删除图片" @click="removeExistingPhoto(photo)">×</button>
+                <button
+                  class="tl__photo-remove"
+                  title="删除图片"
+                  @click="removeExistingPhoto(photo)"
+                >
+                  ×
+                </button>
               </div>
             </div>
-            <!-- Pending uploads -->
             <div v-if="pendingFiles.length" class="tl__photo-grid">
               <div v-for="(pf, pi) in pendingFiles" :key="'p' + pi" class="tl__photo-item">
                 <img :src="pf.previewUrl" alt="" class="tl__photo-thumb" />
-                <button class="tl__photo-remove" title="取消" @click="removePendingFile(pi)">×</button>
+                <button
+                  class="tl__photo-remove"
+                  title="取消"
+                  @click="removePendingFile(pi)"
+                >
+                  ×
+                </button>
               </div>
             </div>
-            <!-- Upload button -->
             <label class="tl__upload-btn" :class="{ loading: photoUploading }">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-              </svg>
+              <AppIcon name="plus" size="14" />
               <span>上传图片</span>
-              <input type="file" accept="image/*" multiple hidden @change="handleFileSelect" />
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                hidden
+                @change="handleFileSelect"
+              />
             </label>
           </div>
         </NFormItem>
       </NForm>
       <template #footer>
-        <div style="display: flex; gap: 8px; justify-content: flex-end">
-          <NButton @click="showModal = false">取消</NButton>
+        <div class="tl__modal-footer">
+          <NButton @click="showModal = false">
+            取消
+          </NButton>
           <NButton type="primary" :loading="modalLoading" @click="handleSave">
             {{ saveLabel }}
           </NButton>
         </div>
       </template>
     </NModal>
+
+    <!-- Fullscreen image viewer -->
+    <Teleport to="body">
+      <Transition name="viewer">
+        <div v-if="viewerOpen" class="img-viewer" @click="closeViewer">
+          <img
+            :src="viewerPhotos[viewerIndex]?.url"
+            class="img-viewer__img"
+            alt=""
+            @click.stop
+          />
+          <button class="img-viewer__close" aria-label="关闭" @click="closeViewer">
+            <AppIcon name="close" size="24" color="#fff" />
+          </button>
+          <div class="img-viewer__counter">
+            {{ viewerIndex + 1 }} / {{ viewerPhotos.length }}
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
 <style scoped>
-.tl { max-width: 720px; margin: 0 auto; padding: var(--spacing-page); padding-bottom: 80px; }
-
-/* Hero */
-.tl__hero { margin-bottom: 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
-.tl__title { font-size: 32px; font-weight: 700; color: var(--color-text-primary); margin: 0; letter-spacing: 1px; }
-.tl__sub { font-size: 14px; color: var(--color-text-tertiary); margin: 0; flex: 1; min-width: 200px; }
-
-/* Filter */
-.tl__types { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 24px; }
-.tl__type-btn {
-  padding: 5px 14px; border: 1px solid var(--color-border-light); border-radius: var(--radius-full);
-  background: #fff; color: var(--color-text-secondary); font-size: 12px; cursor: pointer;
-  font-family: inherit; transition: all .15s;
-}
-.tl__type-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
-.tl__type-btn.active { background: var(--color-primary); color: #fff; font-weight: 600; border-color: var(--color-primary); }
-
-/* Empty */
-.tl__empty { text-align: center; padding: 80px 20px; }
-.tl__empty-icon { font-size: 56px; opacity: .3; margin-bottom: 12px; }
-.tl__empty p { font-size: 15px; color: var(--color-text-tertiary); margin: 0; }
-
-/* Timeline */
-.tl__group { margin-bottom: 20px; }
-.tl__g-mo {
-  font-size: 16px; font-weight: 700; color: var(--color-primary); margin: 0 0 16px;
-  padding-left: 32px; position: relative;
-}
-.tl__g-mo::before {
-  content: ''; position: absolute; left: 4px; top: 4px; width: 10px; height: 10px;
-  border-radius: 50%; background: var(--color-primary); border: 3px solid var(--color-bg);
+.tl {
+  max-width: 800px;
+  margin: 0 auto;
 }
 
-.tl__events { position: relative; padding-left: 28px; }
+/* ---- Header ---- */
+.tl__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 4px 14px;
+  margin-bottom: var(--spacing-xl);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.tl__header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tl__title {
+  font-size: var(--font-page-title, 32px);
+  font-weight: var(--font-weight-extrabold);
+  color: var(--color-text-primary);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.tl__subtitle {
+  font-size: var(--font-caption);
+  color: var(--color-text-tertiary);
+  margin: 0;
+}
+
+.tl__create-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 20px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: #fff;
+  font-family: inherit;
+  font-size: var(--font-secondary);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tl__create-btn:hover {
+  background: var(--color-primary-dark);
+}
+
+/* ---- Filter pills ---- */
+.tl__filters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: var(--spacing-xl);
+}
+
+.tl__filter-btn {
+  padding: 6px 16px;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-full);
+  background: var(--color-bg-white);
+  color: var(--color-text-secondary);
+  font-size: var(--font-caption);
+  font-family: inherit;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+
+.tl__filter-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.tl__filter-btn--active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+  font-weight: var(--font-weight-semibold);
+}
+
+/* ---- Empty state ---- */
+.tl__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 72px 20px;
+  text-align: center;
+}
+
+.tl__empty-icon {
+  opacity: 0.25;
+  margin-bottom: 4px;
+}
+
+.tl__empty-title {
+  font-size: var(--font-content);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.tl__empty-desc {
+  font-size: var(--font-caption);
+  color: var(--color-text-tertiary);
+  margin: 0;
+}
+
+.tl__empty-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 9px 22px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: #fff;
+  font-family: inherit;
+  font-size: var(--font-secondary);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+}
+
+.tl__empty-btn:hover {
+  background: var(--color-primary-dark);
+}
+
+/* ---- Timeline ---- */
+.tl__group {
+  margin-bottom: var(--spacing-xl);
+}
+
+.tl__g-month {
+  font-size: var(--font-content);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+  margin: 0 0 14px;
+  padding-left: 36px;
+  position: relative;
+}
+
+.tl__g-month::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  border: 3px solid var(--color-bg);
+}
+
+.tl__events {
+  position: relative;
+  padding-left: 28px;
+}
+
 .tl__events::before {
-  content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px;
-  background: linear-gradient(180deg, var(--color-primary) 0%, rgba(74, 140, 148, 0.12) 100%);
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(
+    180deg,
+    var(--color-primary) 0%,
+    rgba(75, 143, 140, 0.08) 100%
+  );
 }
 
-/* Event card */
-.tl__event { position: relative; margin-bottom: 20px; display: flex; }
-.tl__event-gutter { position: absolute; left: -18px; top: 14px; }
-.tl__event-dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06); }
+.tl__event {
+  position: relative;
+  margin-bottom: 16px;
+  display: flex;
+}
+
+.tl__event-gutter {
+  position: absolute;
+  left: -18px;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.tl__event-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--color-bg-white);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06);
+  flex-shrink: 0;
+  margin-top: 14px;
+}
+
+.tl__event-line {
+  flex: 1;
+  width: 2px;
+  background: transparent;
+}
 
 .tl__card {
-  padding: 18px 20px; background: #fff; border-radius: var(--radius-card);
-  border: 1px solid var(--color-border-light); transition: all .15s;
-  box-shadow: var(--shadow-sm); width: 100%;
+  width: 100%;
 }
-.tl__card:hover { box-shadow: var(--shadow-md); border-color: transparent; }
 
-.tl__card-date { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-.tl__card-day { font-size: 18px; font-weight: 700; color: var(--color-text-primary); }
-.tl__card-wd { font-size: 12px; color: var(--color-text-tertiary); }
-.tl__card-type { font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: 4px; margin-left: auto; }
+/* ---- Card content ---- */
+.tl__card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
 
-.tl__card-title { font-size: 17px; font-weight: 600; color: var(--color-text-primary); margin: 0 0 6px; }
-.tl__card-desc { font-size: 14px; color: var(--color-text-secondary); line-height: 1.6; margin: 0 0 8px; }
+.tl__card-day {
+  font-size: 18px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+}
 
-.tl__card-photos { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
-.tl__card-photo { width: 72px; height: 72px; border-radius: var(--radius-sm); object-fit: cover; }
-.tl__card-photo--more { filter: brightness(.6); }
+.tl__card-wd {
+  font-size: var(--font-caption);
+  color: var(--color-text-tertiary);
+}
 
-.tl__card-actions { display: flex; gap: 4px; padding-top: 8px; border-top: 1px solid var(--color-border-light); }
+.tl__card-cat {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  padding: 2px 8px;
+  border-radius: var(--radius-xs);
+  margin-left: auto;
+}
 
-/* Photo upload section in modal */
-.tl__photo-section { display: flex; flex-direction: column; gap: 8px; }
-.tl__photo-grid { display: flex; gap: 8px; flex-wrap: wrap; }
-.tl__photo-item { position: relative; width: 72px; height: 72px; border-radius: var(--radius-sm); overflow: hidden; }
-.tl__photo-thumb { width: 100%; height: 100%; object-fit: cover; }
+.tl__card-title {
+  font-size: 17px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0 0 8px;
+}
+
+.tl__card-desc {
+  font-size: var(--font-secondary);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+  margin: 0 0 10px;
+}
+
+.tl__card-photos {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.tl__card-photo {
+  width: 76px;
+  height: 76px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.tl__card-photo:hover {
+  opacity: 0.85;
+}
+
+.tl__card-photo--more {
+  filter: brightness(0.6);
+}
+
+.tl__card-actions {
+  display: flex;
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.tl__card-act {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-caption);
+  font-family: inherit;
+  cursor: pointer;
+  border-radius: var(--radius-xs);
+  transition: all var(--transition-fast);
+}
+
+.tl__card-act:hover {
+  color: var(--color-primary);
+  background: var(--color-primary-bg);
+}
+
+.tl__card-act--del:hover {
+  color: var(--color-error);
+  background: rgba(194, 103, 106, 0.08);
+}
+
+/* ---- Modal photo section ---- */
+.tl__photo-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tl__photo-grid {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tl__photo-item {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.tl__photo-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .tl__photo-remove {
-  position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; border-radius: 50%;
-  border: none; background: rgba(0,0,0,.5); color: #fff; font-size: 14px; cursor: pointer;
-  display: flex; align-items: center; justify-content: center; line-height: 1; padding: 0;
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
 }
-.tl__photo-remove:hover { background: var(--color-error); }
-.tl__upload-btn {
-  display: flex; align-items: center; gap: 6px; padding: 8px 14px; border: 1px dashed var(--color-border);
-  border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; color: var(--color-text-secondary);
-  transition: all .15s; width: fit-content;
-}
-.tl__upload-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
-.tl__upload-btn.loading { opacity: .5; pointer-events: none; }
 
-/* Footer */
-.tl__footer { text-align: center; font-size: 12px; color: var(--color-text-tertiary); opacity: .4; margin-top: 24px; }
+.tl__photo-remove:hover {
+  background: var(--color-error);
+}
+
+.tl__upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 14px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: var(--font-caption);
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast);
+  width: fit-content;
+}
+
+.tl__upload-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.tl__upload-btn.loading {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.tl__modal-footer {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
 
 @media (max-width: 500px) {
-  .tl__title { font-size: 26px; }
-  .tl__card { padding: 14px 16px; }
-  .tl__card-photo { width: 56px; height: 56px; }
-  .tl__photo-item { width: 56px; height: 56px; }
+  .tl__card-photo {
+    width: 56px;
+    height: 56px;
+  }
+
+  .tl__photo-item {
+    width: 56px;
+    height: 56px;
+  }
+}
+
+/* Fullscreen image viewer */
+.img-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-image-viewer, 300);
+  background: rgba(0, 0, 0, 0.94);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+}
+
+.img-viewer__img {
+  max-width: 90vw;
+  max-height: 85vh;
+  border-radius: var(--radius-lg, 20px);
+  object-fit: contain;
+  cursor: default;
+}
+
+.img-viewer__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition-fast);
+}
+
+.img-viewer__close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.img-viewer__counter {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: var(--font-caption);
+  font-weight: var(--font-weight-medium);
+}
+
+.viewer-enter-active,
+.viewer-leave-active {
+  transition: opacity 0.2s;
+}
+
+.viewer-enter-from,
+.viewer-leave-to {
+  opacity: 0;
 }
 </style>

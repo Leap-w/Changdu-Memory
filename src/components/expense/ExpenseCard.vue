@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Expense } from '@/repositories/ExpenseRepository'
-import { AppCard } from '@/components/ui'
+import { AppCard, AppIcon } from '@/components/ui'
 
 defineProps<{ expense: Expense }>()
 const emit = defineEmits<{ click: [id: string] }>()
@@ -12,19 +12,53 @@ const labels: Record<string, string> = {
   other: '其他',
 }
 
-const icons: Record<string, string> = {
-  food:'🍜', transport:'🚌', shopping:'🛒', accommodation:'🏠', study:'📚', entertainment:'🎮', medical:'💊',
-  salary:'💰', subsidy:'🎁', bonus:'🏆', part_time:'💼',
-  other:'📦',
+const categoryIcons: Record<string, string> = {
+  food: 'check', transport: 'chevron-right', shopping: 'wallet', accommodation: 'home',
+  study: 'book', entertainment: 'star', medical: 'heart',
+  salary: 'wallet', subsidy: 'gift', bonus: 'star', part_time: 'briefcase',
+  other: 'grid',
 }
 
-function fmt(n: number) { return `¥${Number(n).toFixed(2)}` }
+const categoryBgColors: Record<string, string> = {
+  food: 'rgba(208,135,112,0.12)', transport: 'rgba(111,168,220,0.12)',
+  shopping: 'rgba(214,168,79,0.12)', accommodation: 'rgba(75,143,140,0.1)',
+  study: 'rgba(107,158,133,0.12)', entertainment: 'rgba(194,103,106,0.1)',
+  medical: 'rgba(232,176,76,0.12)',
+  salary: 'rgba(107,158,133,0.12)', subsidy: 'rgba(75,143,140,0.1)',
+  bonus: 'rgba(214,168,79,0.12)', part_time: 'rgba(111,168,220,0.12)',
+  other: 'rgba(140,154,155,0.12)',
+}
+
+const categoryIconColors: Record<string, string> = {
+  food: 'var(--color-accent-soft)', transport: 'var(--color-sky)',
+  shopping: 'var(--color-gold)', accommodation: 'var(--color-primary)',
+  study: 'var(--color-secondary)', entertainment: 'var(--color-accent)',
+  medical: '#E8B04C',
+  salary: 'var(--color-secondary)', subsidy: 'var(--color-primary)',
+  bonus: 'var(--color-gold)', part_time: 'var(--color-sky)',
+  other: 'var(--color-text-tertiary)',
+}
+
+function fmt(n: number) {
+  return `¥${Number(n).toFixed(2)}`
+}
 </script>
 
 <template>
   <AppCard hoverable class="ec" @click="emit('click', expense.id)">
     <div class="ec__inner">
-      <span class="ec__icon">{{ icons[expense.category] || '📦' }}</span>
+      <div
+        class="ec__icon"
+        :style="{
+          background: categoryBgColors[expense.category] || categoryBgColors.other,
+          color: categoryIconColors[expense.category] || categoryIconColors.other,
+        }"
+      >
+        <AppIcon
+          :name="categoryIcons[expense.category] || 'grid'"
+          size="16"
+        />
+      </div>
       <div class="ec__body">
         <span class="ec__label">{{ labels[expense.category] || expense.category }}</span>
         <span v-if="expense.description" class="ec__desc">{{ expense.description }}</span>
@@ -37,11 +71,52 @@ function fmt(n: number) { return `¥${Number(n).toFixed(2)}` }
 </template>
 
 <style scoped>
-.ec__inner { display:flex;align-items:center;gap:12px; }
-.ec__icon { font-size:26px;flex-shrink:0; }
-.ec__body { flex:1;min-width:0;display:flex;flex-direction:column;gap:2px; }
-.ec__label { font-size:15px;color:var(--color-text-primary);font-weight:500; }
-.ec__desc { font-size:12px;color:var(--color-text-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
-.ec__amt { font-size:17px;font-weight:700;color:var(--color-text-primary);flex-shrink:0; }
-.ec__amt--in { color:var(--color-secondary); }
+.ec__inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ec__icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ec__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ec__label {
+  font-size: var(--font-content);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.ec__desc {
+  font-size: var(--font-caption);
+  color: var(--color-text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ec__amt {
+  font-size: var(--font-content);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  flex-shrink: 0;
+}
+
+.ec__amt--in {
+  color: var(--color-secondary);
+}
 </style>

@@ -137,10 +137,12 @@ async function handleDelete(id: string) {
 }
 
 .tag-manage__title {
-  font-size: var(--font-title);
-  font-weight: 700;
+  font-size: var(--font-page-title, 32px);
+  font-weight: var(--font-weight-extrabold);
   color: var(--color-text-primary);
   margin: 0 0 8px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .tag-manage__desc {

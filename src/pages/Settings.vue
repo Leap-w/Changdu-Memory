@@ -178,7 +178,7 @@ function goRecycleBin() {
         <div class="settings-item">
           <div class="settings-item__info">
             <span class="settings-item__label">昌都记忆 Changdu Memory</span>
-            <span class="settings-item__desc">V5.0 — 个人数字记录平台</span>
+            <span class="settings-item__desc">V5.4 — 个人数字记录平台</span>
           </div>
         </div>
       </NCard>
@@ -194,10 +194,12 @@ function goRecycleBin() {
 }
 
 .page-settings__title {
-  font-size: var(--font-title);
-  font-weight: 700;
+  font-size: var(--font-page-title, 32px);
+  font-weight: var(--font-weight-extrabold);
   color: var(--color-text-primary);
   margin: 0 0 24px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .settings-card {

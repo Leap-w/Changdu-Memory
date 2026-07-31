@@ -78,7 +78,7 @@ function toggleMode() {
       <!-- 品牌区域 -->
       <div class="login-brand">
         <div class="login-logo">
-          🏔️
+          昌
         </div>
         <h1 class="login-title">
           昌都记忆
@@ -150,7 +150,7 @@ function toggleMode() {
 
       <!-- 底部版本信息 -->
       <p class="login-version">
-        V5.0
+        V5.4
       </p>
     </div>
   </div>
@@ -179,8 +179,17 @@ function toggleMode() {
 }
 
 .login-logo {
-  font-size: 56px;
-  margin-bottom: 12px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 28px;
+  font-weight: var(--font-weight-extrabold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
 }
 
 .login-title {

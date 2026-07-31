@@ -73,8 +73,12 @@ function handleSave() {
       <input v-model="form.role" class="sc__input" placeholder="职务" />
       <input v-model="form.notes" class="sc__input" placeholder="备注" />
       <div class="sc__edit-actions">
-        <button class="sc__act" @click="cancelEdit">取消</button>
-        <button class="sc__act sc__act--save" @click="handleSave">保存</button>
+        <button class="sc__act" @click="cancelEdit">
+          取消
+        </button>
+        <button class="sc__act sc__act--save" @click="handleSave">
+          保存
+        </button>
       </div>
     </div>
   </AppCard>

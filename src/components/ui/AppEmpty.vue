@@ -37,11 +37,17 @@ const emit = defineEmits<{
 
 <template>
   <div class="app-empty">
-    <div v-if="icon" class="app-empty__icon">{{ icon }}</div>
+    <div v-if="icon" class="app-empty__icon">
+      {{ icon }}
+    </div>
 
-    <h3 class="app-empty__title">{{ title }}</h3>
+    <h3 class="app-empty__title">
+      {{ title }}
+    </h3>
 
-    <p v-if="desc" class="app-empty__desc">{{ desc }}</p>
+    <p v-if="desc" class="app-empty__desc">
+      {{ desc }}
+    </p>
 
     <button
       v-if="actionLabel"

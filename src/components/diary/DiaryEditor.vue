@@ -8,6 +8,7 @@ import {
   getDiaryPhotoUrl,
 } from '@/repositories/DiaryPhotoRepository'
 import type { DiaryPhoto } from '@/repositories/DiaryPhotoRepository'
+import { AppIcon } from '@/components/ui'
 
 // ==========================================
 // Props / Emits
@@ -46,13 +47,13 @@ const errorMsg = ref('')
 // Templates
 // ==========================================
 const templates = [
-  { key: 'teaching', label: '今日教学', icon: '📚', content: '## 今日教学内容\n\n### 课堂要点\n\n### 学生表现\n\n### 反思与改进\n\n' },
-  { key: 'student', label: '学生故事', icon: '👤', content: '## 学生姓名\n\n### 今天发生了什么\n\n### 我的感受\n\n' },
-  { key: 'feeling', label: '支教感悟', icon: '💭', content: '## 今日感悟\n\n' },
-  { key: 'training', label: '培训记录', icon: '📝', content: '## 培训主题\n\n### 要点\n-\n-\n\n### 行动计划\n-\n' },
-  { key: 'life',   label: '生活随笔', icon: '☕', content: '今天在昌都的生活…\n\n' },
-  { key: 'travel', label: '旅行记录', icon: '🏔️', content: '## 目的地\n\n### 同行\n\n### 见闻\n\n' },
-  { key: 'custom', label: '自定义', icon: '✏️', content: '' },
+  { key: 'teaching', label: '今日教学', icon: 'calendar', content: '## 今日教学内容\n\n### 课堂要点\n\n### 学生表现\n\n### 反思与改进\n\n' },
+  { key: 'student', label: '学生故事', icon: 'people', content: '## 学生姓名\n\n### 今天发生了什么\n\n### 我的感受\n\n' },
+  { key: 'feeling', label: '支教感悟', icon: 'heart', content: '## 今日感悟\n\n' },
+  { key: 'training', label: '培训记录', icon: 'checklist', content: '## 培训主题\n\n### 要点\n-\n-\n\n### 行动计划\n-\n' },
+  { key: 'life',   label: '生活随笔', icon: 'book', content: '今天在昌都的生活…\n\n' },
+  { key: 'travel', label: '旅行记录', icon: 'pin', content: '## 目的地\n\n### 同行\n\n### 见闻\n\n' },
+  { key: 'custom', label: '自定义', icon: 'edit', content: '' },
 ]
 
 function applyTemplate(key: string) {
@@ -188,11 +189,14 @@ function handleSubmit() {
       <span class="de__section-label">选择模板</span>
       <div class="de__templates">
         <button
-          v-for="t in templates" :key="t.key"
+          v-for="t in templates"
+          :key="t.key"
           class="de__tpl-btn"
           @click="applyTemplate(t.key)"
         >
-          <span class="de__tpl-icon">{{ t.icon }}</span>
+          <div class="de__tpl-icon">
+            <AppIcon :name="t.icon" size="18" />
+          </div>
           <span class="de__tpl-label">{{ t.label }}</span>
         </button>
       </div>
@@ -201,7 +205,12 @@ function handleSubmit() {
     <!-- ====== Title ====== -->
     <div class="de__section">
       <label class="de__label">标题</label>
-      <input v-model="localTitle" class="de__input" placeholder="日记标题…" maxlength="100" />
+      <input
+        v-model="localTitle"
+        class="de__input"
+        placeholder="日记标题…"
+        maxlength="100"
+      />
     </div>
 
     <!-- ====== Date ====== -->
@@ -219,25 +228,40 @@ function handleSubmit() {
         placeholder="记录今天的点滴…&#10;&#10;支持 Markdown 格式：# 标题 ## 小标题 - 列表"
         rows="12"
         maxlength="10000"
-      ></textarea>
+      />
     </div>
 
     <!-- ====== Images ====== -->
     <div class="de__section">
       <label class="de__label">图片（{{ images.length + previewUrls.length }}/{{ MAX_IMAGES }}）</label>
       <div class="de__images">
-        <div v-for="(p, i) in images" :key="p.id" class="de__img-item" @click="openViewer(i)">
+        <div
+          v-for="(p, i) in images"
+          :key="p.id"
+          class="de__img-item"
+          @click="openViewer(i)"
+        >
           <img :src="getImageUrl(p)" class="de__img-thumb" alt="" />
-          <button class="de__img-del" @click.stop="removeImage(p)">×</button>
+          <button class="de__img-del" @click.stop="removeImage(p)">
+            ×
+          </button>
         </div>
         <!-- 预缓存图片预览 -->
         <div v-for="(url, i) in previewUrls" :key="'p'+i" class="de__img-item">
           <img :src="url" class="de__img-thumb" alt="" />
-          <button class="de__img-del" @click.stop="pendingImages.splice(i,1); previewUrls.splice(i,1)">×</button>
+          <button class="de__img-del" @click.stop="pendingImages.splice(i,1); previewUrls.splice(i,1)">
+            ×
+          </button>
         </div>
         <label v-if="canUploadMore" class="de__img-add" :class="{ loading: uploading }">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          <input type="file" accept="image/*" multiple hidden @change="handleImageUpload" />
+          <AppIcon name="plus" size="22" />
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            hidden
+            @change="handleImageUpload"
+          />
         </label>
       </div>
     </div>
@@ -248,13 +272,18 @@ function handleSubmit() {
       <!-- Preset tags -->
       <div class="de__tags">
         <button
-          v-for="(name, i) in presetTags" :key="name"
+          v-for="(name, i) in presetTags"
+          :key="name"
           class="de__tag-btn"
           :class="{ active: tagStore.tags.some((t) => t.name === name && localTagIds.includes(t.id)) }"
           :style="{ '--tag-color': presetTagColors[i] }"
           @click="togglePresetTag(name)"
-        >{{ name }}</button>
-        <button class="de__tag-btn de__tag-btn--add" @click="showCustomTag = !showCustomTag">+</button>
+        >
+          {{ name }}
+        </button>
+        <button class="de__tag-btn de__tag-btn--add" @click="showCustomTag = !showCustomTag">
+          +
+        </button>
       </div>
       <!-- Custom tag input -->
       <div v-if="showCustomTag" class="de__custom-tag">
@@ -265,16 +294,22 @@ function handleSubmit() {
           maxlength="10"
           @keydown.enter.prevent="addCustomTag()"
         />
-        <button class="de__tag-confirm" @click="addCustomTag()">添加</button>
+        <button class="de__tag-confirm" @click="addCustomTag()">
+          添加
+        </button>
       </div>
     </div>
 
     <!-- ====== Error ====== -->
-    <p v-if="errorMsg" class="de__error">{{ errorMsg }}</p>
+    <p v-if="errorMsg" class="de__error">
+      {{ errorMsg }}
+    </p>
 
     <!-- ====== Actions ====== -->
     <div class="de__actions">
-      <button class="de__btn de__btn--cancel" @click="emit('cancel')">取消</button>
+      <button class="de__btn de__btn--cancel" @click="emit('cancel')">
+        取消
+      </button>
       <button class="de__btn de__btn--save" :disabled="loading" @click="handleSubmit">
         {{ loading ? '保存中…' : submitLabel }}
       </button>
@@ -284,8 +319,15 @@ function handleSubmit() {
     <Teleport to="body">
       <Transition name="modal">
         <div v-if="viewerOpen" class="img-viewer" @click="closeViewer">
-          <img :src="getImageUrl(images[viewerIndex])" class="img-viewer__img" @click.stop alt="" />
-          <button class="img-viewer__close" @click="closeViewer">×</button>
+          <img
+            :src="getImageUrl(images[viewerIndex])"
+            class="img-viewer__img"
+            alt=""
+            @click.stop
+          />
+          <button class="img-viewer__close" @click="closeViewer">
+            ×
+          </button>
         </div>
       </Transition>
     </Teleport>
@@ -300,45 +342,48 @@ function handleSubmit() {
 
 /* Templates */
 .de__templates { display:flex;gap:6px;flex-wrap:wrap; }
-.de__tpl-btn { display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 12px;border:1px solid var(--color-border-light);border-radius:var(--radius-md);background:#fff;cursor:pointer;font-family:inherit;transition:all .15s;min-width:68px; }
+.de__tpl-btn { display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 14px;border:1px solid var(--color-border-light);border-radius:var(--radius-lg);background:var(--color-bg-white);cursor:pointer;font-family:inherit;transition:all var(--transition-fast);min-width:72px; }
 .de__tpl-btn:hover { border-color:var(--color-primary);background:var(--color-primary-bg); }
-.de__tpl-icon { font-size:18px; }
-.de__tpl-label { font-size:11px;color:var(--color-text-secondary);white-space:nowrap; }
+.de__tpl-icon { width:32px;height:32px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;background:var(--color-bg);color:var(--color-text-secondary);transition:all var(--transition-fast); }
+.de__tpl-btn:hover .de__tpl-icon { color:var(--color-primary);background:var(--color-primary-light); }
+.de__tpl-label { font-size:11px;color:var(--color-text-secondary);white-space:nowrap;font-weight:var(--font-weight-medium); }
 
 /* Inputs */
-.de__input { padding:10px 12px;border:1px solid var(--color-border);border-radius:var(--radius-sm);font-size:15px;font-family:inherit;color:var(--color-text-primary);background:var(--color-bg);outline:none;transition:border-color .15s;width:100%; }
-.de__input:focus { border-color:var(--color-primary);background:#fff; }
-.de__input--sm { padding:6px 10px;font-size:13px; }
-.de__textarea { padding:12px 14px;border:1px solid var(--color-border);border-radius:var(--radius-md);font-size:15px;font-family:inherit;color:var(--color-text-primary);background:var(--color-bg);outline:none;resize:vertical;line-height:1.8;transition:border-color .15s; }
-.de__textarea:focus { border-color:var(--color-primary);background:#fff; }
+.de__input { padding:10px 14px;border:1px solid var(--color-border);border-radius:var(--radius-input);font-size:var(--font-content);font-family:inherit;color:var(--color-text-primary);background:var(--color-bg);outline:none;transition:border-color var(--transition-fast);width:100%; }
+.de__input:focus { border-color:var(--color-primary);background:var(--color-bg-white); }
+.de__input--sm { padding:7px 12px;font-size:var(--font-secondary); }
+.de__textarea { padding:14px 16px;border:1px solid var(--color-border);border-radius:var(--radius-lg);font-size:var(--font-content);font-family:inherit;color:var(--color-text-primary);background:var(--color-bg);outline:none;resize:vertical;line-height:1.8;transition:border-color var(--transition-fast); }
+.de__textarea:focus { border-color:var(--color-primary);background:var(--color-bg-white); }
 
 /* Images */
 .de__images { display:flex;gap:8px;flex-wrap:wrap;align-items:center; }
-.de__img-item { position:relative;width:80px;height:80px;border-radius:var(--radius-sm);overflow:hidden;cursor:pointer;flex-shrink:0; }
-.de__img-thumb { width:100%;height:100%;object-fit:cover; }
-.de__img-del { position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s; }
+.de__img-item { position:relative;width:84px;height:84px;border-radius:var(--radius-md);overflow:hidden;cursor:pointer;flex-shrink:0; }
+.de__img-thumb { width:100%;height:100%;object-fit:cover;transition:transform var(--transition-fast); }
+.de__img-item:hover .de__img-thumb { transform:scale(1.05); }
+.de__img-del { position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity var(--transition-fast); }
 .de__img-item:hover .de__img-del { opacity:1; }
-.de__img-add { width:80px;height:80px;border:1.5px dashed var(--color-border);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--color-text-tertiary);transition:all .15s; }
-.de__img-add:hover { border-color:var(--color-primary);color:var(--color-primary); }
+.de__img-add { width:84px;height:84px;border:2px dashed var(--color-border);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--color-text-tertiary);transition:all var(--transition-fast); }
+.de__img-add:hover { border-color:var(--color-primary);color:var(--color-primary);background:var(--color-primary-bg); }
 .de__img-add.loading { opacity:.5;pointer-events:none; }
-.de__img-hint { font-size:12px;color:var(--color-text-tertiary); }
 
 /* Tags */
 .de__tags { display:flex;gap:6px;flex-wrap:wrap;align-items:center; }
-.de__tag-btn { padding:5px 12px;border:1px solid var(--color-border-light);border-radius:var(--radius-full);background:#fff;color:var(--color-text-secondary);font-size:12px;cursor:pointer;font-family:inherit;transition:all .15s; }
+.de__tag-btn { padding:6px 14px;border:1px solid var(--color-border-light);border-radius:var(--radius-full);background:var(--color-bg-white);color:var(--color-text-secondary);font-size:var(--font-caption);cursor:pointer;font-family:inherit;transition:all var(--transition-fast);font-weight:var(--font-weight-medium); }
 .de__tag-btn:hover { border-color:var(--tag-color,var(--color-primary));color:var(--tag-color,var(--color-primary)); }
-.de__tag-btn.active { background:var(--tag-color,var(--color-primary));border-color:var(--tag-color,var(--color-primary));color:#fff;font-weight:600; }
-.de__tag-btn--add { font-size:16px;padding:3px 10px; }
+.de__tag-btn.active { background:var(--tag-color,var(--color-primary));border-color:var(--tag-color,var(--color-primary));color:#fff;font-weight:var(--font-weight-semibold); }
+.de__tag-btn--add { font-size:16px;padding:4px 12px; }
 .de__custom-tag { display:flex;gap:6px;margin-top:4px; }
-.de__tag-confirm { padding:6px 12px;border:none;border-radius:6px;background:var(--color-primary);color:#fff;font-size:12px;cursor:pointer;font-family:inherit; }
+.de__tag-confirm { padding:7px 14px;border:none;border-radius:var(--radius-sm);background:var(--color-primary);color:#fff;font-size:var(--font-caption);cursor:pointer;font-family:inherit;font-weight:var(--font-weight-semibold); }
 
 /* Actions */
-.de__error { color:var(--color-error);font-size:13px;margin:0; }
+.de__error { color:var(--color-error);font-size:var(--font-secondary);margin:0; }
 .de__actions { display:flex;gap:12px;justify-content:flex-end;padding-top:8px; }
-.de__btn { padding:10px 28px;border:none;border-radius:var(--radius-button);font-size:15px;font-family:inherit;cursor:pointer;transition:all .15s; }
+.de__btn { padding:10px 28px;border:none;border-radius:var(--radius-button);font-size:var(--font-content);font-family:inherit;cursor:pointer;transition:all var(--transition-fast);font-weight:var(--font-weight-semibold); }
 .de__btn--cancel { background:var(--color-bg);color:var(--color-text-secondary); }
-.de__btn--save { background:var(--color-primary);color:#fff;font-weight:600; }
-.de__btn--save:disabled { opacity:.6;cursor:not-allowed; }
+.de__btn--cancel:hover { background:var(--color-border-light); }
+.de__btn--save { background:var(--color-primary);color:#fff; }
+.de__btn--save:hover { background:var(--color-primary-dark); }
+.de__btn--save:disabled { opacity:.5;cursor:not-allowed; }
 
 /* Image Viewer */
 .img-viewer { position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;padding:20px;cursor:pointer;backdrop-filter:blur(8px); }

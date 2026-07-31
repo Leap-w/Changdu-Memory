@@ -64,7 +64,13 @@ function onImgError() {
       background: src && !imgError ? undefined : color || 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))',
     }"
   >
-    <img v-if="src && !imgError" :src="src" class="app-avatar__img" :alt="name" @error="onImgError" />
+    <img
+      v-if="src && !imgError"
+      :src="src"
+      class="app-avatar__img"
+      :alt="name"
+      @error="onImgError"
+    />
     <span v-else class="app-avatar__text">{{ initial() }}</span>
   </div>
 </template>

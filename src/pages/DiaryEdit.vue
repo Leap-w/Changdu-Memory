@@ -73,7 +73,9 @@ function handleCancel() { router.back() }
 
 <template>
   <div class="diary-edit-page">
-    <h1 class="diary-edit-page__title">{{ isEdit ? '编辑日记' : '写日记' }}</h1>
+    <h1 class="diary-edit-page__title">
+      {{ isEdit ? '编辑日记' : '写日记' }}
+    </h1>
     <NSpin :show="loading">
       <DiaryEditor
         v-if="!loading"
@@ -92,6 +94,17 @@ function handleCancel() { router.back() }
 </template>
 
 <style scoped>
-.diary-edit-page { max-width:720px;margin:0 auto;padding:var(--spacing-page); }
-.diary-edit-page__title { font-size:var(--font-title);font-weight:700;color:var(--color-text-primary);margin:0 0 24px; }
+.diary-edit-page {
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+.diary-edit-page__title {
+  font-size: var(--font-page-title, 32px);
+  font-weight: var(--font-weight-extrabold);
+  color: var(--color-text-primary);
+  margin: 0 0 28px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
 </style>

@@ -7,7 +7,7 @@ const router = useRouter()
 
 <template>
   <AppEmpty
-    icon="✅"
+    icon="checklist"
     title="暂无待办"
     desc="添加待办事项，让支教生活更有条理。"
     action-label="创建待办"

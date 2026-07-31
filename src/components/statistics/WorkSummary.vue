@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { NCard } from 'naive-ui'
-import { CATEGORY_LABELS, CATEGORY_ICONS } from '@/utils/statistics'
+import { AppIcon } from '@/components/ui'
+import { CATEGORY_LABELS } from '@/utils/statistics'
 
 defineProps<{
   periodData: { key: string; count: number }[]
@@ -16,7 +17,13 @@ const periodLabels: Record<string, string> = {
 </script>
 
 <template>
-  <NCard class="work-card" title="📋 工作统计">
+  <NCard class="work-card">
+    <template #header>
+      <div class="work-card__header">
+        <AppIcon name="briefcase" size="16" color="var(--color-primary)" />
+        <span>工作统计</span>
+      </div>
+    </template>
     <div v-if="total === 0" class="work-card__empty">
       暂无数据
     </div>
@@ -46,7 +53,6 @@ const periodLabels: Record<string, string> = {
             :key="d.key"
             class="work-chip"
           >
-            {{ CATEGORY_ICONS[d.key] || '' }}
             {{ CATEGORY_LABELS[d.key] || d.key }} {{ d.count }}
           </span>
         </div>
@@ -59,6 +65,15 @@ const periodLabels: Record<string, string> = {
 .work-card {
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
+}
+
+.work-card__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-content);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
 }
 
 .work-card__empty {

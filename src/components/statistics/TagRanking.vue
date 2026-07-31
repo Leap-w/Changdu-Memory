@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { NCard, NTag } from 'naive-ui'
+import { AppIcon } from '@/components/ui'
 
 defineProps<{
   data: { name: string; color: string; count: number }[]
@@ -7,7 +8,13 @@ defineProps<{
 </script>
 
 <template>
-  <NCard class="tag-card" title="🏷️ 常用标签 Top 10">
+  <NCard class="tag-card">
+    <template #header>
+      <div class="tag-card__header">
+        <AppIcon name="tag" size="16" color="var(--color-primary)" />
+        <span>常用标签 Top 10</span>
+      </div>
+    </template>
     <div v-if="data.length === 0" class="tag-card__empty">
       暂无数据
     </div>
@@ -36,6 +43,15 @@ defineProps<{
 .tag-card {
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
+}
+
+.tag-card__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-content);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
 }
 
 .tag-card__empty {

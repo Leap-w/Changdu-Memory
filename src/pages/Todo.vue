@@ -99,7 +99,6 @@ function goCreate() {
 .todo-page {
   max-width: 640px;
   margin: 0 auto;
-  padding: var(--spacing-page);
 }
 
 .todo-page__header {
@@ -107,11 +106,13 @@ function goCreate() {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 24px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .todo-page__title {
-  font-size: var(--font-title);
-  font-weight: 700;
+  font-size: var(--font-page-title, 32px);
+  font-weight: var(--font-weight-extrabold);
   color: var(--color-text-primary);
   margin: 0;
 }

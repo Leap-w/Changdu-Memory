@@ -1,56 +1,62 @@
 :root {
   /* ================================================================
-     昌都记忆 V5.2 — 全新设计令牌系统
-     主色：高原湖绿（Teal）
-     保留 V5.1 旧变量作为别名，确保现有组件不受影响
+     昌都记忆 V5.4 — 高原自然色系设计令牌
+     主色：高原青（#4B8F8C）
+     保留 V5.1 / V5.2 旧变量作为别名，确保现有组件不受影响
      ================================================================ */
 
   /* ==========================================================
-     1. 主色 — 高原湖绿
-     primary:  #4A8C94  湖绿（主按钮、链接、激活态）
-     primary-light: #E8F3F4  极浅湖绿（背景 hover）
-     primary-dark:  #356A70  深湖绿（按钮 hover / active）
+     1. 主色 — 高原青
+     primary:  #4B8F8C  高原青（主按钮、链接、激活态）
+     primary-light: #E8F4F3  极浅青（背景 hover）
+     primary-dark:  #3B7572  深青（按钮 hover / active）
      ========================================================== */
-  --color-primary: #4A8C94;
-  --color-primary-light: #E8F3F4;
-  --color-primary-dark: #356A70;
+  --color-primary: #4B8F8C;
+  --color-primary-light: #E8F4F3;
+  --color-primary-dark: #3B7572;
 
   /* primary 半透明背景系列（hover / active 背景） */
-  --color-primary-bg: rgba(74, 140, 148, 0.06);
-  --color-primary-bg-hover: rgba(74, 140, 148, 0.10);
-  --color-primary-bg-active: rgba(74, 140, 148, 0.14);
+  --color-primary-bg: rgba(75, 143, 140, 0.06);
+  --color-primary-bg-hover: rgba(75, 143, 140, 0.10);
+  --color-primary-bg-active: rgba(75, 143, 140, 0.14);
 
   /* ==========================================================
-     2. 辅助色
+     2. 辅助色 — 高原自然色系
      ========================================================== */
-  --color-accent: #C2676A;        /* 暖红点缀 */
-  --color-accent-soft: #D08770;   /* 暖橙 */
+  --color-accent: #C2676A;        /* 暖红点缀（保留） */
+  --color-accent-soft: #D08770;   /* 暖橙（保留） */
 
   --color-secondary: #6B9E85;     /* 草原绿（保留兼容） */
   --color-secondary-light: #8DB5A2;
   --color-secondary-dark: #527A65;
 
+  /* 新增：高原辅助色 */
+  --color-sky: #6FA8DC;           /* 天空蓝 */
+  --color-sky-light: #E8F2FA;     /* 天空蓝浅底 */
+  --color-gold: #D6A84F;          /* 日照金 */
+  --color-gold-light: #FBF4E5;    /* 日照金浅底 */
+
   /* 语义色 */
   --color-success: #6B9E85;
   --color-warning: #E8B04C;
   --color-error: #C2676A;
-  --color-info: #4A8C94;
+  --color-info: #4B8F8C;
 
   /* ==========================================================
      3. 背景系统
      ========================================================== */
-  --color-bg: #F6F8F7;            /* 页面底色 — 微湖绿灰 */
+  --color-bg: #F7F9F8;            /* 页面底色 — 雪山白 */
   --color-bg-white: #FFFFFF;       /* 纯白 */
-  --color-bg-card: #FFFFFF;       /* 卡片背景 */
-  --color-bg-warm: #F5F0EB;       /* 暖灰（特殊场景） */
-  --color-bg-subtle: #F0F4F4;     /* 次级背景（新） */
+  --color-bg-card: #FFFFFF;       /* 卡片背景（实色 fallback） */
+  --color-bg-warm: #F5F0EB;       /* 暖灰（特殊场景，保留） */
+  --color-bg-subtle: #F0F4F3;     /* 次级背景 */
 
   /* ==========================================================
      4. 文字系统
      ========================================================== */
-  --color-text-primary: #1E2D2F;   /* 主文字 — 深湖绿黑 */
-  --color-text-secondary: #5F6F71; /* 次级文字 */
-  --color-text-tertiary: #8C9A9B;  /* 辅助文字 */
+  --color-text-primary: #101820;   /* 主文字 — 夜空蓝黑 */
+  --color-text-secondary: #5F6F71; /* 次级文字（保留） */
+  --color-text-tertiary: #8C9A9B;  /* 辅助文字（保留） */
   --color-text-inverse: #FFFFFF;   /* 反色文字 */
 
   /* ==========================================================
@@ -66,7 +72,7 @@
   --radius-xs: 4px;
   --radius-sm: 8px;
   --radius-md: 12px;
-  --radius-card: 16px;
+  --radius-card: 24px;            /* 统一卡片圆角（V5.4: 16→24） */
   --radius-lg: 20px;
   --radius-xl: 24px;
   --radius-2xl: 32px;
@@ -91,22 +97,27 @@
   --spacing-4xl: 64px;
 
   /* ==========================================================
-     8. 阴影系统
+     8. 阴影系统（V5.4 轻量化）
      ========================================================== */
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.03);
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.06);
-  --shadow-xl: 0 12px 36px rgba(0, 0, 0, 0.07);
+  --shadow-xs: 0 1px 2px rgba(16, 24, 32, 0.03);
+  --shadow-sm: 0 1px 3px rgba(16, 24, 32, 0.04);
+  --shadow-card: 0 10px 30px -8px rgba(16, 24, 32, 0.04);
+  --shadow-md: 0 8px 24px rgba(16, 24, 32, 0.05);
+  --shadow-lg: 0 16px 36px rgba(16, 24, 32, 0.06);
+  --shadow-xl: 0 20px 48px rgba(16, 24, 32, 0.07);
+  --shadow-hover: 0 20px 40px -12px rgba(16, 24, 32, 0.09);
 
   /* ==========================================================
-     9. 字体系统
+     9. 字体系统（V5.4 扩展层级）
      ========================================================== */
+  --font-hero-num: clamp(56px, 7vw, 72px);   /* Hero 大数字 */
+  --font-hero-title: clamp(36px, 4.5vw, 48px); /* Hero 标题 */
+  --font-page-title: 32px;                    /* 页面标题 */
   --font-display: 36px;
   --font-title: 28px;
-  --font-card-title: 20px;
-  --font-content: 16px;
+  --font-section-title: 20px;                 /* 区块标题 */
+  --font-card-title: 18px;
+  --font-content: 16px;                       /* 正文 */
   --font-secondary: 14px;
   --font-caption: 12px;
   --font-small: 10px;
@@ -130,28 +141,34 @@
   --transition-fast: 150ms ease;
   --transition-normal: 300ms ease;
   --transition-slow: 400ms ease;
+  --transition-spring: 350ms cubic-bezier(0.16, 1, 0.3, 1);
 
   /* ==========================================================
-     12. 毛玻璃（HeroSection / 弹窗遮罩）
+     12. 毛玻璃（导航 / 卡片 / 弹窗遮罩）
      ========================================================== */
-  --glass-bg: rgba(255, 255, 255, 0.15);
-  --glass-border: rgba(255, 255, 255, 0.22);
-  --glass-blur: 24px;
+  --glass-bg: rgba(255, 255, 255, 0.75);
+  --glass-bg-card: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.75);
+  --glass-blur: 20px;
 
   /* ==========================================================
      13. Z-index 层级
      ========================================================== */
+  --z-content: 1;
   --z-dropdown: 100;
   --z-sidebar: 100;
+  --z-sticky: 150;
+  --z-nav: 200;
   --z-modal-backdrop: 200;
   --z-modal: 210;
+  --z-fab: 180;
   --z-image-viewer: 300;
   --z-toast: 400;
 
   /* ==========================================================
-     14. 组件级令牌（可被组件覆盖）
+     14. 组件级令牌
      ========================================================== */
-  --app-card-padding: var(--spacing-card);
+  --app-card-padding: var(--spacing-page);
   --app-card-gap: var(--spacing-md);
   --app-button-height: 44px;
   --app-button-padding: 10px 24px;
@@ -163,11 +180,23 @@
   --app-icon-size-lg: 24px;
 
   /* ==========================================================
-     15. 暗色模式（预留 — 第二阶段实施）
+     15. 导航专用令牌
+     ========================================================== */
+  --nav-height: 56px;
+  --nav-blur: 24px;
+  --bottom-nav-height: 64px;
+
+  /* ==========================================================
+     16. 响应式断点（仅作文档参考，实际以媒体查询为准）
+     ========================================================== */
+  /* mobile: < 768px, tablet: 768-1023px, desktop: >= 1024px */
+
+  /* ==========================================================
+     17. 暗色模式骨架（当前不启用，结构已就绪）
      ========================================================== */
 }
 
-/* 暗色模式骨架（当前不启用，但结构已就绪） */
+/* 暗色模式 */
 .dark,
 [data-theme="dark"] {
   --color-bg: #1A2022;
@@ -180,12 +209,16 @@
   --color-border: rgba(255, 255, 255, 0.08);
   --color-border-light: rgba(255, 255, 255, 0.05);
   --color-border-medium: rgba(255, 255, 255, 0.10);
-  --color-primary-bg: rgba(74, 140, 148, 0.12);
-  --color-primary-bg-hover: rgba(74, 140, 148, 0.18);
-  --color-primary-bg-active: rgba(74, 140, 148, 0.24);
+  --color-primary-bg: rgba(75, 143, 140, 0.12);
+  --color-primary-bg-hover: rgba(75, 143, 140, 0.18);
+  --color-primary-bg-active: rgba(75, 143, 140, 0.24);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.35);
-  --shadow-xl: 0 12px 36px rgba(0, 0, 0, 0.4);
+  --shadow-card: 0 10px 30px -8px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 16px 36px rgba(0, 0, 0, 0.35);
+  --shadow-xl: 0 20px 48px rgba(0, 0, 0, 0.4);
+  --shadow-hover: 0 20px 40px -12px rgba(0, 0, 0, 0.35);
+  --glass-bg: rgba(36, 48, 51, 0.75);
+  --glass-bg-card: rgba(36, 48, 51, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.08);
 }

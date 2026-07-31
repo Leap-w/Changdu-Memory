@@ -54,7 +54,9 @@ onMounted(async () => {
 
 <template>
   <div class="stats-page">
-    <h1 class="stats-page__title">年度记忆统计</h1>
+    <h1 class="stats-page__title">
+      年度记忆统计
+    </h1>
 
     <NSpin :show="loading">
       <div class="stats-grid">
@@ -68,7 +70,7 @@ onMounted(async () => {
         <MonthlyTrend
           class="stats-item"
           title="日记月度趋势"
-          icon="📖"
+          icon="book"
           :data="getMonthlyDiaryCount(diaryStore.diaries)"
         />
 
@@ -91,8 +93,8 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.stats-page { max-width: 1200px; margin: 0 auto; padding: var(--spacing-page); }
-.stats-page__title { font-size: var(--font-title); font-weight: 700; color: var(--color-text-primary); margin: 0 0 24px; }
+.stats-page { max-width: 1200px; margin: 0 auto; }
+.stats-page__title { font-size: var(--font-page-title, 32px); font-weight: var(--font-weight-extrabold); color: var(--color-text-primary); margin: 0 0 24px; padding-bottom: 14px; border-bottom: 1px solid rgba(0, 0, 0, 0.06); }
 .stats-grid { display: flex; flex-direction: column; gap: var(--spacing-card); }
 .stats-item--overview { order: -1; }
 

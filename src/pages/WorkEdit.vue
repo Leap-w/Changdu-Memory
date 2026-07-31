@@ -57,7 +57,6 @@ async function handleSubmit(data: {
       await workStore.addWork(data)
       message.success('已添加')
     }
-    // 跳转回工作页面，定位到行政安排 Tab
     router.push('/work?tab=行政安排')
   } catch {
     message.error('保存失败')
@@ -92,15 +91,16 @@ function handleCancel() {
 
 <style scoped>
 .work-edit-page {
-  max-width: 640px;
+  max-width: 680px;
   margin: 0 auto;
-  padding: var(--spacing-page);
 }
 
 .work-edit-page__title {
-  font-size: var(--font-title);
-  font-weight: 700;
+  font-size: var(--font-page-title, 32px);
+  font-weight: var(--font-weight-extrabold);
   color: var(--color-text-primary);
-  margin: 0 0 24px;
+  margin: 0 0 28px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 </style>

@@ -81,7 +81,9 @@ function handleResultClick(result: SearchResult) {
 
 <template>
   <div class="search-page">
-    <h1 class="search-page__title">🔍 搜索昌都记忆</h1>
+    <h1 class="search-page__title">
+      搜索昌都记忆
+    </h1>
 
     <div class="search-page__input">
       <SearchInput v-model="keyword" />
@@ -102,8 +104,15 @@ function handleResultClick(result: SearchResult) {
         输入关键词搜索日记和工作记录
       </div>
       <div v-else-if="!loading && results.length > 0" class="search-page__results">
-        <div class="search-page__count">找到 {{ results.length }} 条结果</div>
-        <SearchResultCard v-for="r in results" :key="`${r.type}-${r.id}`" :result="r" @click="handleResultClick" />
+        <div class="search-page__count">
+          找到 {{ results.length }} 条结果
+        </div>
+        <SearchResultCard
+          v-for="r in results"
+          :key="`${r.type}-${r.id}`"
+          :result="r"
+          @click="handleResultClick"
+        />
       </div>
       <div v-else-if="!loading && keyword && results.length === 0" class="search-page__empty">
         未找到相关结果
@@ -113,8 +122,8 @@ function handleResultClick(result: SearchResult) {
 </template>
 
 <style scoped>
-.search-page { max-width: 720px; margin: 0 auto; padding: var(--spacing-page); }
-.search-page__title { font-size: var(--font-title); font-weight: 700; color: var(--color-text-primary); margin: 0 0 20px; }
+.search-page { max-width: 720px; margin: 0 auto; }
+.search-page__title { font-size: var(--font-page-title, 32px); font-weight: var(--font-weight-extrabold); color: var(--color-text-primary); margin: 0 0 20px; padding-bottom: 14px; border-bottom: 1px solid rgba(0, 0, 0, 0.06); }
 .search-page__input { margin-bottom: 14px; }
 .search-page__filters { margin-bottom: 20px; }
 .search-page__hint { text-align: center; padding: 48px 24px; color: var(--color-text-secondary); font-size: var(--font-secondary); }

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { NCard } from 'naive-ui'
-import { getMonthlyExpenseTotal, getExpenseCategoryTotal, getTotalExpense, CATEGORY_LABELS, CATEGORY_ICONS } from '@/utils/statistics'
+import { AppIcon } from '@/components/ui'
+import { getMonthlyExpenseTotal, getExpenseCategoryTotal, getTotalExpense, CATEGORY_LABELS } from '@/utils/statistics'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const props = defineProps<{ expenses: any[] }>()
@@ -18,7 +19,13 @@ function formatMonth(month: string): string {
 </script>
 
 <template>
-  <NCard class="expense-card" title="💰 花费统计">
+  <NCard class="expense-card">
+    <template #header>
+      <div class="expense-card__header">
+        <AppIcon name="wallet" size="16" color="var(--color-primary)" />
+        <span>花费统计</span>
+      </div>
+    </template>
     <div v-if="expenses.length === 0" class="expense-card__empty">
       暂无数据
     </div>
@@ -57,7 +64,6 @@ function formatMonth(month: string): string {
             :key="d.key"
             class="expense-chip"
           >
-            {{ CATEGORY_ICONS[d.key] || '📦' }}
             {{ CATEGORY_LABELS[d.key] || d.key }}
             ¥{{ d.total }}
           </span>
@@ -71,6 +77,15 @@ function formatMonth(month: string): string {
 .expense-card {
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
+}
+
+.expense-card__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-content);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
 }
 
 .expense-card__empty {

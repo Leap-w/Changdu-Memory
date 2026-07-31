@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTimeStore } from '@/stores/time'
 import { useAuthStore } from '@/stores/auth'
@@ -7,6 +7,8 @@ import { useWorkStore } from '@/stores/work'
 import { useTodoStore } from '@/stores/todo'
 import { useDiaryStore } from '@/stores/diary'
 import { useExpenseStore } from '@/stores/expense'
+import { useMemoryStore } from '@/stores/memory'
+import { AppCard, AppSection, AppIcon } from '@/components/ui'
 import HeroSection from '@/components/dashboard/HeroSection.vue'
 
 const router = useRouter()
@@ -16,8 +18,12 @@ const workStore = useWorkStore()
 const todoStore = useTodoStore()
 const diaryStore = useDiaryStore()
 const expenseStore = useExpenseStore()
+const memoryStore = useMemoryStore()
 
 const ready = ref(false)
+const periodLabels: Record<string, string> = {
+  morning: '上午', afternoon: '下午', evening: '晚上',
+}
 
 // ==========================================
 // Data loading
@@ -28,72 +34,101 @@ onMounted(async () => {
   }
 
   if (authStore.isLoggedIn) {
-    const stores = [
+    const tasks = [
       { load: () => workStore.works.length ? Promise.resolve() : workStore.loadWorks() },
       { load: () => todoStore.todos.length ? Promise.resolve() : todoStore.loadTodos() },
       { load: () => diaryStore.diaries.length ? Promise.resolve() : diaryStore.loadDiaries() },
       { load: () => expenseStore.expenses.length ? Promise.resolve() : expenseStore.loadExpenses() },
+      { load: () => memoryStore.memories.length ? Promise.resolve() : memoryStore.loadMemories() },
     ]
-    await Promise.allSettled(stores.map((s) => s.load()))
+    await Promise.allSettled(tasks.map((t) => t.load()))
   }
 
   ready.value = true
 })
 
 // ==========================================
-// Today's data
+// Today
 // ==========================================
 const today = computed(() => new Date().toISOString().split('T')[0])
 
 const todayWorks = computed(() => workStore.todayWorks)
-
 const todayTodos = computed(() => todoStore.todayTodos)
-const pendingTodos = computed(() => todayTodos.value.filter((t) => !t.completed))
 const doneTodos = computed(() => todayTodos.value.filter((t) => t.completed))
+const pendingTodos = computed(() => todayTodos.value.filter((t) => !t.completed))
+const todayExpenseTotal = computed(() => expenseStore.todayExpenseTotal)
 
-const todayDiaryCount = computed(() =>
-  diaryStore.diaries.filter((d) => d.diary_date === today.value).length,
+const todayDiary = computed(() =>
+  diaryStore.diaries.find((d) => d.diary_date === today.value) || null,
 )
 
-const todayExpenseTotal = computed(() => {
-  const list = expenseStore.expenses.filter((e) => e.expense_date === today.value && e.type !== 'income')
-  return Math.round(list.reduce((s, e) => s + (Number(e.amount) || 0), 0) * 100) / 100
+// ==========================================
+// Recent memories (diaries + memories merged)
+// ==========================================
+const recentMemories = computed(() => {
+  const items: { type: 'diary' | 'memory'; date: string; title: string; summary: string; id: string }[] = []
+
+  for (const d of diaryStore.diaries.slice(0, 6)) {
+    items.push({
+      type: 'diary',
+      date: d.diary_date,
+      title: d.title || '无标题日记',
+      summary: (d.content || '').replace(/<[^>]+>/g, '').slice(0, 120),
+      id: d.id,
+    })
+  }
+
+  for (const m of memoryStore.memories.slice(0, 4)) {
+    items.push({
+      type: 'memory',
+      date: m.event_date,
+      title: m.title,
+      summary: (m.content || '').slice(0, 120),
+      id: m.id,
+    })
+  }
+
+  // Sort by date descending, take top 6
+  items.sort((a, b) => b.date.localeCompare(a.date))
+  return items.slice(0, 6)
 })
 
 // ==========================================
-// Labels
+// Date display
 // ==========================================
-const periodLabels: Record<string, string> = {
-  morning: '上午', afternoon: '下午', evening: '晚上',
-}
-
-const priorityDotColors: Record<string, string> = {
-  high: '#BF616A', medium: '#E8B04C', low: '#6B9E85',
-}
-
-// ==========================================
-// Quick actions
-// ==========================================
-const quickActions = [
-  { id: 'diary',    label: '日记',     icon: 'pen',       route: '/diary/new' },
-  { id: 'work',     label: '工作',     icon: 'calendar',  route: '/work' },
-  { id: 'todo',     label: '待办',     icon: 'checklist', route: '/todo' },
-  { id: 'expense',  label: '账本',     icon: 'expense',   route: '/expense' },
-  { id: 'students', label: '学生',     icon: 'people',    route: '/work?tab=学生档案' },
-  { id: 'events',   label: '大事记',   icon: 'star',      route: '/memory' },
-  { id: 'time',     label: '时光中心', icon: 'clock',     route: '/time-center' },
-  { id: 'data',     label: '数据管理', icon: 'download',  route: '/import' },
-  { id: 'recycle',  label: '回收站',   icon: 'trash',     route: '/settings/recycle-bin' },
-]
-
-function goTo(path: string) {
-  router.push(path)
-}
-
 function getTodayDisplay() {
   const d = new Date()
-  const days = ['日', '一', '二', '三', '四', '五', '六']
-  return `${d.getMonth() + 1}月${d.getDate()}日 周${days[d.getDay()]}`
+  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`
+}
+
+function getWeekday() {
+  const days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
+  return days[new Date().getDay()]
+}
+
+const currentTime = ref(getCurrentTimeStr())
+let clockTimer: ReturnType<typeof setInterval> | null = null
+
+function getCurrentTimeStr() {
+  const d = new Date()
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+onMounted(() => {
+  clockTimer = setInterval(() => {
+    currentTime.value = getCurrentTimeStr()
+  }, 30000) // update every 30s
+})
+
+onUnmounted(() => {
+  if (clockTimer) clearInterval(clockTimer)
+})
+
+// ==========================================
+// Navigation
+// ==========================================
+function goTo(path: string) {
+  router.push(path)
 }
 </script>
 
@@ -102,244 +137,325 @@ function getTodayDisplay() {
     <!-- ====== Hero ====== -->
     <HeroSection />
 
-    <!-- ====== Content ====== -->
-    <div class="home__content">
-      <!-- Date badge -->
-      <div class="home__section-header">
-        <span class="home__date-badge">{{ getTodayDisplay() }}</span>
+    <!-- ====== Date bar ====== -->
+    <div class="home__date-bar">
+      <div class="home__date-main">
+        <span class="home__date-text">{{ getTodayDisplay() }}</span>
+        <span class="home__date-weekday">{{ getWeekday() }}</span>
       </div>
+      <span class="home__date-time">{{ currentTime }}</span>
+    </div>
 
-      <!-- ====== Today Grid ====== -->
+    <!-- ====== Today Status ====== -->
+    <AppSection title="今日状态" class="home__section">
       <div class="home__today-grid">
         <!-- 今日课程 -->
-        <div class="today-card">
-          <div class="today-card__head" @click="goTo('/work')">
-            <div class="today-card__icon today-card__icon--work">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-              </svg>
+        <AppCard hoverable class="home__today-card" @click="goTo('/work')">
+          <div class="today-card__inner">
+            <div class="today-card__head">
+              <div class="today-card__icon today-card__icon--work">
+                <AppIcon name="calendar" size="16" />
+              </div>
+              <span class="today-card__title">今日课程</span>
             </div>
-            <span class="today-card__title">今日课程</span>
-            <span v-if="todayWorks.length" class="today-card__count">{{ todayWorks.length }}</span>
-            <svg class="today-card__arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-          </div>
-          <div v-if="ready && !todayWorks.length" class="today-card__empty">今天没有课程安排</div>
-          <div v-else-if="todayWorks.length" class="today-card__list">
-            <div v-for="w in todayWorks.slice(0, 3)" :key="w.id" class="today-card__item">
-              <span class="today-card__item-meta">{{ periodLabels[w.period] || w.period }}</span>
-              <span class="today-card__item-title">{{ w.title }}</span>
+            <template v-if="ready && todayWorks.length > 0">
+              <div class="today-card__body">
+                <div
+                  v-for="w in todayWorks.slice(0, 2)"
+                  :key="w.id"
+                  class="today-card__item"
+                >
+                  <span class="today-card__item-meta">{{ periodLabels[w.period] || w.period }}</span>
+                  <span class="today-card__item-text">{{ w.title }}</span>
+                </div>
+                <div v-if="todayWorks.length > 2" class="today-card__more">
+                  还有 {{ todayWorks.length - 2 }} 项…
+                </div>
+              </div>
+            </template>
+            <div v-else class="today-card__empty">
+              今天没有课程安排
             </div>
           </div>
-        </div>
+        </AppCard>
 
         <!-- 今日待办 -->
-        <div class="today-card">
-          <div class="today-card__head" @click="goTo('/todo')">
-            <div class="today-card__icon today-card__icon--todo">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="9 11 12 14 22 4"/>
-                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-              </svg>
+        <AppCard hoverable class="home__today-card" @click="goTo('/todo')">
+          <div class="today-card__inner">
+            <div class="today-card__head">
+              <div class="today-card__icon today-card__icon--todo">
+                <AppIcon name="check" size="16" />
+              </div>
+              <span class="today-card__title">今日待办</span>
             </div>
-            <span class="today-card__title">今日待办</span>
-            <span v-if="todayTodos.length" class="today-card__count">{{ doneTodos.length }}/{{ todayTodos.length }}</span>
-            <svg class="today-card__arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-          </div>
-          <div v-if="ready && !todayTodos.length" class="today-card__empty">今天没有待办事项</div>
-          <div v-else-if="todayTodos.length" class="today-card__list">
-            <div v-for="t in todayTodos.slice(0, 4)" :key="t.id" class="today-card__item">
-              <span
-                class="today-card__item-dot"
-                :class="{ done: t.completed }"
-                :style="{ background: t.completed ? '#6B9E85' : (priorityDotColors[t.priority] || '#6B7B8D') }"
-              ></span>
-              <span class="today-card__item-title" :class="{ done: t.completed }">{{ t.title }}</span>
+            <template v-if="ready && todayTodos.length > 0">
+              <div class="today-card__body">
+                <div class="today-card__stat-row">
+                  <span class="today-card__stat-num">{{ doneTodos.length }} / {{ todayTodos.length }}</span>
+                  <span class="today-card__stat-label">已完成</span>
+                </div>
+                <div v-if="pendingTodos.length > 0" class="today-card__next">
+                  下一项：{{ pendingTodos[0].title }}
+                </div>
+              </div>
+            </template>
+            <div v-else class="today-card__empty">
+              今天没有待办事项
             </div>
           </div>
-        </div>
+        </AppCard>
 
-        <!-- 今日概览 -->
-        <div class="today-card today-card--overview">
-          <div class="today-card__head">
-            <div class="today-card__icon today-card__icon--overview">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-              </svg>
+        <!-- 今日消费 -->
+        <AppCard hoverable class="home__today-card" @click="goTo('/expense')">
+          <div class="today-card__inner">
+            <div class="today-card__head">
+              <div class="today-card__icon today-card__icon--expense">
+                <AppIcon name="expense" size="16" />
+              </div>
+              <span class="today-card__title">今日消费</span>
             </div>
-            <span class="today-card__title">今日概览</span>
+            <template v-if="ready && todayExpenseTotal > 0">
+              <div class="today-card__body">
+                <div class="today-card__stat-row">
+                  <span class="today-card__stat-num">¥ {{ todayExpenseTotal.toFixed(2) }}</span>
+                </div>
+              </div>
+            </template>
+            <div v-else class="today-card__empty">
+              今天还没有消费记录
+            </div>
           </div>
-          <div v-if="ready" class="today-card__stats">
-            <div class="today-card__stat"><span class="today-card__stat-num">{{ todayDiaryCount }}</span><span class="today-card__stat-label">日记</span></div>
+        </AppCard>
 
-            <div class="today-card__stat"><span class="today-card__stat-num">{{ pendingTodos.length }}</span><span class="today-card__stat-label">待办</span></div>
-            <div class="today-card__stat"><span class="today-card__stat-num">¥{{ todayExpenseTotal }}</span><span class="today-card__stat-label">花费</span></div>
+        <!-- 今日心情/日记 -->
+        <AppCard hoverable class="home__today-card" @click="goTo(todayDiary ? `/diary/${todayDiary.id}` : '/diary/new')">
+          <div class="today-card__inner">
+            <div class="today-card__head">
+              <div class="today-card__icon today-card__icon--mood">
+                <AppIcon name="smile" size="16" />
+              </div>
+              <span class="today-card__title">今日心情</span>
+            </div>
+            <template v-if="ready && todayDiary">
+              <div class="today-card__body">
+                <div class="today-card__mood">
+                  <template v-if="todayDiary.mood">
+                    {{ todayDiary.mood }}
+                  </template>
+                  <template v-if="todayDiary.weather">
+                    <span v-if="todayDiary.mood"> · </span>{{ todayDiary.weather }}
+                  </template>
+                </div>
+                <div v-if="todayDiary.content" class="today-card__diary-excerpt">
+                  {{ todayDiary.content.replace(/<[^>]+>/g, '').slice(0, 60) }}{{ (todayDiary.content || '').replace(/<[^>]+>/g, '').length > 60 ? '…' : '' }}
+                </div>
+              </div>
+            </template>
+            <div v-else class="today-card__empty">
+              今天还没有记录心情
+            </div>
           </div>
-        </div>
+        </AppCard>
       </div>
+    </AppSection>
 
-      <!-- ====== Quick Actions ====== -->
-      <div class="home__section-header">
-        <span class="home__section-label">快捷入口</span>
-      </div>
-
+    <!-- ====== Quick Actions ====== -->
+    <AppSection title="快捷入口" class="home__section">
       <div class="home__quick-actions">
-        <button
-          v-for="act in quickActions"
+        <AppCard
+          v-for="act in [
+            { id: 'diary', label: '记录', sub: '日记', icon: 'pen', color: 'rgba(75, 143, 140, 0.1)', iconColor: 'var(--color-primary)', route: '/diary' },
+            { id: 'work', label: '安排', sub: '工作', icon: 'calendar', color: 'rgba(111, 168, 220, 0.12)', iconColor: 'var(--color-sky)', route: '/work' },
+            { id: 'expense', label: '财务', sub: '账本', icon: 'wallet', color: 'rgba(214, 168, 79, 0.12)', iconColor: 'var(--color-gold)', route: '/expense' },
+            { id: 'memory', label: '回忆', sub: '大事记', icon: 'star', color: 'rgba(107, 158, 133, 0.12)', iconColor: '#6B9E85', route: '/memory' },
+            { id: 'more', label: '更多', sub: '全部功能', icon: 'grid', color: 'rgba(140, 154, 155, 0.12)', iconColor: 'var(--color-text-tertiary)', route: '/profile' },
+          ]"
           :key="act.id"
-          class="quick-btn"
+          hoverable
+          padding="sm"
+          class="home__quick-btn"
           @click="goTo(act.route)"
         >
-          <div class="quick-btn__icon" :class="`quick-btn__icon--${act.id}`">
-            <svg v-if="act.icon==='pen'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
-            </svg>
-            <svg v-else-if="act.icon==='calendar'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-            </svg>
-            <svg v-else-if="act.icon==='checklist'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><polyline points="3 6 4 6 5 6"/><circle cx="4" cy="12" r="1.5"/><polyline points="2 18 4 16 6 18"/>
-            </svg>
-            <svg v-else-if="act.icon==='people'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-            </svg>
-            <svg v-else-if="act.icon==='expense'||act.icon==='income'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-            </svg>
-            <svg v-else-if="act.icon==='star'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-            </svg>
-            <svg v-else-if="act.icon==='clock'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-            </svg>
-            <svg v-else-if="act.icon==='download'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            <svg v-else-if="act.icon==='trash'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-            </svg>
-            <svg v-else-if="act.icon==='people'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-            </svg>
+          <div class="quick-btn__inner">
+            <div class="quick-btn__icon" :style="{ background: act.color, color: act.iconColor }">
+              <AppIcon :name="act.icon" size="22" />
+            </div>
+            <div class="quick-btn__text">
+              <span class="quick-btn__label">{{ act.label }}</span>
+              <span class="quick-btn__sub">{{ act.sub }}</span>
+            </div>
           </div>
-          <span class="quick-btn__label">{{ act.label }}</span>
+        </AppCard>
+      </div>
+    </AppSection>
+
+    <!-- ====== Recent Memories ====== -->
+    <AppSection
+      title="最近记忆"
+      :action-label="recentMemories.length > 0 ? `查看全部 (${diaryStore.diaries.length + memoryStore.memories.length})` : undefined"
+      class="home__section"
+      @action="goTo('/diary')"
+    >
+      <template v-if="ready && recentMemories.length > 0">
+        <div class="home__memories-grid">
+          <AppCard
+            v-for="item in recentMemories.slice(0, 3)"
+            :key="`${item.type}-${item.id}`"
+            hoverable
+            no-padding
+            class="home__memory-card"
+            @click="goTo(item.type === 'diary' ? `/diary/${item.id}` : `/memory`)"
+          >
+            <div
+              class="memory-card__color-top"
+              :class="{
+                'memory-card__color-top--diary': item.type === 'diary',
+                'memory-card__color-top--memory': item.type === 'memory',
+              }"
+            />
+            <div class="memory-card__body">
+              <div class="memory-card__date">
+                {{ item.date }}
+              </div>
+              <h3 class="memory-card__title">
+                {{ item.title }}
+              </h3>
+              <p v-if="item.summary" class="memory-card__summary">
+                {{ item.summary }}
+              </p>
+            </div>
+          </AppCard>
+        </div>
+      </template>
+      <div v-else class="home__memories-empty">
+        <p class="home__memories-empty-text">
+          还没有记忆，写下第一篇日记吧
+        </p>
+        <button class="home__memories-empty-btn" @click="goTo('/diary/new')">
+          去记录
         </button>
       </div>
+    </AppSection>
 
-      <div class="home__footer-space"></div>
-    </div>
+    <div class="home__footer-space" />
   </div>
 </template>
 
 <style scoped>
 /* ================================================
-   Home Page — v5.1 设计
+   Home Page — V5.4
    ================================================ */
 .home {
-  min-height: 100vh;
-  min-height: 100dvh;
-  background: var(--color-bg);
+  /* Hero handles its own background */
 }
 
-.home__content {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 0 var(--spacing-page) var(--spacing-3xl);
-  position: relative;
-  z-index: 1;
-  margin-top: -16px;
+.home__section {
+  margin-bottom: var(--spacing-2xl, 40px);
 }
 
-.home__section-header {
+/* ---- Date bar ---- */
+.home__date-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--spacing-md);
-  padding-top: var(--spacing-sm);
+  padding: 0 4px 12px;
+  margin-top: var(--spacing-lg, 20px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 
-.home__date-badge {
+.home__date-main {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.home__date-text {
+  font-size: var(--font-section-title, 20px);
+  font-weight: var(--font-weight-extrabold);
+  color: var(--color-text-primary);
+}
+
+.home__date-weekday {
   font-size: var(--font-secondary);
   color: var(--color-text-secondary);
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
 }
 
-.home__section-label {
+.home__date-time {
   font-size: var(--font-secondary);
   color: var(--color-text-secondary);
-  font-weight: 500;
-  letter-spacing: 0.5px;
+  font-weight: var(--font-weight-semibold);
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  background: rgba(0, 0, 0, 0.03);
 }
 
-/* ---- Today Cards ---- */
+/* ---- Today Status Grid ---- */
 .home__today-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-md, 12px);
+}
+
+@media (min-width: 600px) {
+  .home__today-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 1024px) {
+  .home__today-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.home__today-card {
+  /* AppCard handles glass/radius/shadow */
+}
+
+.today-card__inner {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-xl);
-}
-
-.today-card {
-  background: var(--color-bg-card);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--color-border-light);
-  overflow: hidden;
+  gap: 12px;
 }
 
 .today-card__head {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-card) var(--spacing-card) var(--spacing-sm);
-  cursor: pointer;
-  user-select: none;
+  gap: 10px;
 }
 
 .today-card__icon {
-  width: 30px;
-  height: 30px;
-  border-radius: var(--radius-sm);
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
-
-.today-card__icon--work     { background: #EDF2F8; color: var(--color-primary); }
-.today-card__icon--todo     { background: #F5F0EB; color: var(--color-accent-soft); }
-.today-card__icon--overview { background: #EBF0ED; color: var(--color-secondary); }
+.today-card__icon--work    { background: rgba(75, 143, 140, 0.1);  color: var(--color-primary); }
+.today-card__icon--todo    { background: rgba(111, 168, 220, 0.12); color: var(--color-sky); }
+.today-card__icon--expense { background: rgba(214, 168, 79, 0.12); color: var(--color-gold); }
+.today-card__icon--mood    { background: rgba(107, 158, 133, 0.12); color: #6B9E85; }
 
 .today-card__title {
-  font-size: var(--font-content);
-  font-weight: 600;
-  color: var(--color-text-primary);
-  flex: 1;
+  font-size: var(--font-secondary);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
 }
 
-.today-card__count {
-  font-size: var(--font-caption);
-  color: var(--color-text-tertiary);
-}
-
-.today-card__arrow {
-  color: var(--color-text-tertiary);
-  flex-shrink: 0;
-}
-
-.today-card__list {
-  padding: 0 var(--spacing-card) var(--spacing-card);
+.today-card__body {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 
 .today-card__item {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  padding: 7px var(--spacing-sm);
-  border-radius: var(--radius-sm);
+  gap: 8px;
+  padding: 4px 0;
 }
 
 .today-card__item-meta {
@@ -349,15 +465,7 @@ function getTodayDisplay() {
   flex-shrink: 0;
 }
 
-.today-card__item-dot {
-  width: 7px; height: 7px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.today-card__item-dot.done { opacity: 0.6; }
-
-.today-card__item-title {
+.today-card__item-text {
   font-size: var(--font-secondary);
   color: var(--color-text-primary);
   overflow: hidden;
@@ -365,40 +473,21 @@ function getTodayDisplay() {
   white-space: nowrap;
 }
 
-.today-card__item-title.done {
-  text-decoration: line-through;
+.today-card__more {
+  font-size: var(--font-caption);
   color: var(--color-text-tertiary);
-  opacity: 0.7;
+  padding-top: 2px;
 }
 
-.today-card__empty {
-  padding: var(--spacing-lg) var(--spacing-card);
-  text-align: center;
-  font-size: var(--font-secondary);
-  color: var(--color-text-tertiary);
-}
-
-.today-card__stats {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2px;
-  padding: 0 var(--spacing-card) var(--spacing-card);
-}
-
-.today-card__stat {
+.today-card__stat-row {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: var(--spacing-md) var(--spacing-sm);
-  border-radius: var(--radius-sm);
-  background: var(--color-bg);
-  margin: 1px;
+  align-items: baseline;
+  gap: 6px;
 }
 
 .today-card__stat-num {
   font-size: 22px;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
   line-height: 1;
 }
@@ -408,107 +497,183 @@ function getTodayDisplay() {
   color: var(--color-text-tertiary);
 }
 
+.today-card__next {
+  font-size: var(--font-caption);
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+}
+
+.today-card__mood {
+  font-size: var(--font-content);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+}
+
+.today-card__diary-excerpt {
+  font-size: var(--font-caption);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+}
+
+.today-card__empty {
+  font-size: var(--font-caption);
+  color: var(--color-text-tertiary);
+}
+
 /* ---- Quick Actions ---- */
 .home__quick-actions {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--spacing-md);
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--spacing-md, 12px);
 }
 
-.quick-btn {
+@media (max-width: 599px) {
+  .home__quick-actions {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 600px) and (max-width: 767px) {
+  .home__quick-actions {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.home__quick-btn {
+  cursor: pointer;
+}
+
+.quick-btn__inner {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-lg) var(--spacing-sm) var(--spacing-md);
-  background: var(--color-bg-card);
-  border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-lg);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  font-family: inherit;
-}
-
-.quick-btn:hover {
-  box-shadow: var(--shadow-card);
-  border-color: transparent;
-  transform: translateY(-1px);
-}
-
-.quick-btn:active {
-  transform: translateY(0);
-  background: var(--color-bg);
+  gap: 10px;
+  text-align: center;
 }
 
 .quick-btn__icon {
-  width: 40px; height: 40px;
-  border-radius: var(--radius-md);
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md, 12px);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 
-.quick-btn__icon--diary    { background: #EDF2F8; color: var(--color-primary); }
-.quick-btn__icon--schedule { background: #EDF2F8; color: var(--color-primary); }
-.quick-btn__icon--todo     { background: #F5F0EB; color: var(--color-accent-soft); }
-.quick-btn__icon--students { background: #EBF0ED; color: var(--color-secondary); }
-.quick-btn__icon--expense  { background: #FDF0ED; color: var(--color-error); }
-.quick-btn__icon--income   { background: #EBF0ED; color: var(--color-secondary); }
-.quick-btn__icon--events   { background: #F3EEF8; color: #8E7CB5; }
-.quick-btn__icon--time     { background: #EDF2F8; color: var(--color-primary); }
-.quick-btn__icon--data     { background: #EDF2F8; color: var(--color-primary); }
-.quick-btn__icon--recycle  { background: #FDF0ED; color: var(--color-error); }
-.quick-btn__icon--students { background: #EBF0ED; color: var(--color-secondary); }
+.quick-btn__text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
 
 .quick-btn__label {
-  font-size: var(--font-caption);
-  color: var(--color-text-secondary);
-  font-weight: 500;
-  white-space: nowrap;
+  font-size: var(--font-secondary);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
 }
 
-.home__footer-space {
-  height: var(--spacing-xl);
+.quick-btn__sub {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
 }
 
-/* ---- Responsive ---- */
-@media (max-width: 599px) {
-  .home__quick-actions { grid-template-columns: repeat(2, 1fr); }
+/* ---- Recent Memories ---- */
+.home__memories-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-lg, 20px);
 }
 
-@media (min-width: 600px) and (max-width: 899px) {
-  .home__today-grid { display: grid; grid-template-columns: 1fr 1fr; }
-}
-
-@media (min-width: 900px) {
-  .home__content {
-    max-width: 860px;
-    margin-top: -20px;
-  }
-
-  .home__today-grid {
-    display: grid;
+@media (min-width: 600px) {
+  .home__memories-grid {
     grid-template-columns: 1fr 1fr;
   }
-
-  .today-card--overview {
-    grid-column: 1 / -1;
-  }
-
-  .today-card--overview .today-card__stats {
-    grid-template-columns: repeat(4, 1fr);
-  }
-
-  .home__quick-actions { gap: var(--spacing-card); }
-
-  .quick-btn__icon { width: 44px; height: 44px; }
 }
 
-@media (max-width: 400px) {
-  .home__content {
-    padding: 0 var(--spacing-md) var(--spacing-2xl);
-    margin-top: -12px;
+@media (min-width: 1024px) {
+  .home__memories-grid {
+    grid-template-columns: repeat(3, 1fr);
   }
+}
+
+.home__memory-card {
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.memory-card__color-top {
+  height: 6px;
+  border-radius: var(--radius-card, 24px) var(--radius-card, 24px) 0 0;
+}
+.memory-card__color-top--diary  { background: linear-gradient(90deg, var(--color-primary), var(--color-sky)); }
+.memory-card__color-top--memory { background: linear-gradient(90deg, var(--color-gold), #6B9E85); }
+
+.memory-card__body {
+  padding: 16px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.memory-card__date {
+  font-size: var(--font-caption);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.memory-card__title {
+  font-size: var(--font-content);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.memory-card__summary {
+  font-size: var(--font-caption);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.home__memories-empty {
+  text-align: center;
+  padding: var(--spacing-3xl, 48px) 24px;
+}
+
+.home__memories-empty-text {
+  font-size: var(--font-secondary);
+  color: var(--color-text-tertiary);
+  margin: 0 0 16px;
+}
+
+.home__memories-empty-btn {
+  padding: 8px 24px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: #fff;
+  font-family: inherit;
+  font-size: var(--font-secondary);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.home__memories-empty-btn:hover {
+  background: var(--color-primary-dark);
+}
+
+/* ---- Footer space ---- */
+.home__footer-space {
+  height: var(--spacing-page, 24px);
 }
 </style>

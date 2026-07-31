@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { NButton, NCard, NSpin, NPopconfirm, useMessage } from 'naive-ui'
+import { NButton, NSpin, NPopconfirm, useMessage } from 'naive-ui'
 import {
   fetchDeletedDiaries, restoreDiary, permanentDeleteDiary,
 } from '@/repositories/DiaryRepository'
@@ -14,6 +14,7 @@ import {
 import {
   fetchDeletedWorks, restoreWork, permanentDeleteWork,
 } from '@/repositories/WorkRepository'
+import { AppCard, AppIcon } from '@/components/ui'
 import type { Diary } from '@/repositories/DiaryRepository'
 import type { Todo } from '@/repositories/TodoRepository'
 import type { Expense } from '@/repositories/ExpenseRepository'
@@ -38,11 +39,12 @@ onMounted(async () => {
     r.status === 'fulfilled' ? r.value : [],
   )
 
+  const typeIcons: Record<string, string> = { diary: 'book', work: 'briefcase', todo: 'check', expense: 'wallet' }
   const groups: { type: string; icon: string; label: string; items: unknown[] }[] = []
-  if (diaries.length > 0) groups.push({ type: 'diary', icon: '📖', label: '日记', items: diaries as Diary[] })
-  if (works.length > 0) groups.push({ type: 'work', icon: '📋', label: '工作', items: works as WorkPlan[] })
-  if (todos.length > 0) groups.push({ type: 'todo', icon: '✅', label: '待办', items: todos as Todo[] })
-  if (expenses.length > 0) groups.push({ type: 'expense', icon: '💰', label: '花费', items: expenses as Expense[] })
+  if (diaries.length > 0) groups.push({ type: 'diary', icon: typeIcons.diary, label: '日记', items: diaries as Diary[] })
+  if (works.length > 0) groups.push({ type: 'work', icon: typeIcons.work, label: '工作', items: works as WorkPlan[] })
+  if (todos.length > 0) groups.push({ type: 'todo', icon: typeIcons.todo, label: '待办', items: todos as Todo[] })
+  if (expenses.length > 0) groups.push({ type: 'expense', icon: typeIcons.expense, label: '花费', items: expenses as Expense[] })
   trash.value = groups
   loading.value = false
 })
@@ -90,47 +92,72 @@ function removeFromList(type: string, id: string) {
 <template>
   <div class="recycle-page">
     <div class="recycle-page__head">
-      <NButton text size="small" @click="router.back()">← 返回</NButton>
-      <h1 class="recycle-page__title">回收站</h1>
+      <NButton text size="small" @click="router.back()">
+        ← 返回
+      </NButton>
+      <h1 class="recycle-page__title">
+        回收站
+      </h1>
     </div>
 
     <NSpin :show="loading">
       <div v-if="trash.length === 0 && !loading" class="recycle-page__empty">
-        <div style="font-size: 48px; opacity: .3; margin-bottom: 12px;">🗑️</div>
-        <p style="color: var(--color-text-tertiary);">回收站是空的</p>
+        <div class="recycle-page__empty-icon">
+          <AppIcon name="trash" size="48" color="var(--color-text-tertiary)" />
+        </div>
+        <p class="recycle-page__empty-text">
+          回收站是空的
+        </p>
       </div>
 
       <div v-for="g in trash" :key="g.type" class="recycle-group">
-        <h2 class="recycle-group__title">{{ g.icon }} {{ g.label }}</h2>
-        <NCard v-for="item in g.items" :key="item.id" class="recycle-item">
-          <div class="recycle-item__info">
-            <span class="recycle-item__title">{{ getItemTitle(item) }}</span>
-            <span class="recycle-item__date">{{ getItemDate(item, g.type) }}</span>
+        <h2 class="recycle-group__title">
+          <AppIcon :name="g.icon" size="16" /> {{ g.label }}
+        </h2>
+        <AppCard
+          v-for="item in g.items"
+          :key="item.id"
+          padding="md"
+          class="recycle-item"
+        >
+          <div class="recycle-item__row">
+            <div class="recycle-item__info">
+              <span class="recycle-item__title">{{ getItemTitle(item) }}</span>
+              <span class="recycle-item__date">{{ getItemDate(item, g.type) }}</span>
+            </div>
+            <div class="recycle-item__actions">
+              <NButton size="small" @click="handleRestore(g.type, item.id)">
+                恢复
+              </NButton>
+              <NPopconfirm @positive-click="handlePermanentDelete(g.type, item.id)">
+                <template #trigger>
+                  <NButton size="small" type="error">
+                    永久删除
+                  </NButton>
+                </template>
+                确定永久删除？此操作不可撤销。
+              </NPopconfirm>
+            </div>
           </div>
-          <div class="recycle-item__actions">
-            <NButton size="small" @click="handleRestore(g.type, item.id)">恢复</NButton>
-            <NPopconfirm @positive-click="handlePermanentDelete(g.type, item.id)">
-              <template #trigger><NButton size="small" type="error">永久删除</NButton></template>
-              确定永久删除？此操作不可撤销。
-            </NPopconfirm>
-          </div>
-        </NCard>
+        </AppCard>
       </div>
     </NSpin>
   </div>
 </template>
 
 <style scoped>
-.recycle-page { max-width: 720px; margin: 0 auto; padding: var(--spacing-page); padding-bottom: 80px; }
+.recycle-page { max-width: 720px; margin: 0 auto; }
 .recycle-page__head { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
-.recycle-page__title { font-size: var(--font-title); font-weight: 700; color: var(--color-text-primary); margin: 0; }
+.recycle-page__title { font-size: var(--font-page-title, 32px); font-weight: var(--font-weight-extrabold); color: var(--color-text-primary); margin: 0; padding-bottom: 14px; border-bottom: 1px solid rgba(0, 0, 0, 0.06); }
 .recycle-page__empty { text-align: center; padding: 64px 20px; }
+.recycle-page__empty-icon { opacity: .25; margin-bottom: 12px; }
+.recycle-page__empty-text { color: var(--color-text-tertiary); font-size: var(--font-secondary); margin: 0; }
 .recycle-group { margin-bottom: 24px; }
-.recycle-group__title { font-size: 16px; font-weight: 600; color: var(--color-text-secondary); margin: 0 0 10px; }
-.recycle-item { border-radius: var(--radius-card); box-shadow: var(--shadow-card); margin-bottom: 8px; }
-.recycle-item :deep(.n-card__content) { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; }
+.recycle-group__title { display: flex; align-items: center; gap: 8px; font-size: var(--font-content); font-weight: var(--font-weight-semibold); color: var(--color-text-secondary); margin: 0 0 10px; }
+.recycle-item { margin-bottom: 8px; }
+.recycle-item__row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .recycle-item__info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.recycle-item__title { font-size: 15px; color: var(--color-text-primary); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.recycle-item__date { font-size: 12px; color: var(--color-text-tertiary); }
+.recycle-item__title { font-size: var(--font-content); color: var(--color-text-primary); font-weight: var(--font-weight-medium); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.recycle-item__date { font-size: var(--font-caption); color: var(--color-text-tertiary); }
 .recycle-item__actions { display: flex; gap: 6px; flex-shrink: 0; }
 </style>

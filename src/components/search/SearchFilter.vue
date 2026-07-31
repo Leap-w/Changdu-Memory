@@ -14,8 +14,8 @@ const emit = defineEmits<{
 
 const typeOptions = [
   { label: '全部', value: 'all' },
-  { label: '📖 日记', value: 'diary' },
-  { label: '📋 工作', value: 'work' },
+  { label: '日记', value: 'diary' },
+  { label: '工作', value: 'work' },
 ]
 
 const monthOptions = computed(() => [

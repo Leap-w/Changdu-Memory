@@ -14,7 +14,9 @@ const expenseId = computed(() => route.params.id as string | undefined)
 const isEdit = computed(() => !!expenseId.value)
 const loading = ref(false)
 
-const existing = ref<{ amount: number; type: string; category: string; description: string; expense_date: string } | null>(null)
+const existing = ref<{
+  amount: number; type: string; category: string; description: string; expense_date: string
+} | null>(null)
 
 onMounted(async () => {
   if (expenseId.value) {
@@ -32,25 +34,29 @@ onMounted(async () => {
   }
 })
 
-async function handleSubmit(data: { amount: number; type: string; category: string; description: string; expense_date: string }) {
+async function handleSubmit(data: {
+  amount: number; type: string; category: string; description: string; expense_date: string
+}) {
   try {
     if (isEdit.value && expenseId.value) {
       await expenseStore.editExpense(expenseId.value, data)
       message.success('已更新')
-      router.push('/expense')
     } else {
       await expenseStore.addExpense(data)
       message.success('已记录')
-      router.push('/expense')
     }
+    router.push('/expense')
   } catch { message.error('保存失败') }
 }
+
 function handleCancel() { router.back() }
 </script>
 
 <template>
   <div class="eep">
-    <h1 class="eep__title">{{ isEdit ? '编辑记录' : '记一笔' }}</h1>
+    <h1 class="eep__title">
+      {{ isEdit ? '编辑记录' : '记一笔' }}
+    </h1>
     <NSpin :show="loading">
       <ExpenseEditor
         v-if="!loading"
@@ -69,6 +75,17 @@ function handleCancel() { router.back() }
 </template>
 
 <style scoped>
-.eep { max-width:640px;margin:0 auto;padding:var(--spacing-page); }
-.eep__title { font-size:var(--font-title);font-weight:700;color:var(--color-text-primary);margin:0 0 24px; }
+.eep {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.eep__title {
+  font-size: var(--font-page-title, 32px);
+  font-weight: var(--font-weight-extrabold);
+  color: var(--color-text-primary);
+  margin: 0 0 28px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
 </style>

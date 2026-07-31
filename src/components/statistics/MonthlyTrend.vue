@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { NCard } from 'naive-ui'
+import { AppIcon } from '@/components/ui'
 import type { MonthlyCount } from '@/utils/statistics'
 
 const props = defineProps<{
@@ -20,7 +21,13 @@ function formatMonth(month: string): string {
 </script>
 
 <template>
-  <NCard class="trend-card" :title="`${icon} ${title}`">
+  <NCard class="trend-card">
+    <template #header>
+      <div class="trend-card__header">
+        <AppIcon :name="icon" size="16" color="var(--color-primary)" />
+        <span>{{ title }}</span>
+      </div>
+    </template>
     <div v-if="data.length === 0" class="trend-card__empty">
       暂无数据
     </div>
@@ -47,6 +54,15 @@ function formatMonth(month: string): string {
 .trend-card {
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
+}
+
+.trend-card__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-content);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
 }
 
 .trend-card__empty {

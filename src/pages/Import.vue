@@ -88,8 +88,12 @@ async function handleJsonRestore(e: Event) {
 <template>
   <div class="import-page">
     <div class="import-page__head">
-      <h1 class="import-page__title">数据导入</h1>
-      <NButton text @click="router.push('/profile')">← 返回</NButton>
+      <h1 class="import-page__title">
+        数据导入
+      </h1>
+      <NButton text @click="router.push('/profile')">
+        ← 返回
+      </NButton>
     </div>
 
     <NTabs type="line" animated>
@@ -129,12 +133,19 @@ async function handleJsonRestore(e: Event) {
       </NTabPane>
       <NTabPane name="json" tab="JSON 恢复">
         <div style="text-align: center; padding: 32px;">
-          <p style="color: var(--color-text-secondary); margin-bottom: 16px;">选择之前导出的 JSON 备份文件进行恢复</p>
+          <p style="color: var(--color-text-secondary); margin-bottom: 16px;">
+            选择之前导出的 JSON 备份文件进行恢复
+          </p>
           <label>
             <NButton :loading="jsonImporting">
               {{ jsonImporting ? '导入中…' : '选择 JSON 文件' }}
             </NButton>
-            <input type="file" accept=".json" hidden @change="handleJsonRestore" />
+            <input
+              type="file"
+              accept=".json"
+              hidden
+              @change="handleJsonRestore"
+            />
           </label>
         </div>
       </NTabPane>
@@ -143,8 +154,8 @@ async function handleJsonRestore(e: Event) {
 </template>
 
 <style scoped>
-.import-page { max-width: 720px; margin: 0 auto; padding: var(--spacing-page); padding-bottom: 80px; }
+.import-page { max-width: 720px; margin: 0 auto; }
 .import-page__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-.import-page__title { font-size: var(--font-title); font-weight: 700; color: var(--color-text-primary); margin: 0; }
+.import-page__title { font-size: var(--font-page-title, 32px); font-weight: var(--font-weight-extrabold); color: var(--color-text-primary); margin: 0; padding-bottom: 14px; border-bottom: 1px solid rgba(0, 0, 0, 0.06); }
 .import-page__cards { display: flex; flex-direction: column; gap: 12px; }
 </style>
