@@ -89,12 +89,14 @@ const groupMain: MenuItem[] = [
   { id: 'memory',     label: '大事记',   icon: 'star',    route: '/memory',              desc: '记忆时间轴' },
   { id: 'timecenter', label: '时光中心', icon: 'clock',   route: '/time-center',         desc: '项目倒计时' },
   { id: 'expense',    label: '账本',     icon: 'expense', route: '/expense',             desc: '收支资产管理' },
+  { id: 'stats',      label: '年度统计', icon: 'chart',   route: '/statistics',          desc: '数据统计' },
+  { id: 'recycle',    label: '回收站',   icon: 'trash',   route: '/settings/recycle-bin', desc: '恢复已删除数据' },
 ]
 
 const settingsMenu = computed<MenuItem[]>(() => [
   { id: 'theme',    label: '深色模式',   icon: 'moon',    action: toggleDarkMode, desc: darkMode.value ? '已开启' : '已关闭' },
   { id: 'data',     label: '数据管理',   icon: 'download', action: () => { showDataMgmt.value = true }, desc: '导入 / 导出' },
-  { id: 'about',    label: '关于昌都记忆', icon: 'info',  action: () => { showAbout.value = true }, desc: 'V5.2' },
+  { id: 'about',    label: '关于昌都记忆', icon: 'info',  action: () => { showAbout.value = true }, desc: 'V5.3' },
 ])
 
 function handleMenuClick(item: MenuItem) {
@@ -134,7 +136,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Group B: 大事记 | 时光中心 | 账本 -->
+    <!-- Group B: 大事记 | 时光中心 | 账本 | 年度统计 | 回收站 -->
     <div class="pp__group">
       <div v-for="item in groupMain" :key="item.id" class="pp__row" @click="handleMenuClick(item)">
         <div class="pp__row-icon" :class="`pp__row-icon--${item.id}`"><AppIcon :name="item.icon" :size="20" /></div>
@@ -161,7 +163,7 @@ onMounted(() => {
     </div>
 
     <!-- Version -->
-    <p class="pp__version">昌都记忆 V5.2</p>
+    <p class="pp__version">昌都记忆 V5.3</p>
 
     <!-- ====== Account Modal ====== -->
     <Teleport to="body">
@@ -234,7 +236,7 @@ onMounted(() => {
             <div class="about-logo">🏔️</div>
             <h2 class="about-title">昌都记忆</h2>
             <p class="about-subtitle">Changdu Memory</p>
-            <p class="about-version">V5.2 — 个人数字记录平台</p>
+            <p class="about-version">V5.3 — 个人数字记录平台</p>
             <p class="about-desc">记录在西藏昌都的一年支教生活</p>
             <div style="text-align:center;margin-top:20px">
               <button class="modal-btn modal-btn--cancel" @click="showAbout = false">关闭</button>
