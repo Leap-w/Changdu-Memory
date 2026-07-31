@@ -59,7 +59,7 @@ export const useWorkStore = defineStore('work', () => {
 
   /** 创建 */
   async function addWork(
-    fields: { title: string; work_date: string; period: string; content: string; category: string },
+    fields: { title: string; work_date: string; content: string },
   ): Promise<WorkPlan> {
     loading.value = true
     error.value = null
@@ -78,7 +78,7 @@ export const useWorkStore = defineStore('work', () => {
   /** 编辑 */
   async function editWork(
     id: string,
-    fields: { title: string; work_date: string; period: string; content: string; category: string },
+    fields: { title: string; work_date: string; content: string },
   ): Promise<WorkPlan> {
     loading.value = true
     error.value = null

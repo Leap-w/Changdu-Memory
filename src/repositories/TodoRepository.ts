@@ -24,18 +24,28 @@ export async function fetchTodayTodos(): Promise<Todo[]> {
 }
 
 export async function createTodo(
-  fields: Pick<TodoInsert, 'title' | 'description' | 'todo_date' | 'priority' | 'category'>,
+  fields: Pick<TodoInsert, 'title' | 'description' | 'todo_date' | 'deadline_date' | 'deadline_time' | 'priority' | 'category'>,
 ): Promise<Todo> {
   const user = (await supabase.auth.getUser()).data.user
   if (!user) throw new Error('未登录')
+  const insertData = {
+    user_id: user.id,
+    title: fields.title,
+    description: fields.description ?? null,
+    todo_date: fields.todo_date ?? new Date().toISOString().split('T')[0],
+    deadline_date: fields.deadline_date ?? null,
+    deadline_time: fields.deadline_time ?? null,
+    priority: fields.priority ?? 'medium',
+    category: fields.category ?? 'life',
+  }
   const { data, error } = await db.from('todos')
-    .insert({ user_id: user.id, ...fields }).select('*').single()
+    .insert(insertData).select('*').single()
   if (error) throw error
   return data as Todo
 }
 
 export async function updateTodo(
-  id: string, fields: Pick<TodoUpdate, 'title' | 'description' | 'todo_date' | 'priority' | 'category'>,
+  id: string, fields: Pick<TodoUpdate, 'title' | 'description' | 'todo_date' | 'deadline_date' | 'deadline_time' | 'priority' | 'category'>,
 ): Promise<Todo> {
   const { data, error } = await db.from('todos')
     .update({ ...fields, updated_at: new Date().toISOString() }).eq('id', id).select('*').single()

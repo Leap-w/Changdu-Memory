@@ -18,8 +18,6 @@ const existingWork = ref<{
   title: string
   content: string
   work_date: string
-  period: string
-  category: string
 } | null>(null)
 
 onMounted(async () => {
@@ -32,16 +30,14 @@ onMounted(async () => {
           title: cached.title,
           content: cached.content || '',
           work_date: cached.work_date,
-          period: cached.period,
-          category: cached.category,
         }
       } else {
         message.warning('记录不存在')
-        router.push('/work')
+        router.push('/work?tab=行政安排')
       }
     } catch {
       message.error('加载失败')
-      router.push('/work')
+      router.push('/work?tab=行政安排')
     } finally {
       loading.value = false
     }
@@ -52,8 +48,6 @@ async function handleSubmit(data: {
   title: string
   content: string
   work_date: string
-  period: string
-  category: string
 }) {
   try {
     if (isEdit.value && workId.value) {
@@ -63,7 +57,8 @@ async function handleSubmit(data: {
       await workStore.addWork(data)
       message.success('已添加')
     }
-    router.push('/work')
+    // 跳转回工作页面，定位到行政安排 Tab
+    router.push('/work?tab=行政安排')
   } catch {
     message.error('保存失败')
   }
@@ -77,7 +72,7 @@ function handleCancel() {
 <template>
   <div class="work-edit-page">
     <h1 class="work-edit-page__title">
-      {{ isEdit ? '编辑工作' : '添加工作' }}
+      {{ isEdit ? '编辑安排' : '添加安排' }}
     </h1>
 
     <NSpin :show="loading">
@@ -86,8 +81,6 @@ function handleCancel() {
         :title="existingWork?.title"
         :content="existingWork?.content"
         :work-date="existingWork?.work_date"
-        :period="existingWork?.period"
-        :category="existingWork?.category"
         :loading="workStore.loading"
         :submit-label="isEdit ? '保存' : '添加'"
         @submit="handleSubmit"

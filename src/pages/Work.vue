@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useTodoStore } from '@/stores/todo'
 import { useScheduleStore } from '@/stores/schedule'
 import { useWorkStore } from '@/stores/work'
 import { useStudentStore } from '@/stores/student'
+import { useMessage } from 'naive-ui'
 import WorkCard from '@/components/work/WorkCard.vue'
 import ScheduleWeekView from '@/components/schedule/ScheduleWeekView.vue'
 import ScheduleEditor from '@/components/schedule/ScheduleEditor.vue'
@@ -13,16 +14,25 @@ import type { Schedule } from '@/repositories/ScheduleRepository'
 import type { Student } from '@/repositories/StudentRepository'
 
 const router = useRouter()
+const route = useRoute()
 const todoStore = useTodoStore()
 const scheduleStore = useScheduleStore()
 const workStore = useWorkStore()
 const studentStore = useStudentStore()
+const message = useMessage()
 
 // ==========================================
 // Tab state
 // ==========================================
 const tabs = ['待办', '课程表', '行政安排', '学生档案'] as const
-const activeTab = ref('待办')
+const activeTab = ref((route.query.tab as string) || '待办')
+
+// 监听路由 query 变化更新 tab
+watch(() => route.query.tab, (val) => {
+  if (val && tabs.includes(val as any)) {
+    activeTab.value = val as string
+  }
+})
 
 // ==========================================
 // Data loading
@@ -91,6 +101,13 @@ async function handleDeleteSchedule(id: string) {
 // ==========================================
 function goWorkEdit(id: string) { router.push(`/work/${id}/edit`) }
 function goWorkCreate() { router.push('/work/new') }
+async function handleDeleteWork(id: string) {
+  if (!confirm('确定删除该安排？')) return
+  try {
+    await workStore.removeWork(id)
+    message.success('已删除')
+  } catch { message.error('删除失败') }
+}
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00')
@@ -230,7 +247,7 @@ async function doBatch(action: 'complete' | 'delete') {
           </span>
           <div class="todo-row__body" @click="todoStore.selectionMode ? todoStore.toggleSelect(t.id) : router.push(`/todo/${t.id}/edit`)">
             <span class="todo-row__title">{{ t.title }}</span>
-            <span class="todo-row__meta">{{ t.category }} · {{ t.priority }}</span>
+            <span v-if="(t as any).deadline_date" class="todo-row__deadline">📅 {{ (t as any).deadline_date }}{{ (t as any).deadline_time ? ' ' + (t as any).deadline_time : '' }}</span>
           </div>
           <button
             v-if="!todoStore.selectionMode"
@@ -289,11 +306,15 @@ async function doBatch(action: 'complete' | 'delete') {
             <span class="work-group__count">{{ group.items.length }} 项</span>
           </div>
           <div class="work-group__list">
-            <WorkCard
-              v-for="w in group.items" :key="w.id"
-              :work="w"
-              @click="goWorkEdit"
-            />
+            <div v-for="w in group.items" :key="w.id" class="work-item-row">
+              <WorkCard
+                :work="w"
+                @click="goWorkEdit"
+              />
+              <button class="work-item-row__del" title="删除" @click.stop="handleDeleteWork(w.id)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -451,6 +472,8 @@ async function doBatch(action: 'complete' | 'delete') {
 .todo-row__body { flex:1;min-width:0;cursor:pointer; }
 .todo-row__title { display:block;font-size:15px;color:var(--color-text-primary); }
 .todo-row__meta { font-size:12px;color:var(--color-text-tertiary); }
+.todo-row__deadline { font-size:11px;color:var(--color-accent-soft);font-weight:500; }
+.todo-row__title.done { text-decoration:line-through;color:var(--color-text-tertiary); }
 .todo-row__del { padding:4px;border:none;background:transparent;color:var(--color-text-tertiary);cursor:pointer;opacity:0;transition:all .15s; }
 .todo-row:hover .todo-row__del { opacity:1; }
 .todo-row__del:hover { color:var(--color-error); }
@@ -461,6 +484,11 @@ async function doBatch(action: 'complete' | 'delete') {
 .work-group__date { font-size:15px;font-weight:600;color:var(--color-text-primary); }
 .work-group__count { font-size:12px;color:var(--color-text-secondary); }
 .work-group__list { display:flex;flex-direction:column;gap:8px; }
+.work-item-row { display:flex;align-items:flex-start;gap:4px; }
+.work-item-row .work-card { flex:1;min-width:0; }
+.work-item-row__del { flex-shrink:0;padding:6px;margin-top:8px;border:none;background:transparent;color:var(--color-text-tertiary);cursor:pointer;border-radius:6px;opacity:0;transition:all .15s; }
+.work-item-row:hover .work-item-row__del { opacity:1; }
+.work-item-row__del:hover { color:var(--color-error);background:rgba(191,97,106,.08); }
 
 /* ---- Student Groups ---- */
 .student-group { margin-bottom:24px; }

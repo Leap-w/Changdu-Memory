@@ -33,7 +33,7 @@ async function handleImport(moduleKey: string, validRows: any[]) {
         if (moduleKey === 'diaries') {
           await diaryStore.addDiary({ title: row.title || '', content: row.content || '', diary_date: row.diary_date || row.date || '' })
         } else if (moduleKey === 'work_plans') {
-          await workStore.addWork({ title: row.title || '', content: row.content || '', work_date: row.work_date || row.date || '', period: row.period || 'morning', category: row.category || 'other' })
+          await workStore.addWork({ title: row.title || '', content: row.content || '', work_date: row.work_date || row.date || '' })
         } else if (moduleKey === 'expenses') {
           await expenseStore.addExpense({ amount: Number(row.amount) || 0, type: row.type || 'expense', category: row.category || 'other', description: row.description || '', expense_date: row.expense_date || row.date || '' })
         } else if (moduleKey === 'todos') {

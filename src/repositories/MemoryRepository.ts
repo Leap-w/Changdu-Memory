@@ -1,5 +1,6 @@
 import { supabase } from '@/services/supabase'
 import type { Database } from '@/types/database'
+import { deleteAllMemoryPhotos } from './MemoryPhotoRepository'
 
 export type Memory = Database['public']['Tables']['memories']['Row']
 type MemoryInsert = Database['public']['Tables']['memories']['Insert']
@@ -47,6 +48,8 @@ export async function updateMemory(
 }
 
 export async function deleteMemory(id: string): Promise<void> {
+  // 先删除关联的 Storage 图片
+  try { await deleteAllMemoryPhotos(id) } catch { /* ignore */ }
   const { error } = await db.from('memories').delete().eq('id', id)
   if (error) throw error
 }

@@ -18,23 +18,22 @@ const existingTodo = ref<{
   title: string
   description: string
   todo_date: string
-  priority: string
-  category: string
+  deadline_date: string | null
+  deadline_time: string | null
 } | null>(null)
 
 onMounted(async () => {
   if (todoId.value) {
     loading.value = true
     try {
-      // 尝试从 store 中查找
       const cached = todoStore.todos.find((t) => t.id === todoId.value)
       if (cached) {
         existingTodo.value = {
           title: cached.title,
           description: cached.description ?? '',
           todo_date: cached.todo_date,
-          priority: cached.priority,
-          category: cached.category,
+          deadline_date: (cached as any).deadline_date ?? null,
+          deadline_time: (cached as any).deadline_time ?? null,
         }
       } else {
         message.warning('待办不存在')
@@ -50,7 +49,7 @@ onMounted(async () => {
 })
 
 async function handleSubmit(data: {
-  title: string; description: string; todo_date: string; due_date?: string; priority: string; category: string
+  title: string; description: string; todo_date: string; deadline_date?: string | null; deadline_time?: string | null
 }) {
   try {
     if (isEdit.value && todoId.value) {
@@ -84,8 +83,8 @@ function handleCancel() {
         :title="existingTodo?.title"
         :description="existingTodo?.description"
         :todo-date="existingTodo?.todo_date"
-        :priority="existingTodo?.priority"
-        :category="existingTodo?.category"
+        :deadline-date="existingTodo?.deadline_date"
+        :deadline-time="existingTodo?.deadline_time"
         :loading="todoStore.loading"
         :submit-label="isEdit ? '保存' : '创建'"
         @submit="handleSubmit"

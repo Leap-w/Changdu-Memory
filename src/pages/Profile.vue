@@ -48,12 +48,16 @@ async function handleAvatarUpload(e: Event) {
     const userId = authStore.user?.id
     if (!userId) return
     const ext = file.name.split('.').pop() || 'jpg'
-    const path = `${userId}/avatars/${userId}.${ext}`
+    // 使用时间戳避免浏览器缓存旧头像
+    const timestamp = Date.now()
+    const path = `${userId}/avatars/${userId}_${timestamp}.${ext}`
     const { error: uploadErr } = await supabase.storage.from('photos').upload(path, file, { upsert: true, contentType: file.type })
     if (uploadErr) throw uploadErr
     const { data: urlData } = supabase.storage.from('photos').getPublicUrl(path)
     const publicUrl = urlData.publicUrl
-    await authStore.updateProfile({ avatar_url: publicUrl })
+    // 添加缓存破坏参数
+    const cacheBustedUrl = `${publicUrl}?t=${timestamp}`
+    await authStore.updateProfile({ avatar_url: cacheBustedUrl })
   } catch { /* ignore */ }
   finally { avatarUploading.value = false; input.value = '' }
 }
@@ -82,9 +86,9 @@ const groupSearch: MenuItem[] = [
 ]
 
 const groupMain: MenuItem[] = [
-  { id: 'memory',  label: '大事记',   icon: 'star',   route: '/memory',       desc: '记忆时间轴' },
-  { id: 'stats',   label: '年度统计', icon: 'chart',  route: '/statistics',   desc: '数据统计' },
-  { id: 'recycle', label: '回收站',   icon: 'trash',  route: '/settings/recycle-bin', desc: '恢复已删除数据' },
+  { id: 'memory',     label: '大事记',   icon: 'star',    route: '/memory',              desc: '记忆时间轴' },
+  { id: 'timecenter', label: '时光中心', icon: 'clock',   route: '/time-center',         desc: '项目倒计时' },
+  { id: 'expense',    label: '账本',     icon: 'expense', route: '/expense',             desc: '收支资产管理' },
 ]
 
 const settingsMenu = computed<MenuItem[]>(() => [
@@ -130,7 +134,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Group B: 大事记 | 年度统计 | 回收站 -->
+    <!-- Group B: 大事记 | 时光中心 | 账本 -->
     <div class="pp__group">
       <div v-for="item in groupMain" :key="item.id" class="pp__row" @click="handleMenuClick(item)">
         <div class="pp__row-icon" :class="`pp__row-icon--${item.id}`"><AppIcon :name="item.icon" :size="20" /></div>
@@ -271,6 +275,8 @@ onMounted(() => {
 .pp__row-icon--chart   { background: #F5F0EB; color: var(--color-accent-soft); }
 .pp__row-icon--trash   { background: #FDF0ED; color: var(--color-error); }
 .pp__row-icon--tag     { background: #F5F0EB; color: var(--color-accent-soft); }
+.pp__row-icon--timecenter { background: #EDF2F8; color: var(--color-primary); }
+.pp__row-icon--expense { background: #FDF0ED; color: var(--color-error); }
 .pp__row-label { flex: 1; font-size: 15px; color: var(--color-text-primary); font-weight: 500; }
 .pp__row-desc { font-size: 12px; color: var(--color-text-tertiary); margin-right: 4px; }
 .pp__row-arrow { color: var(--color-text-tertiary); opacity: .4; flex-shrink: 0; }

@@ -2,6 +2,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { useMemoryStore } from '@/stores/memory'
 import { useAuthStore } from '@/stores/auth'
+import { uploadMemoryPhoto, deleteMemoryPhoto } from '@/repositories/MemoryPhotoRepository'
+import type { MemoryPhoto } from '@/repositories/MemoryPhotoRepository'
 import {
   NButton,
   NModal,
@@ -83,12 +85,20 @@ const form = ref({
   content: '',
   event_date: null as number | null,
   category: 'life',
-  image_urls: '',
 })
+
+// 编辑时已有照片
+const existingPhotos = ref<MemoryPhoto[]>([])
+// 新上传的文件列表（预览用）
+const pendingFiles = ref<{ file: File; previewUrl: string }[]>([])
+// 上传中状态
+const photoUploading = ref(false)
 
 function openCreate() {
   editId.value = null
-  form.value = { title: '', content: '', event_date: Date.now(), category: 'life', image_urls: '' }
+  form.value = { title: '', content: '', event_date: Date.now(), category: 'life' }
+  existingPhotos.value = []
+  pendingFiles.value = []
   showModal.value = true
 }
 
@@ -99,9 +109,41 @@ function openEdit(m: Memory) {
     content: m.content || '',
     event_date: m.event_date ? new Date(m.event_date + 'T00:00:00').getTime() : Date.now(),
     category: m.category,
-    image_urls: (m.image_urls || []).join(', '),
   }
+  existingPhotos.value = [...memoryStore.getPhotosForMemory(m.id)]
+  pendingFiles.value = []
   showModal.value = true
+}
+
+function handleFileSelect(e: Event) {
+  const input = e.target as HTMLInputElement
+  const files = input?.files
+  if (!files) return
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i]
+    if (!file.type.startsWith('image/')) continue
+    pendingFiles.value.push({
+      file,
+      previewUrl: URL.createObjectURL(file),
+    })
+  }
+  input.value = ''
+}
+
+function removePendingFile(index: number) {
+  const removed = pendingFiles.value.splice(index, 1)[0]
+  if (removed) URL.revokeObjectURL(removed.previewUrl)
+}
+
+async function removeExistingPhoto(photo: MemoryPhoto) {
+  try {
+    await deleteMemoryPhoto(photo.id, photo.storage_path)
+    memoryStore.removePhotoFromMemory(photo.memory_id, photo.id)
+    existingPhotos.value = existingPhotos.value.filter((p) => p.id !== photo.id)
+    message.success('图片已删除')
+  } catch {
+    message.error('删除图片失败')
+  }
 }
 
 async function handleSave() {
@@ -116,10 +158,10 @@ async function handleSave() {
   modalLoading.value = true
   try {
     const dateStr = new Date(form.value.event_date).toISOString().split('T')[0]
-    const urls = form.value.image_urls
-      .split(/[,\n]/)
-      .map((s) => s.trim())
-      .filter(Boolean)
+    // 收集现有照片的 URL
+    const existingUrls = existingPhotos.value.map((p) => p.url)
+
+    let memoryId: string
 
     if (editId.value) {
       await memoryStore.editMemory(editId.value, {
@@ -127,19 +169,38 @@ async function handleSave() {
         content: form.value.content,
         event_date: dateStr,
         category: form.value.category,
-        image_urls: urls,
+        image_urls: existingUrls,
       })
+      memoryId = editId.value
       message.success('已更新')
     } else {
-      await memoryStore.addMemory({
+      const memory = await memoryStore.addMemory({
         title: form.value.title.trim(),
         content: form.value.content,
         event_date: dateStr,
         category: form.value.category,
-        image_urls: urls,
+        image_urls: existingUrls,
       })
+      memoryId = memory.id
       message.success('已添加')
     }
+
+    // 上传新图片
+    if (pendingFiles.value.length > 0) {
+      photoUploading.value = true
+      const uploaded: MemoryPhoto[] = []
+      for (const pf of pendingFiles.value) {
+        try {
+          const photo = await uploadMemoryPhoto(memoryId, pf.file, pf.file.name)
+          uploaded.push(photo)
+        } catch { /* skip failed uploads */ }
+      }
+      if (uploaded.length > 0) {
+        memoryStore.addPhotosToMemory(memoryId, uploaded)
+      }
+      photoUploading.value = false
+    }
+
     showModal.value = false
   } catch (err: unknown) {
     message.error(err instanceof Error ? err.message : '操作失败')
@@ -260,8 +321,20 @@ function getType(category: string) {
                   {{ event.content.length > 120 ? event.content.slice(0, 120) + '…' : event.content }}
                 </p>
 
-                <!-- Photos -->
-                <div v-if="event.image_urls && event.image_urls.length" class="tl__card-photos">
+                <!-- Photos from memory_photos table -->
+                <div v-if="memoryStore.getPhotosForMemory(event.id).length" class="tl__card-photos">
+                  <img
+                    v-for="(photo, pi) in memoryStore.getPhotosForMemory(event.id).slice(0, 4)"
+                    :key="pi"
+                    :src="photo.url"
+                    class="tl__card-photo"
+                    :class="{ 'tl__card-photo--more': pi === 3 && memoryStore.getPhotosForMemory(event.id).length > 4 }"
+                    loading="lazy"
+                    alt=""
+                  />
+                </div>
+                <!-- Fallback: URL photos from legacy data -->
+                <div v-else-if="event.image_urls && event.image_urls.length" class="tl__card-photos">
                   <img
                     v-for="(url, pi) in event.image_urls.slice(0, 4)"
                     :key="pi"
@@ -317,13 +390,32 @@ function getType(category: string) {
             maxlength="5000"
           />
         </NFormItem>
-        <NFormItem label="图片链接（逗号或换行分隔）">
-          <NInput
-            v-model:value="form.image_urls"
-            type="textarea"
-            placeholder="https://example.com/photo1.jpg, https://example.com/photo2.jpg"
-            :autosize="{ minRows: 2, maxRows: 4 }"
-          />
+        <!-- Image upload -->
+        <NFormItem label="图片">
+          <div class="tl__photo-section">
+            <!-- Existing photos -->
+            <div v-if="existingPhotos.length" class="tl__photo-grid">
+              <div v-for="photo in existingPhotos" :key="photo.id" class="tl__photo-item">
+                <img :src="photo.url" alt="" class="tl__photo-thumb" />
+                <button class="tl__photo-remove" title="删除图片" @click="removeExistingPhoto(photo)">×</button>
+              </div>
+            </div>
+            <!-- Pending uploads -->
+            <div v-if="pendingFiles.length" class="tl__photo-grid">
+              <div v-for="(pf, pi) in pendingFiles" :key="'p' + pi" class="tl__photo-item">
+                <img :src="pf.previewUrl" alt="" class="tl__photo-thumb" />
+                <button class="tl__photo-remove" title="取消" @click="removePendingFile(pi)">×</button>
+              </div>
+            </div>
+            <!-- Upload button -->
+            <label class="tl__upload-btn" :class="{ loading: photoUploading }">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              <span>上传图片</span>
+              <input type="file" accept="image/*" multiple hidden @change="handleFileSelect" />
+            </label>
+          </div>
         </NFormItem>
       </NForm>
       <template #footer>
@@ -386,7 +478,7 @@ function getType(category: string) {
 .tl__card {
   padding: 18px 20px; background: #fff; border-radius: var(--radius-card);
   border: 1px solid var(--color-border-light); transition: all .15s;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-sm); width: 100%;
 }
 .tl__card:hover { box-shadow: var(--shadow-md); border-color: transparent; }
 
@@ -398,11 +490,30 @@ function getType(category: string) {
 .tl__card-title { font-size: 17px; font-weight: 600; color: var(--color-text-primary); margin: 0 0 6px; }
 .tl__card-desc { font-size: 14px; color: var(--color-text-secondary); line-height: 1.6; margin: 0 0 8px; }
 
-.tl__card-photos { display: flex; gap: 6px; margin-bottom: 10px; }
+.tl__card-photos { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
 .tl__card-photo { width: 72px; height: 72px; border-radius: var(--radius-sm); object-fit: cover; }
 .tl__card-photo--more { filter: brightness(.6); }
 
 .tl__card-actions { display: flex; gap: 4px; padding-top: 8px; border-top: 1px solid var(--color-border-light); }
+
+/* Photo upload section in modal */
+.tl__photo-section { display: flex; flex-direction: column; gap: 8px; }
+.tl__photo-grid { display: flex; gap: 8px; flex-wrap: wrap; }
+.tl__photo-item { position: relative; width: 72px; height: 72px; border-radius: var(--radius-sm); overflow: hidden; }
+.tl__photo-thumb { width: 100%; height: 100%; object-fit: cover; }
+.tl__photo-remove {
+  position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; border-radius: 50%;
+  border: none; background: rgba(0,0,0,.5); color: #fff; font-size: 14px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; line-height: 1; padding: 0;
+}
+.tl__photo-remove:hover { background: var(--color-error); }
+.tl__upload-btn {
+  display: flex; align-items: center; gap: 6px; padding: 8px 14px; border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; color: var(--color-text-secondary);
+  transition: all .15s; width: fit-content;
+}
+.tl__upload-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.tl__upload-btn.loading { opacity: .5; pointer-events: none; }
 
 /* Footer */
 .tl__footer { text-align: center; font-size: 12px; color: var(--color-text-tertiary); opacity: .4; margin-top: 24px; }
@@ -411,5 +522,6 @@ function getType(category: string) {
   .tl__title { font-size: 26px; }
   .tl__card { padding: 14px 16px; }
   .tl__card-photo { width: 56px; height: 56px; }
+  .tl__photo-item { width: 56px; height: 56px; }
 }
 </style>

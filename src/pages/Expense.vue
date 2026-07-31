@@ -167,14 +167,14 @@ async function handleWelfareSave() {
         <button @click="openAddAsset()">添加资产</button>
       </div>
       <div v-else class="lp__asset-list">
+        <div class="lp__asset-total">
+          <span>资产合计</span>
+          <span class="lp__asset-total-amt">¥{{ assetStore.totalAssets }}</span>
+        </div>
         <div v-for="a in assetStore.assets" :key="a.id" class="lp__asset-item" @click="openEditAsset(a.id, { name: a.name, amount: a.amount })">
           <span class="lp__asset-icon">{{ assetIcons[a.name] || '💎' }}</span>
           <span class="lp__asset-name">{{ a.name }}</span>
           <span class="lp__asset-amt">¥{{ Number(a.amount).toFixed(2) }}</span>
-        </div>
-        <div class="lp__asset-total">
-          <span>资产合计</span>
-          <span class="lp__asset-total-amt">¥{{ assetStore.totalAssets }}</span>
         </div>
       </div>
     </div>
@@ -188,6 +188,10 @@ async function handleWelfareSave() {
         <button @click="openAddWelfare()">添加福利</button>
       </div>
       <div v-else class="lp__welfare-list">
+        <div class="lp__asset-total">
+          <span>福利估值合计</span>
+          <span class="lp__asset-total-amt">¥{{ welfareStore.totalValue }}</span>
+        </div>
         <div v-for="w in welfareStore.items" :key="w.id" class="lp__welfare-item">
           <span class="lp__welfare-icon">{{ welfareIcons[w.category] || '✨' }}</span>
           <div class="lp__welfare-body">
@@ -197,10 +201,6 @@ async function handleWelfareSave() {
           </div>
           <span v-if="w.value_estimate" class="lp__welfare-val">¥{{ Number(w.value_estimate).toFixed(2) }}</span>
           <button class="lp__welfare-del" @click.stop="welfareStore.removeItem(w.id)">×</button>
-        </div>
-        <div class="lp__asset-total">
-          <span>福利估值合计</span>
-          <span class="lp__asset-total-amt">¥{{ welfareStore.totalValue }}</span>
         </div>
       </div>
     </div>

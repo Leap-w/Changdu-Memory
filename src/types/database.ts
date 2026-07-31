@@ -63,6 +63,8 @@ export interface Database {
           todo_date: string
           priority: string
           category: string
+          deadline_date: string | null
+          deadline_time: string | null
           completed: boolean
           created_at: string
           updated_at: string
@@ -76,6 +78,8 @@ export interface Database {
           todo_date?: string
           priority?: string
           category?: string
+          deadline_date?: string | null
+          deadline_time?: string | null
           completed?: boolean
           created_at?: string
           updated_at?: string
@@ -86,6 +90,8 @@ export interface Database {
           todo_date?: string
           priority?: string
           category?: string
+          deadline_date?: string | null
+          deadline_time?: string | null
           completed?: boolean
           updated_at?: string
         }
@@ -435,6 +441,26 @@ export interface Database {
           end_date?: string
           pinned?: boolean
           updated_at?: string
+        }
+      }
+      memory_photos: {
+        Row: {
+          id: string
+          memory_id: string
+          storage_path: string
+          url: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          memory_id: string
+          storage_path: string
+          url: string
+          created_at?: string
+        }
+        Update: {
+          storage_path?: string
+          url?: string
         }
       }
 

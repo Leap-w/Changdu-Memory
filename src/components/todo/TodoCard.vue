@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Todo } from '@/repositories/TodoRepository'
-import { NCard, NCheckbox } from 'naive-ui'
+import { NCheckbox } from 'naive-ui'
 
 const props = defineProps<{
   todo: Todo
@@ -11,34 +11,23 @@ const emit = defineEmits<{
   click: [id: string]
 }>()
 
-const priorityLabels: Record<string, string> = {
-  high: '高',
-  medium: '中',
-  low: '低',
-}
-
-const priorityColors: Record<string, string> = {
-  high: '#EF4444',
-  medium: '#F59E0B',
-  low: '#6B7280',
-}
-
-const categoryLabels: Record<string, string> = {
-  teaching: '教学',
-  life: '生活',
-  growth: '成长',
-}
-
 function onCheck() {
   emit('toggle', props.todo.id)
+}
+
+function formatDeadline(todo: Todo): string {
+  const dd = (todo as any).deadline_date as string | null
+  const dt = (todo as any).deadline_time as string | null
+  if (!dd) return ''
+  if (dt) return `${dd} ${dt}`
+  return dd
 }
 </script>
 
 <template>
-  <NCard
+  <div
     class="todo-card"
     :class="{ 'todo-card--done': todo.completed }"
-    hoverable
     @click="emit('click', todo.id)"
   >
     <div class="todo-card__inner">
@@ -51,74 +40,61 @@ function onCheck() {
         <span class="todo-card__title" :class="{ 'line-through': todo.completed }">
           {{ todo.title }}
         </span>
-        <div class="todo-card__meta">
-          <span class="todo-card__category">
-            {{ categoryLabels[todo.category] || todo.category }}
-          </span>
-          <span
-            class="todo-card__priority"
-            :style="{ color: priorityColors[todo.priority] }"
-          >
-            {{ priorityLabels[todo.priority] || todo.priority }}
-          </span>
-        </div>
+        <div v-if="todo.description" class="todo-card__desc">{{ todo.description }}</div>
+        <div v-if="formatDeadline(todo)" class="todo-card__deadline">📅 {{ formatDeadline(todo) }}</div>
       </div>
     </div>
-  </NCard>
+  </div>
 </template>
 
 <style scoped>
 .todo-card {
+  background: #fff;
+  border: 1px solid var(--color-border-light);
   border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
-  transition: opacity 0.2s ease;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.15s ease;
+  cursor: pointer;
+  padding: 14px 16px;
 }
-
+.todo-card:hover {
+  box-shadow: var(--shadow-card);
+  border-color: transparent;
+}
 .todo-card--done {
   opacity: 0.55;
 }
-
-.todo-card :deep(.n-card__content) {
-  padding: 12px 16px;
-}
-
 .todo-card__inner {
   display: flex;
   align-items: flex-start;
   gap: 12px;
 }
-
 .todo-card__body {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
-
 .todo-card__title {
-  font-size: var(--font-content);
+  font-size: 15px;
   color: var(--color-text-primary);
-  display: block;
-  margin-bottom: 4px;
+  font-weight: 500;
 }
-
 .todo-card__title.line-through {
   text-decoration: line-through;
   color: var(--color-text-secondary);
 }
-
-.todo-card__meta {
-  display: flex;
-  gap: 8px;
-  font-size: var(--font-caption);
-}
-
-.todo-card__category {
+.todo-card__desc {
+  font-size: 13px;
   color: var(--color-text-secondary);
-  background: var(--color-primary-bg);
-  padding: 1px 8px;
-  border-radius: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-
-.todo-card__priority {
-  font-weight: 600;
+.todo-card__deadline {
+  font-size: 12px;
+  color: var(--color-accent-soft);
+  font-weight: 500;
 }
 </style>

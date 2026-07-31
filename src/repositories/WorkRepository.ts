@@ -23,18 +23,26 @@ export async function fetchWorksByDate(date: string): Promise<WorkPlan[]> {
 }
 
 export async function createWork(
-  fields: Pick<WorkPlanInsert, 'title' | 'work_date' | 'period' | 'content' | 'category'>,
+  fields: Pick<WorkPlanInsert, 'title' | 'work_date' | 'content'> & Partial<Pick<WorkPlanInsert, 'period' | 'category'>>,
 ): Promise<WorkPlan> {
   const user = (await supabase.auth.getUser()).data.user
   if (!user) throw new Error('未登录')
+  const insertData = {
+    user_id: user.id,
+    title: fields.title,
+    work_date: fields.work_date ?? new Date().toISOString().split('T')[0],
+    content: fields.content ?? null,
+    period: fields.period ?? 'morning',
+    category: fields.category ?? 'other',
+  }
   const { data, error } = await db.from('work_plans')
-    .insert({ user_id: user.id, ...fields }).select('*').single()
+    .insert(insertData).select('*').single()
   if (error) throw error
   return data as WorkPlan
 }
 
 export async function updateWork(
-  id: string, fields: Pick<WorkPlanUpdate, 'title' | 'work_date' | 'period' | 'content' | 'category'>,
+  id: string, fields: Pick<WorkPlanUpdate, 'title' | 'work_date' | 'content'> & Partial<Pick<WorkPlanUpdate, 'period' | 'category'>>,
 ): Promise<WorkPlan> {
   const { data, error } = await db.from('work_plans')
     .update({ ...fields, updated_at: new Date().toISOString() }).eq('id', id).select('*').single()

@@ -5,6 +5,7 @@
  * 支持文字首字母、图片头像、自定义颜色。
  * 尺寸：sm(32) / md(44) / lg(64)
  */
+import { ref } from 'vue'
 
 const props = withDefaults(
   defineProps<{
@@ -25,6 +26,8 @@ const props = withDefaults(
   },
 )
 
+const imgError = ref(false)
+
 const sizeMap: Record<string, string> = {
   sm: 'var(--app-avatar-size-sm, 32px)',
   md: 'var(--app-avatar-size-md, 44px)',
@@ -43,21 +46,25 @@ function initial(): string {
   if (!trimmed) return '?'
   return trimmed[0].toUpperCase()
 }
+
+function onImgError() {
+  imgError.value = true
+}
 </script>
 
 <template>
   <div
     class="app-avatar"
     :class="{
-      'app-avatar--img': !!src,
+      'app-avatar--img': !!src && !imgError,
     }"
     :style="{
       width: avatarSize(),
       height: avatarSize(),
-      background: src ? undefined : color || 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))',
+      background: src && !imgError ? undefined : color || 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))',
     }"
   >
-    <img v-if="src" :src="src" class="app-avatar__img" :alt="name" />
+    <img v-if="src && !imgError" :src="src" class="app-avatar__img" :alt="name" @error="onImgError" />
     <span v-else class="app-avatar__text">{{ initial() }}</span>
   </div>
 </template>

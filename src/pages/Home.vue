@@ -75,14 +75,15 @@ const priorityDotColors: Record<string, string> = {
 // Quick actions
 // ==========================================
 const quickActions = [
-  { id: 'diary',    label: '写日记',   icon: 'pen',       route: '/diary/new' },
-  { id: 'schedule', label: '课程表',   icon: 'calendar',  route: '/work' },
-  { id: 'todo',     label: '待办清单', icon: 'checklist', route: '/todo' },
-
-  { id: 'expense',  label: '支出记录', icon: 'expense',   route: '/expense' },
-  { id: 'income',   label: '收入记录', icon: 'income',    route: '/expense/new' },
+  { id: 'diary',    label: '日记',     icon: 'pen',       route: '/diary/new' },
+  { id: 'work',     label: '工作',     icon: 'calendar',  route: '/work' },
+  { id: 'todo',     label: '待办',     icon: 'checklist', route: '/todo' },
+  { id: 'expense',  label: '账本',     icon: 'expense',   route: '/expense' },
+  { id: 'students', label: '学生',     icon: 'people',    route: '/work?tab=学生档案' },
   { id: 'events',   label: '大事记',   icon: 'star',      route: '/memory' },
   { id: 'time',     label: '时光中心', icon: 'clock',     route: '/time-center' },
+  { id: 'data',     label: '数据管理', icon: 'download',  route: '/import' },
+  { id: 'recycle',  label: '回收站',   icon: 'trash',     route: '/settings/recycle-bin' },
 ]
 
 function goTo(path: string) {
@@ -210,6 +211,15 @@ function getTodayDisplay() {
             </svg>
             <svg v-else-if="act.icon==='clock'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <svg v-else-if="act.icon==='download'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            <svg v-else-if="act.icon==='trash'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+            <svg v-else-if="act.icon==='people'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
             </svg>
           </div>
           <span class="quick-btn__label">{{ act.label }}</span>
@@ -447,6 +457,9 @@ function getTodayDisplay() {
 .quick-btn__icon--income   { background: #EBF0ED; color: var(--color-secondary); }
 .quick-btn__icon--events   { background: #F3EEF8; color: #8E7CB5; }
 .quick-btn__icon--time     { background: #EDF2F8; color: var(--color-primary); }
+.quick-btn__icon--data     { background: #EDF2F8; color: var(--color-primary); }
+.quick-btn__icon--recycle  { background: #FDF0ED; color: var(--color-error); }
+.quick-btn__icon--students { background: #EBF0ED; color: var(--color-secondary); }
 
 .quick-btn__label {
   font-size: var(--font-caption);

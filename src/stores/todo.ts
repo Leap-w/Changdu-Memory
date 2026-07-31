@@ -71,12 +71,12 @@ export const useTodoStore = defineStore('todo', () => {
 
   /** 创建 */
   async function addTodo(
-    fields: { title: string; description: string; todo_date: string; priority: string; category: string },
+    fields: { title: string; description: string; todo_date: string; deadline_date?: string | null; deadline_time?: string | null; priority?: string; category?: string },
   ): Promise<Todo> {
     loading.value = true
     error.value = null
     try {
-      const todo = await createTodo(fields)
+      const todo = await createTodo({ ...fields, priority: fields.priority || 'medium', category: fields.category || 'life' })
       todos.value.unshift(todo)
       return todo
     } catch (err: unknown) {
@@ -90,7 +90,7 @@ export const useTodoStore = defineStore('todo', () => {
   /** 编辑 */
   async function editTodo(
     id: string,
-    fields: { title: string; description: string; todo_date: string; priority: string; category: string },
+    fields: { title: string; description: string; todo_date: string; deadline_date?: string | null; deadline_time?: string | null; priority?: string; category?: string },
   ): Promise<Todo> {
     loading.value = true
     error.value = null
