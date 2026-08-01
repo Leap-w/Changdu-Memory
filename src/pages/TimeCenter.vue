@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useTimeStore, getCountdownStats } from '@/stores/time'
+import { useMemoryStore } from '@/stores/memory'
 import type { Countdown } from '@/repositories/TimeRepository'
+import type { Memory } from '@/repositories/MemoryRepository'
 import { AppCard, AppSection, AppIcon } from '@/components/ui'
 import {
   NButton, NInput, NDatePicker, NForm, NFormItem,
@@ -10,56 +12,36 @@ import {
 } from 'naive-ui'
 
 const timeStore = useTimeStore()
+const memoryStore = useMemoryStore()
 const message = useMessage()
 
 // ====== Data loading ======
 onMounted(() => {
   timeStore.loadTimeProfile()
   timeStore.loadCountdowns()
+  if (memoryStore.memories.length === 0) memoryStore.loadMemories()
 })
 
-// ====== Journey milestones (derived from start/end dates) ======
-const milestones = computed(() => {
-  if (!timeStore.profile?.start_date || !timeStore.profile?.end_date) return []
-
-  const start = new Date(timeStore.profile.start_date + 'T00:00:00')
-  const end = new Date(timeStore.profile.end_date + 'T00:00:00')
-  const totalMs = end.getTime() - start.getTime()
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-
-  const nodes: { label: string; date: Date; isPassed: boolean; isCurrent: boolean; desc: string }[] = []
-
-  const addNode = (ratio: number, label: string, desc: string) => {
-    const date = new Date(start.getTime() + totalMs * ratio)
-    const isPassed = date <= today
-    const isCurrent = !isPassed && nodes.every((n) => n.isPassed)
-    nodes.push({ label, date, isPassed, isCurrent, desc })
+// ====== 大事记（仅展示，修改入口仍在设置里） ======
+const memoryGroups = computed(() => {
+  const groups: { month: string; items: Memory[] }[] = []
+  for (const m of memoryStore.memories) {
+    const month = (m.event_date || '').substring(0, 7)
+    const last = groups[groups.length - 1]
+    if (last && last.month === month) last.items.push(m)
+    else groups.push({ month, items: [m] })
   }
-
-  addNode(0, '启程', '抵达昌都，开始支教旅程')
-  addNode(0.08, '适应', '适应高原环境与教学节奏')
-  addNode(0.30, '深耕', '深入教学，融入校园生活')
-  addNode(0.55, '过半', '支教旅程过半，收获与反思')
-  addNode(0.78, '沉淀', '沉淀经验，留下更多印记')
-  addNode(1, '归程', '圆满完成支教任务')
-
-  // Mark the first un-passed node as current
-  let foundCurrent = false
-  for (const n of nodes) {
-    if (!n.isPassed && !foundCurrent) {
-      n.isCurrent = true
-      foundCurrent = true
-    } else {
-      n.isCurrent = false
-    }
-  }
-
-  return nodes
+  return groups
 })
 
-function fmtMilestoneDate(d: Date): string {
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`
+function formatMonth(m: string): string {
+  const [y, mo] = m.split('-')
+  return `${y}年${parseInt(mo)}月`
+}
+
+function formatMemoryDay(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00')
+  return `${d.getMonth() + 1}月${d.getDate()}日`
 }
 
 // ====== Main project edit modal ======
@@ -213,31 +195,40 @@ async function handleCdDelete(id: string) {
         </div>
       </div>
 
-      <!-- ====== Journey Route ====== -->
-      <AppSection title="一年旅程" subtitle="根据起止日期自动推算" class="tc__section">
-        <div v-if="milestones.length" class="tc-journey">
-          <div
-            v-for="(node, i) in milestones"
-            :key="i"
-            class="tc-journey__node"
-            :class="{
-              'tc-journey__node--passed': node.isPassed,
-              'tc-journey__node--current': node.isCurrent,
-            }"
-          >
-            <div class="tc-journey__gutter">
-              <div class="tc-journey__dot" />
-              <div v-if="i < milestones.length - 1" class="tc-journey__line" />
-            </div>
-            <div class="tc-journey__body">
-              <span class="tc-journey__date">{{ fmtMilestoneDate(node.date) }}</span>
-              <span class="tc-journey__label">{{ node.label }}</span>
-              <span class="tc-journey__desc">{{ node.desc }}</span>
+      <!-- ====== 大事记（仅展示，修改入口仍在设置里） ====== -->
+      <AppSection title="大事记" subtitle="珍藏的每一个重要瞬间" class="tc__section">
+        <div v-if="memoryStore.memories.length === 0" class="tc-empty-text">
+          还没有大事记，前往「记忆时间轴」记录
+        </div>
+        <div v-else class="tc-memories">
+          <div v-for="group in memoryGroups" :key="group.month" class="tc-memories__group">
+            <h3 class="tc-memories__month">
+              {{ formatMonth(group.month) }}
+            </h3>
+
+            <div v-for="m in group.items" :key="m.id" class="tc-memory">
+              <div class="tc-memory__gutter">
+                <div class="tc-memory__dot" />
+                <div class="tc-memory__line" />
+              </div>
+
+              <div class="tc-memory__body">
+                <div class="tc-memory__head">
+                  <h4 class="tc-memory__title">
+                    {{ m.title }}
+                  </h4>
+                  <span class="tc-memory__date">{{ formatMemoryDay(m.event_date) }}</span>
+                </div>
+                <div v-if="m.location" class="tc-memory__loc">
+                  <AppIcon name="pin" size="11" />
+                  {{ m.location }}
+                </div>
+                <p v-if="m.content" class="tc-memory__desc">
+                  {{ m.content.length > 120 ? m.content.slice(0, 120) + '…' : m.content }}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
-        <div v-else class="tc-empty-text">
-          配置起止日期后显示旅程路线
         </div>
       </AppSection>
 
@@ -577,25 +568,30 @@ async function handleCdDelete(id: string) {
 }
 
 /* ==========================================
-   Journey Route
+   大事记列表（仅展示）
    ========================================== */
 .tc__section {
   margin-bottom: var(--spacing-2xl);
 }
 
-.tc-journey {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.tc-memories__group {
+  margin-bottom: 18px;
 }
 
-.tc-journey__node {
+.tc-memories__month {
+  font-size: var(--font-content);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+  margin: 0 0 6px;
+}
+
+.tc-memory {
   display: flex;
   gap: 16px;
-  padding: 4px 0;
+  padding: 2px 0;
 }
 
-.tc-journey__gutter {
+.tc-memory__gutter {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -604,26 +600,17 @@ async function handleCdDelete(id: string) {
   padding-top: 6px;
 }
 
-.tc-journey__dot {
+.tc-memory__dot {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: var(--color-border);
-  border: 2px solid var(--color-bg);
-  flex-shrink: 0;
-  transition: all var(--transition-fast);
-}
-
-.tc-journey__node--passed .tc-journey__dot {
   background: var(--color-primary);
+  border: 2px solid var(--color-bg-white);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06);
+  flex-shrink: 0;
 }
 
-.tc-journey__node--current .tc-journey__dot {
-  background: var(--color-gold);
-  box-shadow: 0 0 0 4px rgba(214, 168, 79, 0.15);
-}
-
-.tc-journey__line {
+.tc-memory__line {
   flex: 1;
   width: 2px;
   min-height: 24px;
@@ -631,42 +618,67 @@ async function handleCdDelete(id: string) {
   margin-top: 4px;
 }
 
-.tc-journey__node--passed .tc-journey__line {
-  background: var(--color-primary);
-}
-
-.tc-journey__body {
+.tc-memory__body {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 2px 0 12px;
+  gap: 3px;
+  padding: 2px 0 14px;
   padding-left: 4px;
+  flex: 1;
+  min-width: 0;
 }
 
-.tc-journey__date {
-  font-size: 11px;
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-tertiary);
+.tc-memory__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
 }
 
-.tc-journey__node--current .tc-journey__date {
-  color: var(--color-gold);
-  font-weight: var(--font-weight-semibold);
-}
-
-.tc-journey__label {
+.tc-memory__title {
+  flex: 1;
+  min-width: 0;
   font-size: var(--font-content);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-}
-
-.tc-journey__node--current .tc-journey__label {
   font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin: 0;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.tc-journey__desc {
+.tc-memory__date {
+  font-size: 14px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.tc-memory__loc {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+  background: var(--color-primary-bg);
+  padding: 2px 8px;
+  border-radius: var(--radius-xs);
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tc-memory__desc {
   font-size: var(--font-caption);
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+  margin: 0;
 }
 
 /* ---- Section actions ---- */

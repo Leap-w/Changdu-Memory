@@ -513,7 +513,7 @@ async function handleBatchAdd() {
 
 <style scoped>
 /* ================================================
-   Work Page — V5.5.1
+   Work Page — V5.5.2
    ================================================ */
 .work-page {
   max-width: 960px;

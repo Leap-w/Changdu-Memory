@@ -1,7 +1,7 @@
 {
   "name": "changdu-memory",
   "private": true,
-  "version": "5.5.1",
+  "version": "5.5.2",
   "type": "module",
   "description": "昌都记忆 Changdu Memory - 个人数字记录平台",
   "scripts": {

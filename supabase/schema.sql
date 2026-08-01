@@ -772,9 +772,135 @@ ALTER TABLE public.diaries ADD COLUMN IF NOT EXISTS weather TEXT;
 ALTER TABLE public.diaries ADD COLUMN IF NOT EXISTS mood TEXT;
 
 -- ============================================================
+-- 22. journey_milestones（一年旅程节点）— V5.5.2
+-- ============================================================
+-- 依赖: auth.users
+-- 说明: 可自定义的旅程节点（label / description / start_date），
+--       首次访问时由后端自动写入默认节点（日期按旅程起止比例推算，见 JourneyRepository）
+--       start_date 表示各阶段的开始日期
+
+CREATE TABLE IF NOT EXISTS public.journey_milestones (
+  id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  label       TEXT NOT NULL,
+  description TEXT DEFAULT '',
+  start_date  DATE,
+  sort_order  INTEGER DEFAULT 0,
+  created_at  TIMESTAMPTZ DEFAULT now(),
+  updated_at  TIMESTAMPTZ DEFAULT now()
+);
+
+DROP TRIGGER IF EXISTS set_journey_milestones_updated_at ON public.journey_milestones;
+CREATE TRIGGER set_journey_milestones_updated_at
+  BEFORE UPDATE ON public.journey_milestones
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+ALTER TABLE public.journey_milestones ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "journey_milestones_select" ON public.journey_milestones;
+CREATE POLICY "journey_milestones_select" ON public.journey_milestones FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "journey_milestones_insert" ON public.journey_milestones;
+CREATE POLICY "journey_milestones_insert" ON public.journey_milestones FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "journey_milestones_update" ON public.journey_milestones;
+CREATE POLICY "journey_milestones_update" ON public.journey_milestones FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "journey_milestones_delete" ON public.journey_milestones;
+CREATE POLICY "journey_milestones_delete" ON public.journey_milestones FOR DELETE USING (auth.uid() = user_id);
+
+CREATE INDEX IF NOT EXISTS idx_journey_milestones_user ON public.journey_milestones(user_id, sort_order);
+
+-- ============================================================
+-- 23. memories 增加 location（地点/地址）— V5.5.2
+-- ============================================================
+-- 大事记不再使用固定分类（保留 category 字段兼容旧数据），
+-- 新增自定义地点/地址字段用于展示。
+
+ALTER TABLE public.memories ADD COLUMN IF NOT EXISTS location TEXT DEFAULT '';
+
+-- ============================================================
+-- 24. moods（心情记录）— V5.5.2
+-- ============================================================
+-- 依赖: auth.users
+-- 说明: 一天可记录多条心情；mood_date 为日期，created_at 为设置时间点，
+--       外部卡片按 created_at 倒序取最新一条展示。
+--       每次保存时快照 label/emoji，保证历史记录不被后续编辑影响。
+
+CREATE TABLE IF NOT EXISTS public.moods (
+  id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  label       TEXT NOT NULL,
+  emoji       TEXT NOT NULL DEFAULT '😊',
+  note        TEXT DEFAULT '',
+  mood_date   DATE NOT NULL DEFAULT CURRENT_DATE,
+  created_at  TIMESTAMPTZ DEFAULT now(),
+  updated_at  TIMESTAMPTZ DEFAULT now()
+);
+
+DROP TRIGGER IF EXISTS set_moods_updated_at ON public.moods;
+CREATE TRIGGER set_moods_updated_at
+  BEFORE UPDATE ON public.moods
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+ALTER TABLE public.moods ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "moods_select" ON public.moods;
+CREATE POLICY "moods_select" ON public.moods FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "moods_insert" ON public.moods;
+CREATE POLICY "moods_insert" ON public.moods FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "moods_update" ON public.moods;
+CREATE POLICY "moods_update" ON public.moods FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "moods_delete" ON public.moods;
+CREATE POLICY "moods_delete" ON public.moods FOR DELETE USING (auth.uid() = user_id);
+
+CREATE INDEX IF NOT EXISTS idx_moods_user_date ON public.moods(user_id, mood_date DESC, created_at DESC);
+
+-- ============================================================
+-- 25. mood_options（自定义心情选项）— V5.5.2
+-- ============================================================
+-- 依赖: auth.users
+-- 说明: 用户自定义的心情选项（标签 + emoji），按 sort_order 排序显示。
+
+CREATE TABLE IF NOT EXISTS public.mood_options (
+  id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  label       TEXT NOT NULL,
+  emoji       TEXT NOT NULL DEFAULT '😊',
+  sort_order  INTEGER DEFAULT 0,
+  created_at  TIMESTAMPTZ DEFAULT now(),
+  updated_at  TIMESTAMPTZ DEFAULT now()
+);
+
+DROP TRIGGER IF EXISTS set_mood_options_updated_at ON public.mood_options;
+CREATE TRIGGER set_mood_options_updated_at
+  BEFORE UPDATE ON public.mood_options
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+ALTER TABLE public.mood_options ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "mood_options_select" ON public.mood_options;
+CREATE POLICY "mood_options_select" ON public.mood_options FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "mood_options_insert" ON public.mood_options;
+CREATE POLICY "mood_options_insert" ON public.mood_options FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "mood_options_update" ON public.mood_options;
+CREATE POLICY "mood_options_update" ON public.mood_options FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "mood_options_delete" ON public.mood_options;
+CREATE POLICY "mood_options_delete" ON public.mood_options FOR DELETE USING (auth.uid() = user_id);
+
+CREATE INDEX IF NOT EXISTS idx_mood_options_user ON public.mood_options(user_id, sort_order);
+
+-- ============================================================
+-- 26. journey_milestones 迁移：position 百分比 → start_date 日期 — V5.5.2
+-- ============================================================
+-- 兼容已执行过旧版（position 0-100）的库：
+-- 新增 start_date 列，删除 position 列。
+-- 旧数据 start_date 为空，前端访问时会自动按旅程起止日期比例补算默认日期。
+
+ALTER TABLE public.journey_milestones ADD COLUMN IF NOT EXISTS start_date DATE;
+ALTER TABLE public.journey_milestones DROP COLUMN IF EXISTS position;
+
+-- ============================================================
 -- 完成
 -- ============================================================
--- 总计: 15 张数据表 + 3 张关联表 = 18 张表
--- 总计: 95+ 条 RLS Policy
--- 总计: 28 个索引
+-- 总计: 17 张数据表 + 3 张关联表 = 20 张表
+-- 总计: 115+ 条 RLS Policy
+-- 总计: 31 个索引
 -- ============================================================

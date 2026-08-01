@@ -8,9 +8,9 @@ import { useTodoStore } from '@/stores/todo'
 import { useDiaryStore } from '@/stores/diary'
 import { useExpenseStore } from '@/stores/expense'
 import { useMemoryStore } from '@/stores/memory'
+import { useMoodStore } from '@/stores/mood'
 import { AppCard, AppSection, AppIcon } from '@/components/ui'
 import HeroSection from '@/components/dashboard/HeroSection.vue'
-import { getTodayMood } from '@/utils/mood'
 
 const router = useRouter()
 const timeStore = useTimeStore()
@@ -20,6 +20,7 @@ const todoStore = useTodoStore()
 const diaryStore = useDiaryStore()
 const expenseStore = useExpenseStore()
 const memoryStore = useMemoryStore()
+const moodStore = useMoodStore()
 
 const ready = ref(false)
 const periodLabels: Record<string, string> = {
@@ -41,6 +42,10 @@ onMounted(async () => {
       { load: () => diaryStore.diaries.length ? Promise.resolve() : diaryStore.loadDiaries() },
       { load: () => expenseStore.expenses.length ? Promise.resolve() : expenseStore.loadExpenses() },
       { load: () => memoryStore.memories.length ? Promise.resolve() : memoryStore.loadMemories() },
+      // Hero 倒计时卡片依赖「时光」模块的自定义倒计时
+      { load: () => timeStore.countdowns.length ? Promise.resolve() : timeStore.loadCountdowns() },
+      // 今日心情（数据库最新一条）
+      { load: () => moodStore.records.length ? Promise.resolve() : moodStore.loadAll() },
     ]
     await Promise.allSettled(tasks.map((t) => t.load()))
   }
@@ -57,8 +62,8 @@ const doneTodos = computed(() => todayTodos.value.filter((t) => t.completed))
 const pendingTodos = computed(() => todayTodos.value.filter((t) => !t.completed))
 const todayExpenseTotal = computed(() => expenseStore.todayExpenseTotal)
 
-// 今日心情（独立轻量功能，仅存 localStorage）
-const todayMood = computed(() => getTodayMood())
+// 今日心情（数据库最新一条，按设置时间倒序）
+const todayMood = computed(() => moodStore.todayLatestMood)
 
 // ==========================================
 // Recent memories (diaries + memories merged)
@@ -336,7 +341,7 @@ function goTo(path: string) {
 
 <style scoped>
 /* ================================================
-   Home Page — V5.5.1
+   Home Page — V5.5.2
    ================================================ */
 .home {
   /* Hero handles its own background */

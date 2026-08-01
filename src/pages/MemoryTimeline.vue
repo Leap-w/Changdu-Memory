@@ -2,57 +2,51 @@
 import { ref, computed, onMounted } from 'vue'
 import { useMemoryStore } from '@/stores/memory'
 import { useAuthStore } from '@/stores/auth'
+import { useTimeStore } from '@/stores/time'
+import { useJourneyStore } from '@/stores/journey'
 import { uploadMemoryPhoto, deleteMemoryPhoto } from '@/repositories/MemoryPhotoRepository'
 import type { MemoryPhoto } from '@/repositories/MemoryPhotoRepository'
 import { AppCard, AppIcon } from '@/components/ui'
 import {
   NButton, NModal, NForm, NFormItem, NInput,
-  NDatePicker, NSelect, NSpin, useMessage,
+  NDatePicker, NSpin, useMessage,
 } from 'naive-ui'
 import type { Memory } from '@/repositories/MemoryRepository'
 
 const memoryStore = useMemoryStore()
 const authStore = useAuthStore()
+const timeStore = useTimeStore()
+const journeyStore = useJourneyStore()
 const message = useMessage()
 
 const ready = ref(false)
-const activeType = ref<string>('all')
 
-// ==========================================
-// Category mapping (no emoji)
-// ==========================================
-const typeMap: Record<string, { label: string; icon: string; color: string; bgColor: string }> = {
-  school:    { label: '教学', icon: 'book', color: '#4B8F8C', bgColor: 'rgba(75,143,140,0.1)' },
-  activity:  { label: '活动', icon: 'star', color: '#D08770', bgColor: 'rgba(208,135,112,0.1)' },
-  travel:    { label: '旅行', icon: 'pin', color: '#6B9E85', bgColor: 'rgba(107,158,133,0.1)' },
-  life:      { label: '生活', icon: 'check', color: '#8E7CB5', bgColor: 'rgba(142,124,181,0.1)' },
-  important: { label: '重要', icon: 'heart', color: '#C2676A', bgColor: 'rgba(194,103,106,0.1)' },
-}
-
-const typeKeys = Object.keys(typeMap)
+// ====== Tab: 大事记 / 一年旅程 ======
+const activeTab = ref<'memories' | 'journey'>('memories')
 
 // ==========================================
 // Data loading
 // ==========================================
 onMounted(async () => {
   if (!authStore.isLoggedIn) { ready.value = true; return }
-  if (memoryStore.memories.length === 0) {
-    try { await memoryStore.loadMemories() } catch { /* ignore */ }
+  const tasks = [
+    memoryStore.memories.length === 0 ? memoryStore.loadMemories() : Promise.resolve(),
+    timeStore.profile ? Promise.resolve() : timeStore.loadTimeProfile(),
+  ]
+  await Promise.allSettled(tasks)
+  // 旅程节点依赖旅程起止日期推算默认节点日期，需在 profile 加载后再拉取
+  if (journeyStore.milestones.length === 0) {
+    await journeyStore.loadMilestones(timeStore.profile?.start_date, timeStore.profile?.end_date)
   }
   ready.value = true
 })
 
 // ==========================================
-// Filtered & grouped
+// Grouped (按月份，倒序)
 // ==========================================
-const filtered = computed(() => {
-  if (activeType.value === 'all') return memoryStore.memories
-  return memoryStore.memories.filter((m) => m.category === activeType.value)
-})
-
 const groupedByMonth = computed(() => {
   const groups: { month: string; items: Memory[] }[] = []
-  for (const m of filtered.value) {
+  for (const m of memoryStore.memories) {
     const month = (m.event_date || '').substring(0, 7)
     const last = groups[groups.length - 1]
     if (last && last.month === month) last.items.push(m)
@@ -74,7 +68,7 @@ const form = ref({
   title: '',
   content: '',
   event_date: null as number | null,
-  category: 'life',
+  location: '',
 })
 
 const existingPhotos = ref<MemoryPhoto[]>([])
@@ -97,7 +91,7 @@ function closeViewer() {
 
 function openCreate() {
   editId.value = null
-  form.value = { title: '', content: '', event_date: Date.now(), category: 'life' }
+  form.value = { title: '', content: '', event_date: Date.now(), location: '' }
   existingPhotos.value = []
   pendingFiles.value = []
   showModal.value = true
@@ -109,7 +103,7 @@ function openEdit(m: Memory) {
     title: m.title,
     content: m.content || '',
     event_date: m.event_date ? new Date(m.event_date + 'T00:00:00').getTime() : Date.now(),
-    category: m.category,
+    location: m.location ?? '',
   }
   existingPhotos.value = [...memoryStore.getPhotosForMemory(m.id)]
   pendingFiles.value = []
@@ -156,7 +150,8 @@ async function handleSave() {
         title: form.value.title.trim(),
         content: form.value.content,
         event_date: dateStr,
-        category: form.value.category,
+        category: 'life', // 保留兼容字段
+        location: form.value.location.trim(),
         image_urls: existingUrls,
       })
       memoryId = editId.value
@@ -166,7 +161,8 @@ async function handleSave() {
         title: form.value.title.trim(),
         content: form.value.content,
         event_date: dateStr,
-        category: form.value.category,
+        category: 'life',
+        location: form.value.location.trim(),
         image_urls: existingUrls,
       })
       memoryId = memory.id
@@ -219,8 +215,97 @@ function formatWeekday(dateStr: string): string {
   return ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][d.getDay()]
 }
 
-function getType(category: string) {
-  return typeMap[category] || { label: category, icon: 'grid', color: '#6B7B8D', bgColor: 'rgba(107,123,141,0.1)' }
+// ==========================================
+// 一年旅程：展示 + 设置
+// ==========================================
+/** 节点按开始日期排序，标注当前阶段 */
+const journeyNodes = computed(() => {
+  return [...journeyStore.milestones].sort((a, b) =>
+    (a.start_date || '').localeCompare(b.start_date || ''),
+  )
+})
+
+/** 当前旅程进度（0-100） */
+const journeyProgress = computed(() => timeStore.progress)
+
+/** 根据今天日期匹配当前所在节点下标（当前阶段开始时间 ≤ 今天） */
+const currentJourneyIndex = computed(() => {
+  const nodes = journeyNodes.value
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  let idx = 0
+  for (let i = 0; i < nodes.length; i++) {
+    const sd = nodes[i].start_date
+    if (sd) {
+      const d = new Date(sd + 'T00:00:00')
+      if (d <= today) idx = i
+      else break
+    }
+  }
+  return idx
+})
+
+/** 节点日期格式化：YYYY.MM.DD */
+function formatJourneyDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return '未设置'
+  const d = new Date(dateStr + 'T00:00:00')
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`
+}
+
+/** 旅程起止日期文本 */
+const journeyRangeText = computed(() => {
+  const s = timeStore.profile?.start_date
+  const e = timeStore.profile?.end_date
+  if (!s || !e) return ''
+  const fmt = (d: string) => `${d.substring(0, 4)}.${d.substring(5, 7)}`
+  return `${fmt(s)} — ${fmt(e)}`
+})
+
+// ====== 一年旅程设置弹窗 ======
+const showJourney = ref(false)
+const journeyLoading = ref(false)
+const journeyForm = ref<{ label: string; description: string; start_date: number | null }[]>([])
+
+async function openJourneySettings() {
+  showJourney.value = true
+  journeyLoading.value = true
+  try {
+    await journeyStore.loadMilestones(timeStore.profile?.start_date, timeStore.profile?.end_date)
+    journeyForm.value = journeyStore.milestones.map((m) => ({
+      label: m.label,
+      description: m.description ?? '',
+      start_date: m.start_date ? new Date(m.start_date + 'T00:00:00').getTime() : null,
+    }))
+  } catch { /* ignore */ }
+  finally {
+    journeyLoading.value = false
+  }
+}
+
+function addJourneyNode() {
+  journeyForm.value.push({ label: '', description: '', start_date: Date.now() })
+}
+
+function removeJourneyNode(index: number) {
+  journeyForm.value.splice(index, 1)
+}
+
+async function saveJourney() {
+  journeyLoading.value = true
+  try {
+    const items = journeyForm.value.map((n) => ({
+      label: n.label,
+      description: n.description,
+      start_date: n.start_date
+        ? new Date(n.start_date).toISOString().split('T')[0]
+        : new Date().toISOString().split('T')[0],
+    }))
+    await journeyStore.persistMilestones(items)
+    showJourney.value = false
+  } catch { /* ignore */ }
+  finally {
+    journeyLoading.value = false
+  }
 }
 
 </script>
@@ -237,33 +322,79 @@ function getType(category: string) {
           记录在昌都的每一个重要时刻
         </p>
       </div>
-      <button class="tl__create-btn" @click="openCreate">
+      <button v-if="activeTab === 'memories'" class="tl__create-btn" @click="openCreate">
         <AppIcon name="plus" size="16" /> 记录新瞬间
       </button>
-    </div>
-
-    <!-- ====== Category filter ====== -->
-    <div class="tl__filters">
-      <button
-        class="tl__filter-btn"
-        :class="{ 'tl__filter-btn--active': activeType === 'all' }"
-        @click="activeType = 'all'"
-      >
-        全部
-      </button>
-      <button
-        v-for="key in typeKeys"
-        :key="key"
-        class="tl__filter-btn"
-        :class="{ 'tl__filter-btn--active': activeType === key }"
-        @click="activeType = key"
-      >
-        {{ typeMap[key].label }}
+      <button v-else class="tl__create-btn" @click="openJourneySettings">
+        <AppIcon name="settings" size="16" /> 设置旅程
       </button>
     </div>
 
-    <!-- Loading -->
-    <NSpin :show="!ready">
+    <!-- ====== Tab: 大事记 / 一年旅程 ====== -->
+    <div class="tl__tabs">
+      <button
+        class="tl__tab"
+        :class="{ 'tl__tab--active': activeTab === 'memories' }"
+        @click="activeTab = 'memories'"
+      >
+        大事记
+      </button>
+      <button
+        class="tl__tab"
+        :class="{ 'tl__tab--active': activeTab === 'journey' }"
+        @click="activeTab = 'journey'"
+      >
+        一年旅程
+      </button>
+    </div>
+
+    <!-- ====== 一年旅程 Tab ====== -->
+    <div v-if="activeTab === 'journey'" class="tl-journey">
+      <div class="tl-journey__summary">
+        <div class="tl-journey__range">
+          <AppIcon name="clock" size="14" />
+          <span>{{ journeyRangeText || '支教旅程' }}</span>
+        </div>
+        <span class="tl-journey__pct">{{ journeyProgress }}%</span>
+      </div>
+
+      <div class="tl-journey__track">
+        <div
+          class="tl-journey__fill"
+          :style="{ width: journeyProgress + '%' }"
+        />
+      </div>
+
+      <div v-if="journeyNodes.length" class="tl-journey__nodes">
+        <div
+          v-for="(node, i) in journeyNodes"
+          :key="node.id"
+          class="tl-journey__node"
+          :class="{ 'tl-journey__node--current': i === currentJourneyIndex }"
+        >
+          <div class="tl-journey__dot" />
+          <div v-if="i < journeyNodes.length - 1" class="tl-journey__line" />
+          <div class="tl-journey__body">
+            <span class="tl-journey__pos">{{ formatJourneyDate(node.start_date) }}</span>
+            <span class="tl-journey__label">{{ node.label }}</span>
+            <p v-if="node.description" class="tl-journey__desc">{{ node.description }}</p>
+          </div>
+        </div>
+      </div>
+      <div v-else class="tl__empty">
+        <p class="tl__empty-title">
+          还没有设置旅程节点
+        </p>
+        <button class="tl__empty-btn" @click="openJourneySettings">
+          <AppIcon name="settings" size="16" /> 去设置
+        </button>
+      </div>
+    </div>
+
+    <!-- ====== 大事记 Tab ====== -->
+    <div v-else>
+      <!-- Loading -->
+      <NSpin :show="!ready">
       <!-- Empty state -->
       <div v-if="ready && memoryStore.memories.length === 0" class="tl__empty">
         <div class="tl__empty-icon">
@@ -280,15 +411,8 @@ function getType(category: string) {
         </button>
       </div>
 
-      <!-- No results after filter -->
-      <div v-else-if="ready && filtered.length === 0" class="tl__empty">
-        <p class="tl__empty-title">
-          该分类下暂无事件
-        </p>
-      </div>
-
       <!-- Timeline -->
-      <div v-else class="tl__timeline">
+      <div v-else-if="ready" class="tl__timeline">
         <div v-for="group in groupedByMonth" :key="group.month" class="tl__group">
           <h2 class="tl__g-month">
             {{ formatMonth(group.month) }}
@@ -302,10 +426,7 @@ function getType(category: string) {
             >
               <!-- Gutter dot -->
               <div class="tl__event-gutter">
-                <div
-                  class="tl__event-dot"
-                  :style="{ background: getType(event.category).color }"
-                />
+                <div class="tl__event-dot" />
                 <div class="tl__event-line" />
               </div>
 
@@ -314,15 +435,9 @@ function getType(category: string) {
                 <div class="tl__card-head">
                   <span class="tl__card-day">{{ formatDay(event.event_date) }}</span>
                   <span class="tl__card-wd">{{ formatWeekday(event.event_date) }}</span>
-                  <span
-                    class="tl__card-cat"
-                    :style="{
-                      color: getType(event.category).color,
-                      background: getType(event.category).bgColor,
-                    }"
-                  >
-                    <AppIcon :name="getType(event.category).icon" size="11" />
-                    {{ getType(event.category).label }}
+                  <span v-if="event.location" class="tl__card-loc">
+                    <AppIcon name="pin" size="11" />
+                    {{ event.location }}
                   </span>
                 </div>
 
@@ -385,6 +500,7 @@ function getType(category: string) {
         </div>
       </div>
     </NSpin>
+    </div>
 
     <!-- ====== Add/Edit Modal ====== -->
     <NModal
@@ -400,13 +516,11 @@ function getType(category: string) {
         <NFormItem label="日期" required>
           <NDatePicker v-model:value="form.event_date" type="date" style="width: 100%" />
         </NFormItem>
-        <NFormItem label="分类">
-          <NSelect
-            v-model:value="form.category"
-            :options="typeKeys.map((k) => ({
-              label: typeMap[k].label,
-              value: k,
-            }))"
+        <NFormItem label="地点 / 地址">
+          <NInput
+            v-model:value="form.location"
+            placeholder="如：昌都三高、澜沧江畔…"
+            maxlength="50"
           />
         </NFormItem>
         <NFormItem label="描述">
@@ -466,6 +580,77 @@ function getType(category: string) {
           </NButton>
           <NButton type="primary" :loading="modalLoading" @click="handleSave">
             {{ saveLabel }}
+          </NButton>
+        </div>
+      </template>
+    </NModal>
+
+    <!-- ====== 一年旅程设置弹窗 ====== -->
+    <NModal
+      v-model:show="showJourney"
+      preset="card"
+      title="一年旅程设置"
+      style="max-width: 460px"
+    >
+      <p class="tl-journey-hint">
+        为每个旅程节点设置开始日期（当前阶段的开始时间）
+      </p>
+
+      <div v-if="journeyLoading" class="tl-journey-loading">
+        加载中…
+      </div>
+
+      <div v-else class="tl-journey-list">
+        <div
+          v-for="(node, i) in journeyForm"
+          :key="i"
+          class="tl-journey-form-node"
+        >
+          <div class="tl-journey-form-head">
+            <span class="tl-journey-form-index">{{ i + 1 }}</span>
+            <input
+              v-model="node.label"
+              class="tl-journey-form-label"
+              placeholder="节点名称"
+              maxlength="20"
+            />
+            <button
+              class="tl-journey-form-remove"
+              title="删除节点"
+              @click="removeJourneyNode(i)"
+            >
+              ×
+            </button>
+          </div>
+          <div class="tl-journey-form-row">
+            <NDatePicker
+              v-model:value="node.start_date"
+              type="date"
+              class="tl-journey-form-date"
+              placeholder="开始日期"
+              style="width: 100%"
+            />
+            <input
+              v-model="node.description"
+              class="tl-journey-form-desc"
+              placeholder="节点描述（可选）"
+              maxlength="50"
+            />
+          </div>
+        </div>
+      </div>
+
+      <button class="tl-journey-form-add" @click="addJourneyNode">
+        <AppIcon name="plus" size="14" /> 添加节点
+      </button>
+
+      <template #footer>
+        <div class="tl__modal-footer">
+          <NButton @click="showJourney = false">
+            取消
+          </NButton>
+          <NButton type="primary" :loading="journeyLoading" @click="saveJourney">
+            保存
           </NButton>
         </div>
       </template>
@@ -552,21 +737,24 @@ function getType(category: string) {
   background: var(--color-primary-dark);
 }
 
-/* ---- Filter pills ---- */
-.tl__filters {
+/* ---- Tabs: 大事记 / 一年旅程 ---- */
+.tl__tabs {
   display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
   margin-bottom: var(--spacing-xl);
+  background: var(--color-bg);
+  border-radius: var(--radius-full);
+  width: fit-content;
 }
 
-.tl__filter-btn {
-  padding: 6px 16px;
-  border: 1px solid var(--color-border-light);
+.tl__tab {
+  padding: 7px 22px;
+  border: none;
   border-radius: var(--radius-full);
-  background: var(--color-bg-white);
+  background: transparent;
   color: var(--color-text-secondary);
-  font-size: var(--font-caption);
+  font-size: var(--font-secondary);
   font-family: inherit;
   font-weight: var(--font-weight-medium);
   cursor: pointer;
@@ -574,16 +762,15 @@ function getType(category: string) {
   transition: all var(--transition-fast);
 }
 
-.tl__filter-btn:hover {
-  border-color: var(--color-primary);
+.tl__tab:hover {
   color: var(--color-primary);
 }
 
-.tl__filter-btn--active {
+.tl__tab--active {
   background: var(--color-primary);
-  border-color: var(--color-primary);
   color: #fff;
   font-weight: var(--font-weight-semibold);
+  box-shadow: var(--shadow-xs);
 }
 
 /* ---- Empty state ---- */
@@ -699,6 +886,7 @@ function getType(category: string) {
   width: 10px;
   height: 10px;
   border-radius: 50%;
+  background: var(--color-primary);
   border: 2px solid var(--color-bg-white);
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06);
   flex-shrink: 0;
@@ -734,15 +922,21 @@ function getType(category: string) {
   color: var(--color-text-tertiary);
 }
 
-.tl__card-cat {
+.tl__card-loc {
   display: inline-flex;
   align-items: center;
   gap: 3px;
   font-size: 11px;
   font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+  background: var(--color-primary-bg);
   padding: 2px 8px;
   border-radius: var(--radius-xs);
   margin-left: auto;
+  max-width: 55%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .tl__card-title {
@@ -967,5 +1161,272 @@ function getType(category: string) {
 .viewer-enter-from,
 .viewer-leave-to {
   opacity: 0;
+}
+
+/* ==========================================
+   一年旅程 Tab
+   ========================================== */
+.tl-journey {
+  background: var(--glass-bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card, 24px);
+  padding: 24px;
+}
+
+.tl-journey__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.tl-journey__range {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-secondary);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.tl-journey__pct {
+  font-size: var(--font-content);
+  font-weight: var(--font-weight-extrabold);
+  color: var(--color-gold);
+  font-variant-numeric: tabular-nums;
+}
+
+.tl-journey__track {
+  width: 100%;
+  height: 8px;
+  background: var(--color-border-light);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.tl-journey__fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-gold));
+  transition: width 800ms ease;
+}
+
+.tl-journey__nodes {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.tl-journey__node {
+  display: flex;
+  gap: 16px;
+  padding: 2px 0;
+  position: relative;
+}
+
+.tl-journey__dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-border);
+  border: 3px solid var(--color-bg-white);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06);
+  flex-shrink: 0;
+  margin-top: 14px;
+  z-index: 1;
+  transition: all var(--transition-fast);
+}
+
+.tl-journey__node--current .tl-journey__dot {
+  background: var(--color-gold);
+  box-shadow: 0 0 0 4px rgba(214, 168, 79, 0.2);
+}
+
+.tl-journey__line {
+  position: absolute;
+  left: 6px;
+  top: 30px;
+  bottom: -2px;
+  width: 2px;
+  background: var(--color-border-light);
+}
+
+.tl-journey__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 0 20px;
+  padding-left: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.tl-journey__pos {
+  font-size: 11px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-tertiary);
+}
+
+.tl-journey__node--current .tl-journey__pos {
+  color: var(--color-gold);
+  font-weight: var(--font-weight-semibold);
+}
+
+.tl-journey__label {
+  font-size: var(--font-content);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.tl-journey__node--current .tl-journey__label {
+  font-weight: var(--font-weight-bold);
+}
+
+.tl-journey__desc {
+  font-size: var(--font-caption);
+  color: var(--color-text-tertiary);
+  margin: 0;
+}
+
+/* ---- 一年旅程设置弹窗 ---- */
+.tl-journey-hint {
+  font-size: var(--font-caption);
+  color: var(--color-text-tertiary);
+  margin: -4px 0 16px;
+}
+
+.tl-journey-loading {
+  padding: 32px 0;
+  text-align: center;
+  font-size: var(--font-secondary);
+  color: var(--color-text-tertiary);
+}
+
+.tl-journey-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 46vh;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.tl-journey-form-node {
+  padding: 12px 14px;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg);
+}
+
+.tl-journey-form-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.tl-journey-form-index {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 11px;
+  font-weight: var(--font-weight-bold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.tl-journey-form-label {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-input);
+  font-size: var(--font-secondary);
+  font-family: inherit;
+  color: var(--color-text-primary);
+  background: var(--color-bg-white);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.tl-journey-form-label:focus {
+  border-color: var(--color-primary);
+}
+
+.tl-journey-form-remove {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(194, 103, 106, 0.1);
+  color: var(--color-error);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--transition-fast);
+}
+
+.tl-journey-form-remove:hover {
+  background: rgba(194, 103, 106, 0.18);
+}
+
+.tl-journey-form-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tl-journey-form-date {
+  width: 150px;
+  flex-shrink: 0;
+}
+
+.tl-journey-form-desc {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-input);
+  font-size: var(--font-secondary);
+  font-family: inherit;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-white);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.tl-journey-form-desc:focus {
+  border-color: var(--color-primary);
+}
+
+.tl-journey-form-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px 16px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: var(--font-caption);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.tl-journey-form-add:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 </style>

@@ -20,7 +20,7 @@ export async function fetchMemories(): Promise<Memory[]> {
 }
 
 export async function createMemory(
-  fields: Pick<MemoryInsert, 'title' | 'content' | 'event_date' | 'category' | 'image_urls'>,
+  fields: Pick<MemoryInsert, 'title' | 'content' | 'event_date' | 'category' | 'location' | 'image_urls'>,
 ): Promise<Memory> {
   const user = (await supabase.auth.getUser()).data.user
   if (!user) throw new Error('未登录')
@@ -35,7 +35,7 @@ export async function createMemory(
 
 export async function updateMemory(
   id: string,
-  fields: Pick<MemoryUpdate, 'title' | 'content' | 'event_date' | 'category' | 'image_urls'>,
+  fields: Pick<MemoryUpdate, 'title' | 'content' | 'event_date' | 'category' | 'location' | 'image_urls'>,
 ): Promise<Memory> {
   const { data, error } = await db
     .from('memories')

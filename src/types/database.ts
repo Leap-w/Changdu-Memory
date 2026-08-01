@@ -270,6 +270,7 @@ export interface Database {
           content: string | null
           event_date: string
           category: string
+          location: string | null
           image_urls: string[] | null
           created_at: string
           updated_at: string
@@ -281,6 +282,7 @@ export interface Database {
           content?: string | null
           event_date: string
           category?: string
+          location?: string | null
           image_urls?: string[] | null
           created_at?: string
           updated_at?: string
@@ -290,6 +292,7 @@ export interface Database {
           content?: string | null
           event_date?: string
           category?: string
+          location?: string | null
           image_urls?: string[] | null
           updated_at?: string
         }
@@ -467,6 +470,90 @@ export interface Database {
         Update: {
           storage_path?: string
           url?: string
+        }
+      }
+      journey_milestones: {
+        Row: {
+          id: string
+          user_id: string
+          label: string
+          description: string | null
+          start_date: string | null
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          label: string
+          description?: string | null
+          start_date?: string | null
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          label?: string
+          description?: string | null
+          start_date?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+      }
+      moods: {
+        Row: {
+          id: string
+          user_id: string
+          label: string
+          emoji: string
+          note: string | null
+          mood_date: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          label: string
+          emoji?: string
+          note?: string | null
+          mood_date?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          label?: string
+          emoji?: string
+          note?: string | null
+          mood_date?: string
+          updated_at?: string
+        }
+      }
+      mood_options: {
+        Row: {
+          id: string
+          user_id: string
+          label: string
+          emoji: string
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          label: string
+          emoji?: string
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          label?: string
+          emoji?: string
+          sort_order?: number
+          updated_at?: string
         }
       }
 

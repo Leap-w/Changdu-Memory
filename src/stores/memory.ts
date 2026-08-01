@@ -85,6 +85,7 @@ export const useMemoryStore = defineStore('memory', () => {
       content: string
       event_date: string
       category: string
+      location: string
       image_urls: string[]
     },
   ): Promise<Memory> {
@@ -109,6 +110,7 @@ export const useMemoryStore = defineStore('memory', () => {
       content: string
       event_date: string
       category: string
+      location: string
       image_urls: string[]
     },
   ): Promise<Memory> {

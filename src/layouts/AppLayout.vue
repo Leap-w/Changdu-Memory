@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * AppLayout — V5.5.1 统一应用外壳
+ * AppLayout — V5.5.2 统一应用外壳
  *
  * 包含：顶部悬浮胶囊导航 + 主内容区 + 移动端底部导航
  * PC（>=768px）：顶部导航含全部链接

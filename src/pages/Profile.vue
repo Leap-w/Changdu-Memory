@@ -7,10 +7,11 @@ import { useTimeStore } from '@/stores/time'
 import { useDiaryStore } from '@/stores/diary'
 import { useWorkStore } from '@/stores/work'
 import { useMemoryStore } from '@/stores/memory'
-import { useExpenseStore } from '@/stores/expense'
+import { useStudentStore } from '@/stores/student'
+import { useJourneyStore } from '@/stores/journey'
 import { supabase } from '@/services/supabase'
 import { exportAllData, downloadJson } from '@/utils/export'
-import { AppCard, AppSection, AppAvatar, AppIcon } from '@/components/ui'
+import { AppCard, AppAvatar, AppIcon } from '@/components/ui'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -19,7 +20,8 @@ const timeStore = useTimeStore()
 const diaryStore = useDiaryStore()
 const workStore = useWorkStore()
 const memoryStore = useMemoryStore()
-const expenseStore = useExpenseStore()
+const studentStore = useStudentStore()
+const journeyStore = useJourneyStore()
 
 // ====== Data loading ======
 const ready = ref(false)
@@ -30,9 +32,13 @@ onMounted(async () => {
     diaryStore.diaries.length ? Promise.resolve() : diaryStore.loadDiaries(),
     workStore.works.length ? Promise.resolve() : workStore.loadWorks(),
     memoryStore.memories.length ? Promise.resolve() : memoryStore.loadMemories(),
-    expenseStore.expenses.length ? Promise.resolve() : expenseStore.loadExpenses(),
+    studentStore.students.length ? Promise.resolve() : studentStore.loadStudents(),
   ]
   await Promise.allSettled(tasks)
+  // 旅程节点依赖旅程起止日期，需在 profile 加载后再拉取
+  if (journeyStore.milestones.length === 0) {
+    await journeyStore.loadMilestones(timeStore.profile?.start_date, timeStore.profile?.end_date)
+  }
   ready.value = true
 })
 
@@ -47,18 +53,10 @@ function toggleDarkMode() {
 
 // ====== Time profile ======
 const hasTimeProfile = computed(() => !!timeStore.profile?.start_date)
-const dateRangeText = computed(() => {
-  if (!timeStore.profile?.start_date || !timeStore.profile?.end_date) return ''
-  const s = timeStore.profile.start_date
-  const e = timeStore.profile.end_date
-  return `${s.substring(0, 7).replace('-', '年')}月 — ${e.substring(0, 7).replace('-', '年')}月`
-})
 
-// ====== Profile hero card (按 我的1.1.html 原型) ======
+// ====== Profile hero card (按 我的1.3.html 原型) ======
 const projectName = computed(() => timeStore.profile?.project_name || '')
 const heroLocation = computed(() => timeStore.profile?.location || '')
-/** 顶部徽标文案：优先项目名，其次位置 */
-const heroBadge = computed(() => projectName.value || heroLocation.value || '支教志愿者')
 /** 姓名下方的支教团信息：项目名 · 位置 */
 const heroSub = computed(() => {
   if (projectName.value && heroLocation.value) return `${projectName.value} · ${heroLocation.value}`
@@ -68,12 +66,46 @@ const heroSub = computed(() => {
 const heroSchool = computed(() => authStore.profile.school || '待设置')
 const heroSubject = computed(() => authStore.profile.subject || '待设置')
 
-// ====== Stats ======
+// ====== 时间胶囊（按 我的1.3.html 原型：支教第X天 / 已经过X月 / 剩余X天） ======
+/** 已经过的整月数（按天折算，约 30.44 天/月） */
+const monthsPassed = computed(() => {
+  if (!timeStore.profile?.start_date) return 0
+  return Math.floor(timeStore.daysPassed / 30.44)
+})
+
+/** 时间胶囊底部三行：出发 / 陪伴中 / 告别 */
+const capsuleDates = computed(() => {
+  const s = timeStore.profile?.start_date
+  const e = timeStore.profile?.end_date
+  if (!s || !e) return { start: '', end: '' }
+  const fmt = (d: string) => `${d.substring(0, 4)}.${d.substring(5, 7)}`
+  return { start: fmt(s), end: fmt(e) }
+})
+
+/** 阶段徽标：按「一年旅程」时间节点匹配今天日期（开始日期 ≤ 今天的最后一个节点） */
+const currentJourneyStage = computed(() => {
+  const ms = journeyStore.milestones
+  if (ms.length === 0) return timeStore.phase // 未配置一年旅程时回退到自动阶段
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const sorted = [...ms].sort((a, b) => (a.start_date || '').localeCompare(b.start_date || ''))
+  let current = sorted[0]
+  for (const m of sorted) {
+    if (m.start_date) {
+      const d = new Date(m.start_date + 'T00:00:00')
+      if (d <= today) current = m
+      else break
+    }
+  }
+  return current.label
+})
+
+// ====== Stats（按 我的1.3.html 原型：4 个数据勋章） ======
 const statCards = computed(() => [
-  { key: 'diary', label: '日记篇数', value: diaryStore.diaries.length, icon: 'book', color: 'rgba(75,143,140,0.1)', iconColor: 'var(--color-primary)' },
-  { key: 'work', label: '工作记录', value: workStore.works.length, icon: 'briefcase', color: 'rgba(111,168,220,0.12)', iconColor: 'var(--color-sky)' },
-  { key: 'memory', label: '大事记', value: memoryStore.memories.length, icon: 'star', color: 'rgba(214,168,79,0.12)', iconColor: 'var(--color-gold)' },
-  { key: 'expense', label: '消费记录', value: expenseStore.expenses.length, icon: 'wallet', color: 'rgba(194,103,106,0.1)', iconColor: 'var(--color-accent)' },
+  { key: 'diary',    label: '篇藏东日记', sub: 'Diary',    value: diaryStore.diaries.length,    icon: 'book',   iconColor: 'var(--color-primary)',           card: 'stat-card--diary' },
+  { key: 'work',     label: '个工作记录', sub: 'Works',    value: workStore.works.length,       icon: 'grid',   iconColor: 'var(--color-sky)',             card: 'stat-card--work' },
+  { key: 'memory',   label: '次时光记录', sub: 'Events',   value: memoryStore.memories.length,  icon: 'photo',  iconColor: 'var(--color-gold)',           card: 'stat-card--memory' },
+  { key: 'student',  label: '名支教学生', sub: 'Students', value: studentStore.students.length, icon: 'star',   iconColor: 'var(--color-text-secondary)', card: 'stat-card--student' },
 ])
 
 // ====== Account modal (keep existing logic) ======
@@ -140,12 +172,10 @@ async function doExport() {
   finally { exporting.value = false }
 }
 
-// ====== About modal ======
-const showAbout = ref(false)
-
 // ====== Menu groups ======
 interface MenuItem { id: string; label: string; icon: string; route?: string; action?: () => void; desc?: string }
 
+/** 常用功能（单列卡片，放右侧下方） */
 const groupFeatures: MenuItem[] = [
   { id: 'mood',   label: '今日心情', icon: 'smile',  route: '/mood',                desc: '记录此刻心情' },
   { id: 'search', label: '全局搜索', icon: 'search', route: '/search',              desc: '搜索全部记录' },
@@ -153,16 +183,12 @@ const groupFeatures: MenuItem[] = [
   { id: 'stats',  label: '年度统计', icon: 'chart',  route: '/statistics',          desc: '数据统计' },
 ]
 
-const groupData: MenuItem[] = [
+/** 系统管理（单列卡片，放左侧关于卡片下方） */
+const groupSystem: MenuItem[] = [
+  { id: 'theme',   label: '深色模式', icon: 'moon',   action: toggleDarkMode, desc: darkMode.value ? '已开启' : '已关闭' },
   { id: 'data',    label: '数据管理', icon: 'upload', action: () => { showDataMgmt.value = true }, desc: '导入 / 导出全部数据' },
   { id: 'recycle', label: '回收站',   icon: 'trash',  route: '/settings/recycle-bin',              desc: '恢复已删除数据' },
 ]
-
-const settingsMenu = computed<MenuItem[]>(() => [
-  { id: 'theme', label: '深色模式', icon: 'moon', action: toggleDarkMode, desc: darkMode.value ? '已开启' : '已关闭' },
-  { id: 'about', label: '关于昌都记忆', icon: 'info', action: () => { showAbout.value = true }, desc: 'V5.5.1' },
-  { id: 'logout', label: '退出登录', icon: 'logout', action: () => { handleLogout() }, desc: '退出当前账号' },
-])
 
 function handleMenuClick(item: MenuItem) {
   if (item.route) router.push(item.route)
@@ -184,10 +210,9 @@ function goTo(path: string) {
           我的档案
         </h1>
         <p class="profile__header-sub">
-          志愿者的数字时光归档
+          志愿者的数字时光归档 · 记录在昌都的每一天
         </p>
       </div>
-      <span v-if="dateRangeText" class="profile__header-badge">{{ dateRangeText }}</span>
     </div>
 
     <!-- ====== Desktop: 2-column | Mobile: single ====== -->
@@ -196,7 +221,7 @@ function goTo(path: string) {
            LEFT COLUMN
            ========================================== -->
       <div class="profile__left">
-        <!-- Personal Hero Card (按 我的1.1.html 原型) -->
+        <!-- Personal Hero Card (按 我的1.3.html 原型) -->
         <div class="profile-hero" @click="openAccount">
           <!-- 背景雪山线稿纹理 -->
           <svg
@@ -209,15 +234,8 @@ function goTo(path: string) {
           </svg>
 
           <div class="profile-hero__content">
-            <!-- 顶部状态标签 -->
-            <div class="profile-hero__top">
-              <span class="profile-hero__badge">
-                {{ heroBadge }}
-              </span>
-              <span v-if="heroLocation" class="profile-hero__top-location">
-                {{ heroLocation }}
-              </span>
-            </div>
+            <!-- 顶部状态标签区（按原型留白占位） -->
+            <div class="profile-hero__top" />
 
             <!-- 头像与姓名信息 -->
             <div class="profile-hero__profile">
@@ -272,14 +290,58 @@ function goTo(path: string) {
           </div>
         </div>
 
-        <!-- About / version (desktop only: light block) -->
-        <div class="profile__about-block">
-          <div class="profile__about-icon">
-            <AppIcon name="info" size="16" />
+        <!-- ==========================================
+             系统管理（左侧，单列卡片，标题在卡内）
+             ========================================== -->
+        <div class="profile__menu-card profile__menu-card--push">
+          <h2 class="profile__menu-card-title">
+            系统管理
+          </h2>
+          <button
+            v-for="item in groupSystem"
+            :key="item.id"
+            class="profile__menu-row"
+            @click="handleMenuClick(item)"
+          >
+            <div
+              class="profile__menu-icon"
+              :class="`profile__menu-icon--${item.id}`"
+            >
+              <AppIcon :name="item.icon" size="18" />
+            </div>
+            <span class="profile__menu-label">{{ item.label }}</span>
+            <span class="profile__menu-desc">{{ item.desc }}</span>
+            <template v-if="item.id === 'theme'">
+              <label class="profile__toggle" @click.stop>
+                <input type="checkbox" :checked="darkMode" @change="toggleDarkMode" />
+                <span class="profile__toggle-slider" />
+              </label>
+            </template>
+            <AppIcon
+              v-else
+              name="chevron-right"
+              size="14"
+              class="profile__menu-arrow"
+            />
+          </button>
+        </div>
+
+        <!-- About / 昌都记忆品牌卡片 (按 我的1.3.html 原型) -->
+        <div class="profile__about-card">
+          <div class="profile__about-logo">
+            昌
           </div>
-          <div class="profile__about-text">
-            <span class="profile__about-name">昌都记忆</span>
-            <span class="profile__about-version">V5.5.1</span>
+          <div class="profile__about-info">
+            <h3 class="profile__about-name">
+              Changdu Memory
+            </h3>
+            <p class="profile__about-desc">
+              记录 2026 昌都支教岁月 · 志愿者的数字时光档案
+            </p>
+          </div>
+          <div class="profile__about-foot">
+            <span class="profile__about-version">当前版本 V5.5.2</span>
+            <span class="profile__about-update">检查更新</span>
           </div>
         </div>
       </div>
@@ -288,35 +350,33 @@ function goTo(path: string) {
            RIGHT COLUMN
            ========================================== -->
       <div class="profile__right">
-        <!-- Time capsule -->
+        <!-- Time capsule (按 我的1.3.html 原型：支教第X天 / 已经过X月 / 剩余X天) -->
         <template v-if="hasTimeProfile">
-          <AppCard class="profile__time-capsule">
+          <div class="profile__time-capsule">
             <div class="time-capsule__head">
-              <AppIcon name="clock" size="18" color="var(--color-primary)" />
               <span class="time-capsule__head-label">支教时光</span>
-              <span class="time-capsule__phase">{{ timeStore.phase }}</span>
+              <span class="time-capsule__phase">{{ currentJourneyStage }}</span>
             </div>
 
             <div class="time-capsule__grid">
               <div class="time-capsule__stat">
-                <span class="time-capsule__stat-num">{{ timeStore.daysPassed }}</span>
-                <span class="time-capsule__stat-label">已过天数</span>
+                <span class="time-capsule__stat-label">支教第</span>
+                <span class="time-capsule__stat-num time-capsule__stat-num--primary">{{ timeStore.daysPassed }}</span>
+                <span class="time-capsule__stat-sub">天</span>
               </div>
               <div class="time-capsule__stat">
-                <span class="time-capsule__stat-num">{{ timeStore.daysRemaining }}</span>
-                <span class="time-capsule__stat-label">剩余天数</span>
+                <span class="time-capsule__stat-label">已经过</span>
+                <span class="time-capsule__stat-num">{{ monthsPassed }}</span>
+                <span class="time-capsule__stat-sub">个月</span>
               </div>
               <div class="time-capsule__stat">
-                <span class="time-capsule__stat-num">{{ timeStore.totalDays }}</span>
-                <span class="time-capsule__stat-label">总天数</span>
-              </div>
-              <div class="time-capsule__stat">
-                <span class="time-capsule__stat-num">{{ timeStore.progress }}%</span>
-                <span class="time-capsule__stat-label">完成度</span>
+                <span class="time-capsule__stat-label">剩余</span>
+                <span class="time-capsule__stat-num time-capsule__stat-num--gold">{{ timeStore.daysRemaining }}</span>
+                <span class="time-capsule__stat-sub">天返程</span>
               </div>
             </div>
 
-            <!-- Progress bar -->
+            <!-- 柔和进度条 -->
             <div class="time-capsule__progress">
               <div class="time-capsule__progress-track">
                 <div
@@ -327,11 +387,11 @@ function goTo(path: string) {
             </div>
 
             <div class="time-capsule__dates">
-              {{ timeStore.profile?.start_date?.replace(/-/g, '.') }}
-              —
-              {{ timeStore.profile?.end_date?.replace(/-/g, '.') }}
+              <span>{{ capsuleDates.start }} 出发</span>
+              <span>昌都三高 陪伴中</span>
+              <span>{{ capsuleDates.end }} 告别</span>
             </div>
-          </AppCard>
+          </div>
         </template>
         <AppCard v-else class="profile__time-capsule profile__time-capsule--empty">
           <div class="time-capsule__empty">
@@ -344,107 +404,55 @@ function goTo(path: string) {
           </div>
         </AppCard>
 
-        <!-- Stats: 在昌都的印记 -->
-        <AppSection title="在昌都的印记" class="profile__section profile__section--stats">
+        <!-- Stats: 在昌都的印记 (按 我的1.3.html 原型：外层圆角卡片 + 4 个数据勋章) -->
+        <AppCard class="profile__stats-card">
+          <div class="profile__stats-head">
+            <h2 class="profile__stats-title">
+              在昌都的印记
+            </h2>
+            <span class="profile__stats-sub">数字档案汇总</span>
+          </div>
+
           <div class="profile__stats-grid">
             <div
               v-for="stat in statCards"
               :key="stat.key"
               class="profile__stat-card"
+              :class="stat.card"
             >
-              <div
-                class="profile__stat-icon"
-                :style="{ background: stat.color, color: stat.iconColor }"
-              >
-                <AppIcon :name="stat.icon" size="18" />
+              <div class="profile__stat-head" :style="{ color: stat.iconColor }">
+                <AppIcon :name="stat.icon" size="16" />
+                <span class="profile__stat-sub">{{ stat.sub }}</span>
               </div>
               <span class="profile__stat-value">{{ ready ? stat.value : '—' }}</span>
               <span class="profile__stat-label">{{ stat.label }}</span>
             </div>
           </div>
-        </AppSection>
+        </AppCard>
 
         <!-- ==========================================
-             Menus: 常用功能 + 数据管理 + 系统
-             电脑端两列（左:常用功能+系统 | 右:数据管理），手机端单列
+             常用功能（右侧下方，单列卡片，标题在卡内）
              ========================================== -->
-        <div class="profile__menus">
-          <!-- Menu: Features -->
-          <AppSection title="常用功能" class="profile__section profile__menus-item profile__menus-item--features">
-            <AppCard no-padding>
-              <button
-                v-for="item in groupFeatures"
-                :key="item.id"
-                class="profile__menu-row"
-                @click="handleMenuClick(item)"
-              >
-                <div
-                  class="profile__menu-icon"
-                  :class="`profile__menu-icon--${item.id}`"
-                >
-                  <AppIcon :name="item.icon" size="18" />
-                </div>
-                <span class="profile__menu-label">{{ item.label }}</span>
-                <span class="profile__menu-desc">{{ item.desc }}</span>
-                <AppIcon name="chevron-right" size="14" class="profile__menu-arrow" />
-              </button>
-            </AppCard>
-          </AppSection>
-
-          <!-- Menu: Data -->
-          <AppSection title="数据管理" class="profile__section profile__menus-item profile__menus-item--data">
-            <AppCard no-padding>
-              <button
-                v-for="item in groupData"
-                :key="item.id"
-                class="profile__menu-row"
-                @click="handleMenuClick(item)"
-              >
-                <div
-                  class="profile__menu-icon"
-                  :class="`profile__menu-icon--${item.id}`"
-                >
-                  <AppIcon :name="item.icon" size="18" />
-                </div>
-                <span class="profile__menu-label">{{ item.label }}</span>
-                <span class="profile__menu-desc">{{ item.desc }}</span>
-                <AppIcon name="chevron-right" size="14" class="profile__menu-arrow" />
-              </button>
-            </AppCard>
-          </AppSection>
-
-          <!-- Menu: Settings -->
-          <AppSection title="系统" class="profile__section profile__menus-item profile__menus-item--system">
-            <AppCard no-padding>
-              <button
-                v-for="item in settingsMenu"
-                :key="item.id"
-                class="profile__menu-row"
-                @click="handleMenuClick(item)"
-              >
-                <div
-                  class="profile__menu-icon"
-                  :class="`profile__menu-icon--${item.id}`"
-                >
-                  <AppIcon :name="item.icon" size="18" />
-                </div>
-                <span class="profile__menu-label">{{ item.label }}</span>
-                <span class="profile__menu-desc">{{ item.desc }}</span>
-                <template v-if="item.id === 'theme'">
-                  <label class="profile__toggle" @click.stop>
-                    <input type="checkbox" :checked="darkMode" @change="toggleDarkMode" />
-                    <span class="profile__toggle-slider" />
-                  </label>
-                </template>
-                <AppIcon
-                  v-else
-                  name="chevron-right"
-                  size="14"
-                  class="profile__menu-arrow"
-                />
-              </button>
-            </AppCard>
-          </AppSection>
+        <div class="profile__menu-card">
+          <h2 class="profile__menu-card-title">
+            常用功能
+          </h2>
+          <button
+            v-for="item in groupFeatures"
+            :key="item.id"
+            class="profile__menu-row"
+            @click="handleMenuClick(item)"
+          >
+            <div
+              class="profile__menu-icon"
+              :class="`profile__menu-icon--${item.id}`"
+            >
+              <AppIcon :name="item.icon" size="18" />
+            </div>
+            <span class="profile__menu-label">{{ item.label }}</span>
+            <span class="profile__menu-desc">{{ item.desc }}</span>
+            <AppIcon name="chevron-right" size="14" class="profile__menu-arrow" />
+          </button>
         </div>
       </div>
     </div>
@@ -515,6 +523,13 @@ function goTo(path: string) {
                   {{ accLoading ? '保存中…' : '保存' }}
                 </button>
               </div>
+
+              <!-- 退出登录（从「我的」页移入账号管理弹窗底部） -->
+              <div class="modal-logout">
+                <button class="modal-btn modal-btn--logout" @click="handleLogout">
+                  <AppIcon name="logout" size="14" /> 退出登录
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -559,41 +574,12 @@ function goTo(path: string) {
       </Transition>
     </Teleport>
 
-    <!-- ====== About Modal ====== -->
-    <Teleport to="body">
-      <Transition name="modal">
-        <div v-if="showAbout" class="modal-overlay" @click.self="showAbout = false">
-          <div class="modal-sheet modal-sheet--about">
-            <div class="about-logo-circle">
-              昌
-            </div>
-            <h2 class="about-title">
-              昌都记忆
-            </h2>
-            <p class="about-subtitle">
-              Changdu Memory
-            </p>
-            <p class="about-version">
-              V5.5.1 — 个人数字记录平台
-            </p>
-            <p class="about-desc">
-              记录在西藏昌都的一年支教生活
-            </p>
-            <div class="modal-sheet__footer">
-              <button class="modal-btn modal-btn--cancel" @click="showAbout = false">
-                关闭
-              </button>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
   </div>
 </template>
 
 <style scoped>
 /* ================================================
-   Profile — V5.5.1
+   Profile — V5.5.2
    ================================================ */
 .profile {
   max-width: 1200px;
@@ -631,17 +617,6 @@ function goTo(path: string) {
   margin: 0;
 }
 
-.profile__header-badge {
-  font-size: var(--font-caption);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-primary);
-  background: var(--color-primary-light);
-  padding: 5px 14px;
-  border-radius: var(--radius-full);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
 /* ==========================================
    Layout grid
    ========================================== */
@@ -653,8 +628,10 @@ function goTo(path: string) {
 
 @media (min-width: 1024px) {
   .profile__grid {
-    grid-template-columns: 5fr 7fr;
-    align-items: start;
+    /* 左侧含个人卡片+系统管理+关于，右侧含时间胶囊+印记+常用功能，4/8 保持均衡；
+       默认 stretch 让左右两列等高，右侧卡片 flex-grow 使「常用功能」底部与左侧「关于」底部对齐 */
+    grid-template-columns: 4fr 8fr;
+    align-items: stretch;
   }
 }
 
@@ -662,45 +639,36 @@ function goTo(path: string) {
   margin-bottom: var(--spacing-2xl);
 }
 
-/* 手机端：隐藏页面标题与「在昌都的印记」卡片（电脑端保持不变） */
-@media (max-width: 767px) {
-  .profile__header {
-    display: none;
-  }
-
-  .profile__section--stats {
-    display: none;
-  }
-}
-
 /* ==========================================
-   Menus — 电脑端两列 / 手机端单列
-   左列：常用功能 + 系统 | 右列：数据管理
+   Menu cards — 功能分组圆角卡片（标题在卡内，单列）
+   常用功能：右侧下方 | 系统管理：左侧关于卡片下方
    ========================================== */
-.profile__menus {
-  display: flex;
-  flex-direction: column;
+.profile__menu-card {
+  background: var(--glass-bg-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card, 24px);
+  box-shadow: var(--shadow-card, 0 10px 30px -8px rgba(16, 24, 32, 0.04));
+  overflow: hidden;
 }
 
-@media (min-width: 1024px) {
-  .profile__menus {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-areas:
-      'features data'
-      'system   data';
-    column-gap: var(--spacing-xl);
-    row-gap: var(--spacing-2xl);
-    align-items: start;
-  }
+.profile__menu-card-title {
+  font-size: 20px;
+  line-height: 1.3;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0;
+  padding: 20px 24px 4px;
+}
 
-  .profile__menus .profile__section {
-    margin-bottom: 0;
-  }
+.profile__menu-card + .profile__menu-card {
+  margin-top: var(--spacing-2xl);
+}
 
-  .profile__menus-item--features { grid-area: features; }
-  .profile__menus-item--data     { grid-area: data; }
-  .profile__menus-item--system   { grid-area: system; }
+/* 需要靠底对齐的菜单卡片（左侧「系统管理」）：左侧列被拉伸时吸附到底部 */
+.profile__menu-card--push {
+  margin-top: auto;
 }
 
 /* ==========================================
@@ -712,10 +680,18 @@ function goTo(path: string) {
   gap: var(--spacing-lg);
 }
 
+/* ==========================================
+   RIGHT — 纵向 flex，中间卡片 grow 使底部对齐
+   ========================================== */
+.profile__right {
+  display: flex;
+  flex-direction: column;
+}
+
 .profile-hero {
   position: relative;
   overflow: hidden;
-  border-radius: var(--radius-2xl, 32px);
+  border-radius: var(--radius-card, 24px);
   background: linear-gradient(145deg, #101820 0%, #1f343a 40%, var(--color-primary) 100%);
   box-shadow: 0 20px 40px -15px rgba(16, 24, 32, 0.3);
   color: #fff;
@@ -737,7 +713,7 @@ function goTo(path: string) {
 .profile-hero__content {
   position: relative;
   z-index: 2;
-  padding: 28px 24px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -749,35 +725,12 @@ function goTo(path: string) {
   }
 }
 
-/* ---- 顶部状态标签 ---- */
+/* ---- 顶部状态标签区（按原型留白占位） ---- */
 .profile-hero__top {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-}
-
-.profile-hero__badge {
-  padding: 4px 12px;
-  border-radius: var(--radius-full);
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(178, 232, 226, 0.9);
-  font-size: 11px;
-  font-weight: var(--font-weight-semibold);
-  letter-spacing: 0.3px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 72%;
-}
-
-.profile-hero__top-location {
-  font-size: 12px;
-  color: rgba(203, 213, 225, 0.8);
-  flex-shrink: 0;
 }
 
 /* ---- 头像与姓名信息 ---- */
@@ -888,58 +841,92 @@ function goTo(path: string) {
   white-space: nowrap;
 }
 
-/* About block */
-.profile__about-block {
-  display: none;
+/* 关于 / 昌都记忆品牌卡片 (按 我的1.3.html 原型：居中布局) */
+.profile__about-card {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding: 14px 18px;
-  border-radius: var(--radius-xl);
+  gap: 14px;
+  padding: 24px;
+  border-radius: var(--radius-card, 24px);
   background: var(--glass-bg-card);
   backdrop-filter: blur(12px);
   border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-card, 0 10px 30px -8px rgba(16, 24, 32, 0.04));
+  text-align: center;
 }
 
-@media (min-width: 1024px) {
-  .profile__about-block {
-    display: flex;
-  }
-}
-
-.profile__about-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  background: rgba(75, 143, 140, 0.1);
-  color: var(--color-primary);
+.profile__about-logo {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 20px;
+  font-weight: var(--font-weight-extrabold);
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
 }
 
-.profile__about-text {
+.profile__about-info {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
 }
 
 .profile__about-name {
-  font-size: var(--font-secondary);
-  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-content);
+  font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
 }
 
-.profile__about-version {
+.profile__about-desc {
   font-size: var(--font-caption);
   color: var(--color-text-tertiary);
+  margin: 0;
+}
+
+.profile__about-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-border-light);
+  font-size: var(--font-caption);
+  color: var(--color-text-tertiary);
+}
+
+.profile__about-version {
+  color: var(--color-text-tertiary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.profile__about-update {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.profile__about-update:hover {
+  opacity: 0.8;
+  text-decoration: underline;
 }
 
 /* ==========================================
    RIGHT — Time capsule
    ========================================== */
 .profile__time-capsule {
+  flex-grow: 1;
   margin-bottom: var(--spacing-2xl);
+  padding: 24px;
+  border-radius: var(--radius-card, 24px);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(247, 249, 248, 0.85) 100%);
+  border: 1px solid rgba(75, 143, 140, 0.2);
+  box-shadow: var(--shadow-card, 0 10px 30px -8px rgba(16, 24, 32, 0.04));
 }
 
 .profile__time-capsule--empty {
@@ -957,24 +944,27 @@ function goTo(path: string) {
 }
 
 .time-capsule__head-label {
-  font-size: var(--font-content);
-  font-weight: var(--font-weight-semibold);
+  font-size: 20px;
+  line-height: 1.3;
+  font-weight: 700;
   color: var(--color-text-primary);
   flex: 1;
 }
 
 .time-capsule__phase {
-  font-size: var(--font-caption);
-  font-weight: var(--font-weight-semibold);
+  font-size: 12px;
+  font-weight: 700;
   color: var(--color-primary);
-  background: var(--color-primary-light);
+  background: rgba(75, 143, 140, 0.12);
   padding: 3px 10px;
   border-radius: var(--radius-full);
+  font-family: inherit;
+  flex-shrink: 0;
 }
 
 .time-capsule__grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
   margin-bottom: 20px;
   text-align: center;
@@ -984,16 +974,11 @@ function goTo(path: string) {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 10px 4px;
-  border-radius: var(--radius-md);
-  background: var(--color-bg);
-}
-
-.time-capsule__stat-num {
-  font-size: 22px;
-  font-weight: var(--font-weight-extrabold);
-  color: var(--color-text-primary);
-  line-height: 1;
+  padding: 14px 4px;
+  border-radius: 16px;
+  background: var(--color-bg-white);
+  border: 1px solid var(--color-border-light);
+  box-shadow: 0 1px 2px rgba(16, 24, 32, 0.03);
 }
 
 .time-capsule__stat-label {
@@ -1001,28 +986,53 @@ function goTo(path: string) {
   color: var(--color-text-tertiary);
 }
 
+.time-capsule__stat-num {
+  font-size: 26px;
+  font-weight: var(--font-weight-extrabold);
+  color: var(--color-text-primary);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.time-capsule__stat-num--primary {
+  color: var(--color-primary);
+}
+
+.time-capsule__stat-num--gold {
+  color: var(--color-gold);
+}
+
+.time-capsule__stat-sub {
+  font-size: 10px;
+  color: var(--color-text-tertiary);
+}
+
 .time-capsule__progress {
   margin-bottom: 10px;
+  padding: 2px;
 }
 
 .time-capsule__progress-track {
-  height: 5px;
+  height: 10px;
   background: var(--color-border-light);
-  border-radius: 3px;
+  border-radius: 999px;
   overflow: hidden;
 }
 
 .time-capsule__progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--color-primary), var(--color-gold));
-  border-radius: 3px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-sky), var(--color-gold));
+  border-radius: 999px;
   transition: width 800ms ease;
 }
 
 .time-capsule__dates {
-  font-size: var(--font-caption);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
   color: var(--color-text-tertiary);
-  text-align: center;
 }
 
 .time-capsule__empty {
@@ -1056,53 +1066,88 @@ function goTo(path: string) {
 }
 
 /* ==========================================
-   Stats grid (2×2)
+   Stats card (按 我的1.3.html 原型：外层圆角卡片 + 4 个数据勋章)
    ========================================== */
+.profile__stats-card {
+  flex-grow: 1;
+  margin-bottom: var(--spacing-2xl);
+  /* AppCard 提供毛玻璃背景 + 24px 圆角 */
+}
+
+.profile__stats-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.profile__stats-title {
+  font-size: 20px;
+  line-height: 1.3;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.profile__stats-sub {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+
 .profile__stats-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: var(--spacing-md);
+  gap: 12px;
 }
 
-@media (max-width: 399px) {
+@media (min-width: 640px) {
   .profile__stats-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(4, 1fr);
   }
 }
 
 .profile__stat-card {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 18px 12px;
-  border-radius: var(--radius-xl);
-  background: var(--glass-bg-card);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--shadow-xs);
+  gap: 4px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid var(--color-border-light);
 }
 
-.profile__stat-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 12px;
+.profile__stat-card--diary   { background: rgba(240, 253, 250, 0.55); border-color: rgba(75, 143, 140, 0.25); }
+.profile__stat-card--work    { background: rgba(240, 249, 255, 0.55); border-color: rgba(111, 168, 220, 0.3); }
+.profile__stat-card--memory  { background: rgba(255, 251, 235, 0.55); border-color: rgba(214, 168, 79, 0.3); }
+.profile__stat-card--student { background: rgba(241, 245, 249, 0.6);  border-color: rgba(107, 123, 141, 0.25); }
+
+.profile__stat-head {
   display: flex;
   align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.profile__stat-sub {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: inherit;
 }
 
 .profile__stat-value {
-  font-size: 26px;
-  font-weight: var(--font-weight-extrabold);
+  font-size: 38px;
+  line-height: 1.1;
+  font-weight: 800;
   color: var(--color-text-primary);
-  line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .profile__stat-label {
-  font-size: var(--font-caption);
-  color: var(--color-text-tertiary);
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
 }
 
 /* ==========================================
@@ -1153,8 +1198,6 @@ function goTo(path: string) {
 .profile__menu-icon--recycle { background: rgba(194, 103, 106, 0.1);  color: var(--color-error); }
 .profile__menu-icon--data    { background: rgba(75, 143, 140, 0.1);   color: var(--color-primary); }
 .profile__menu-icon--theme   { background: rgba(142, 124, 181, 0.12);  color: #8E7CB5; }
-.profile__menu-icon--about   { background: rgba(75, 143, 140, 0.1);   color: var(--color-primary); }
-.profile__menu-icon--logout  { background: rgba(194, 103, 106, 0.1);  color: var(--color-error); }
 
 .profile__menu-label {
   flex: 1;
@@ -1331,6 +1374,36 @@ function goTo(path: string) {
   cursor: not-allowed;
 }
 
+/* 退出登录按钮（账号管理弹窗底部） */
+.modal-logout {
+  display: flex;
+  justify-content: center;
+  padding-top: 20px;
+  margin-top: 16px;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.modal-btn--logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 32px;
+  border: none;
+  border-radius: var(--radius-button);
+  background: rgba(194, 103, 106, 0.08);
+  color: var(--color-error);
+  font-family: inherit;
+  font-size: var(--font-secondary);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.modal-btn--logout:hover {
+  background: var(--color-error);
+  color: #fff;
+}
+
 /* Avatar section in account modal */
 .modal-avatar-section {
   display: flex;
@@ -1411,53 +1484,6 @@ function goTo(path: string) {
 .data-mgmt__desc {
   font-size: var(--font-caption);
   color: var(--color-text-tertiary);
-}
-
-/* About modal */
-.modal-sheet--about {
-  text-align: center;
-}
-
-.about-logo-circle {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: var(--color-primary);
-  color: #fff;
-  font-size: 24px;
-  font-weight: var(--font-weight-extrabold);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 12px;
-}
-
-.about-title {
-  font-size: 26px;
-  font-weight: var(--font-weight-bold);
-  color: var(--color-primary);
-  margin: 0 0 2px;
-  letter-spacing: 2px;
-}
-
-.about-subtitle {
-  font-size: var(--font-caption);
-  color: var(--color-text-secondary);
-  letter-spacing: 1px;
-  margin: 0 0 20px;
-}
-
-.about-version {
-  font-size: var(--font-secondary);
-  color: var(--color-text-primary);
-  font-weight: var(--font-weight-semibold);
-  margin: 0 0 4px;
-}
-
-.about-desc {
-  font-size: var(--font-caption);
-  color: var(--color-text-tertiary);
-  margin: 0;
 }
 
 /* Modal transitions */

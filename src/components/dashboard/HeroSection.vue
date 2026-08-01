@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useTimeStore } from '@/stores/time'
+import { ref, computed } from 'vue'
+import { useTimeStore, getCountdownStats } from '@/stores/time'
 
 const timeStore = useTimeStore()
 
@@ -12,10 +12,115 @@ const subtitle = computed(() => {
   }
   return '支教一年的高原记录'
 })
+
+// ==========================================
+// 倒计时卡片：可自定义选择展示的倒计时
+// 默认显示「距离返程」，其余选项来自「时光」模块的自定义倒计时
+// ==========================================
+interface CountdownOption {
+  id: string
+  label: string
+}
+
+interface ActiveCountdown {
+  title: string
+  endDate: string
+  remaining: number
+  totalDays: number
+  progress: number
+  isPast: boolean
+}
+
+const DAY_IN_MS = 1000 * 60 * 60 * 24
+
+/** 用户选择的倒计时 id（'return' = 距离返程，否则为 countdowns 表记录 id），持久化到 localStorage */
+const selectedId = ref<string>(localStorage.getItem('hero.countdownId') || 'return')
+const pickerOpen = ref(false)
+
+/** 可选倒计时列表：距离返程 + 自定义倒计时 */
+const countdownOptions = computed<CountdownOption[]>(() => {
+  const options: CountdownOption[] = []
+  if (hasProfile.value) options.push({ id: 'return', label: '距离返程' })
+  for (const cd of timeStore.countdowns) {
+    options.push({ id: cd.id, label: cd.title })
+  }
+  return options
+})
+
+/** 距离返程（基于旅程起止日期） */
+function returnCountdown(): ActiveCountdown {
+  return {
+    title: '距离返程',
+    endDate: timeStore.profile?.end_date ?? '',
+    remaining: timeStore.daysRemaining,
+    totalDays: timeStore.totalDays,
+    progress: timeStore.progress,
+    isPast: timeStore.totalDays > 0 && timeStore.daysRemaining <= 0,
+  }
+}
+
+/** 自定义倒计时（来自「时光」模块） */
+function customCountdown(cd: { id: string; title: string; start_date: string | null; end_date: string }): ActiveCountdown {
+  const stats = getCountdownStats(cd)
+
+  // 进度参考起点：优先自定义 start_date，其次旅程开始日
+  const startRef = cd.start_date ?? timeStore.profile?.start_date ?? null
+  let totalDays = 0
+  let progress = 0
+  if (startRef) {
+    const start = new Date(startRef + 'T00:00:00').getTime()
+    const end = new Date(cd.end_date + 'T00:00:00').getTime()
+    totalDays = Math.max(1, Math.ceil((end - start) / DAY_IN_MS))
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const passed = Math.max(0, today.getTime() - start) / DAY_IN_MS
+    progress = Math.min(100, Math.max(0, Math.round((passed / totalDays) * 100)))
+  }
+
+  return {
+    title: cd.title,
+    endDate: cd.end_date,
+    remaining: stats.diff,
+    totalDays,
+    progress,
+    isPast: stats.isPast,
+  }
+}
+
+/** 当前展示的倒计时（选中的自定义倒计时不存在时回退到「距离返程」） */
+const activeCountdown = computed<ActiveCountdown | null>(() => {
+  if (selectedId.value !== 'return') {
+    const cd = timeStore.countdowns.find((c) => c.id === selectedId.value)
+    if (cd) return customCountdown(cd)
+  }
+  if (hasProfile.value) return returnCountdown()
+  return null
+})
+
+const targetText = computed(() => {
+  const c = activeCountdown.value
+  if (!c) return ''
+  if (c.isPast) return '已完成'
+  if (c.totalDays > 0) return `目标 ${c.totalDays} 天`
+  return `截止 ${c.endDate}`
+})
+
+const footText = computed(() => {
+  const c = activeCountdown.value
+  if (!c) return ''
+  if (c.isPast) return '已结束'
+  return `${c.progress}% Completed`
+})
+
+function selectOption(id: string) {
+  selectedId.value = id
+  localStorage.setItem('hero.countdownId', id)
+  pickerOpen.value = false
+}
 </script>
 
 <template>
-  <section class="hero">
+  <section class="hero" @click="pickerOpen = false">
     <!-- 高原雪山大图背景 -->
     <img
       class="hero__bg"
@@ -43,26 +148,76 @@ const subtitle = computed(() => {
         </div>
       </div>
 
-      <!-- 右侧：倒计时半透明卡片 -->
-      <div v-if="hasProfile" class="hero__countdown">
+      <!-- 右侧：可自定义选择的倒计时半透明卡片 -->
+      <div v-if="activeCountdown" class="hero__countdown" @click.stop>
         <div class="hero__countdown-head">
-          <span>距离返程</span>
-          <span class="hero__countdown-target">目标 {{ timeStore.totalDays }} 天</span>
+          <button
+            class="hero__countdown-picker"
+            :aria-expanded="pickerOpen"
+            @click.stop="pickerOpen = !pickerOpen"
+          >
+            <span class="hero__countdown-picker-label">{{ activeCountdown.title }}</span>
+            <svg
+              class="hero__countdown-caret"
+              :class="{ 'hero__countdown-caret--open': pickerOpen }"
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            ><polyline points="6 9 12 15 18 9" /></svg>
+          </button>
+          <span class="hero__countdown-target">{{ targetText }}</span>
         </div>
+
         <div class="hero__countdown-body">
-          <span class="hero__countdown-num">{{ timeStore.daysRemaining }}</span>
+          <span class="hero__countdown-num">{{ Math.abs(activeCountdown.remaining) }}</span>
           <span class="hero__countdown-unit">天</span>
         </div>
+
         <!-- 柔和进度条 -->
         <div class="hero__progress-track">
           <div
             class="hero__progress-fill"
-            :style="{ width: timeStore.progress + '%' }"
+            :style="{ width: activeCountdown.progress + '%' }"
           />
         </div>
         <div class="hero__countdown-foot">
-          <span class="hero__progress-pct">{{ timeStore.progress }}% Completed</span>
+          <span class="hero__progress-pct">{{ footText }}</span>
         </div>
+
+        <!-- 倒计时选择下拉 -->
+        <Transition name="picker">
+          <div v-if="pickerOpen" class="hero__countdown-list">
+            <button
+              v-for="opt in countdownOptions"
+              :key="opt.id"
+              class="hero__countdown-opt"
+              :class="{ 'hero__countdown-opt--active': opt.id === selectedId }"
+              @click.stop="selectOption(opt.id)"
+            >
+              <span class="hero__countdown-opt-text">{{ opt.label }}</span>
+              <svg
+                v-if="opt.id === selectedId"
+                class="hero__countdown-opt-check"
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              ><polyline points="20 6 9 17 4 12" /></svg>
+            </button>
+            <div v-if="countdownOptions.length === 0" class="hero__countdown-list-empty">
+              暂无其他倒计时
+            </div>
+          </div>
+        </Transition>
       </div>
       <div v-else class="hero__countdown hero__countdown--empty">
         <p class="hero__countdown-empty-text">
@@ -79,7 +234,7 @@ const subtitle = computed(() => {
 <style scoped>
 /* ================================================
    Hero Section — 按 首页1.1.html 原型还原
-   高原雪山大图 + 沉浸渐变 + 大号「第 X 天」+ 倒计时卡片
+   高原雪山大图 + 沉浸渐变 + 大号「第 X 天」+ 可自定义倒计时卡片
    ================================================ */
 .hero {
   position: relative;
@@ -169,6 +324,8 @@ const subtitle = computed(() => {
   font-weight: 800;
   letter-spacing: -0.02em;
   color: #fff;
+  /* 标题保持一行不换行 */
+  white-space: nowrap;
 }
 
 .hero__subtitle {
@@ -213,8 +370,9 @@ const subtitle = computed(() => {
   font-variant-numeric: tabular-nums;
 }
 
-/* ---- 右侧：倒计时半透明卡片 ---- */
+/* ---- 右侧：可自定义选择的倒计时半透明卡片 ---- */
 .hero__countdown {
+  position: relative;
   background: rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -264,9 +422,47 @@ const subtitle = computed(() => {
   color: rgba(226, 232, 240, 0.9);
 }
 
+/* 倒计时选择按钮 */
+.hero__countdown-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 68%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: rgba(226, 232, 240, 0.9);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.hero__countdown-picker:hover {
+  color: #fff;
+}
+
+.hero__countdown-picker-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hero__countdown-caret {
+  flex-shrink: 0;
+  transition: transform 0.25s ease;
+}
+
+.hero__countdown-caret--open {
+  transform: rotate(180deg);
+}
+
 .hero__countdown-target {
   color: #fff;
   font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .hero__countdown-body {
@@ -320,5 +516,82 @@ const subtitle = computed(() => {
   font-size: 11px;
   color: rgba(203, 213, 225, 0.9);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* ---- 倒计时选择下拉（向上展开，避免被 hero 圆角裁剪） ---- */
+.hero__countdown-list {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px;
+  background: rgba(16, 24, 32, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.hero__countdown-opt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  color: rgba(226, 232, 240, 0.9);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--transition-fast);
+}
+
+.hero__countdown-opt:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.hero__countdown-opt--active {
+  color: var(--color-gold, #D6A84F);
+  font-weight: 600;
+}
+
+.hero__countdown-opt-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hero__countdown-opt-check {
+  flex-shrink: 0;
+}
+
+.hero__countdown-list-empty {
+  padding: 10px 12px;
+  font-size: 12px;
+  color: rgba(226, 232, 240, 0.45);
+  text-align: center;
+}
+
+/* 下拉过渡 */
+.picker-enter-active,
+.picker-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.picker-enter-from,
+.picker-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 </style>

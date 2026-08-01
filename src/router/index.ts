@@ -55,7 +55,7 @@ const routes: RouteRecordRaw[] = [
     path: '/mood',
     name: 'Mood',
     component: () => import('@/pages/Mood.vue'),
-    meta: { title: '今日心情' },
+    meta: { title: '今日心情', requiresAuth: true },
   },
   {
     path: '/expense',

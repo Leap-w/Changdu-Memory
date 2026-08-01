@@ -31,7 +31,7 @@ export interface ExportData {
 export async function exportAllData(): Promise<ExportData> {
   const data: ExportData = {
     exported_at: new Date().toISOString(),
-    version: '5.5.1',
+    version: '5.5.2',
     profile: null,
     time_profile: null,
     diaries: [],

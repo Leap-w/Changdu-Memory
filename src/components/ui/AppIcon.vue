@@ -265,6 +265,11 @@ function iconSize(): string {
       <polyline points="9 18 15 12 9 6" />
     </template>
 
+    <!-- chevron-down / arrow-down -->
+    <template v-else-if="name === 'chevron-down' || name === 'arrow-down'">
+      <polyline points="6 9 12 15 18 9" />
+    </template>
+
     <!-- plus / add -->
     <template v-else-if="name === 'plus' || name === 'add'">
       <line
@@ -279,6 +284,11 @@ function iconSize(): string {
         x2="19"
         y2="12"
       />
+    </template>
+
+    <!-- map / route -->
+    <template v-else-if="name === 'map'">
+      <path d="M9 20l-5.447-2.724A1 1 0 0 1 3 16.382V5.618a1 1 0 0 1 1.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0 0 21 18.382V7.618a1 1 0 0 0-.553-.894L15 4m0 13V4m0 0L9 7" />
     </template>
 
     <!-- pin / location -->
