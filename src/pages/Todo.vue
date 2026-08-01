@@ -40,6 +40,25 @@ function goCreate() {
       />
 
       <template v-else>
+        <!-- ====== 已过期 ====== -->
+        <section v-if="todoStore.overdueTodos.length" class="todo-section">
+          <h2 class="todo-section__title">
+            已过期
+            <span class="todo-section__count">
+              {{ todoStore.overdueTodos.length }} 项待补
+            </span>
+          </h2>
+          <div class="todo-section__list">
+            <TodoCard
+              v-for="todo in todoStore.overdueTodos"
+              :key="todo.id"
+              :todo="todo"
+              @toggle="todoStore.toggleTodo"
+              @click="goEdit"
+            />
+          </div>
+        </section>
+
         <!-- ====== 今日 ====== -->
         <section v-if="todoStore.todayTodos.length" class="todo-section">
           <h2 class="todo-section__title">

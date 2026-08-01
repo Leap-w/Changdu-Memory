@@ -1,7 +1,7 @@
-# 昌都记忆 Changdu Memory V5.4 — 开发状态
+# 昌都记忆 Changdu Memory V5.5.1 — 开发状态
 
-> 最新更新: 2026-07-31
-> 版本: V5.4 UI
+> 最新更新: 2026-08-01
+> 版本: V5.5.1
 > Build: `npm run build` ✅ 0 errors
 > Type Check: `vue-tsc -b --noEmit` ✅ 0 errors
 > Lint: `eslint` ✅ 0 errors
@@ -30,63 +30,60 @@
 
 ---
 
-## 3. V5.4 UI 升级摘要
+## 3. V5.5.1 更新摘要
 
-### 设计系统
-- **设计令牌**：高原自然色系——主色高原青 `#4B8F8C`、天空蓝 `#6FA8DC`、日照金 `#D6A84F`、雪山白底色 `#F7F9F8`、夜空蓝文字 `#101820`
-- **卡片**：毛玻璃背景 `rgba(255,255,255,0.85)` + `backdrop-filter: blur(20px)` + 统一 24px 圆角 + 轻阴影 + hover 上浮
-- **字体**：Hero 大数字 56–72px / 页面标题 32px / 区块标题 18–20px / 正文 15–16px
+### 首页 Hero（按 首页1.1.html 原型还原）
+- 真实雪山大图背景（`photo-1464822759023-fed622ff2c3b?w=1600`）+ 天幕渐变遮罩 + hover 缓慢放大
+- 左侧标题 + 大号「第 X 天」（日照金），右侧半透明倒计时卡（距离返程 / 目标天数 / 柔和进度条 / `% Completed`）
+- 圆角 32px，手机 `aspect-ratio 3/4`、桌面 `16/6`；数据全部来自 timeStore，无写死
 
-### 应用外壳
-- 统一 `AppLayout.vue`（替代旧的 DesktopLayout + MobileLayout 双布局）
-- 顶部悬浮胶囊导航（毛玻璃 + 圆角全圆）+ 桌面端全部导航链接 + 用户头像
-- 移动端底部五栏导航（首页·日记·工作·账本·我的）+ 安全区适配
+### 我的页个人 Hero 卡（按 我的1.1.html 原型还原）
+- 夜空蓝→高原青深色渐变 + 底部雪山线稿 SVG 纹理
+- 顶部徽标（project_name）+ 位置；渐变环头像 + 右下角绿色勾选徽章
+- 底部「服务学校 / 教学科目」双卡（`profiles.school / subject`，数据库 V5.5.1 新增列）
+- 「退出登录」移入系统菜单；整卡点击仍可进入账号管理
 
-### 通用 UI 组件（`src/components/ui/`）
-| 组件 | 用途 |
-|------|------|
-| `AppCard` | 毛玻璃卡片，支持 hover、多档 padding |
-| `AppSection` | 区块标题 + 右侧操作入口 + 可选底部分隔线 |
-| `AppPillTabs` | 胶囊切换（v-model 双向绑定） |
-| `AppFab` | 悬浮操作按钮，移动端自动避让底栏 |
-| `AppIcon` | 统一 SVG 图标（50+ 图标，禁止 Emoji） |
-| `AppAvatar` | 头像组件（首字母 fallback） |
-| `AppEmpty` | 空状态组件 |
+### 账号管理
+- 弹窗新增「服务学校 / 教学科目」输入框，保存写入 `profiles.school / subject`（列不存在时静默降级）
 
-### 已迁移页面
-- **首页**：Hero 高原雪山 + 日照金大数字 + 返程倒计时 + 今日状态四卡 + 快捷入口 + 最近记忆
-- **我的**：深色渐变 Hero 卡片 + 支教时光胶囊 + 在昌都的印记统计 + 分组功能入口
-- **日记**：月份筛选 + 三种自适应卡片（单图/多图/纯文字）+ 沉浸式阅读详情 + 上下篇导航
-- **工作**：今日时间轴总览 + 四 Tab 体系 + 课程表今日高亮 + 学生画廊
-- **账本**：Wallet Hero 渐变卡 + AppPillTabs 四态切换 + 分类聚合 + 资产/福利档案
-- **时光中心 + 大事记**：旅程路线时间轴 + 自定义倒计时 + 大事记图文时间流 + 分类筛选
-- **次要页面**：搜索、统计、导入、回收站、标签管理、设置、待办、登录——全部统一标题区与按钮风格
+### 我的页布局
+- 手机端隐藏页面标题区 + 「在昌都的印记」卡片（电脑端不变）
+- 电脑端设置项两列：左（常用功能 + 系统）/ 右（数据管理）
 
-### 已移除
-- `DesktopLayout.vue` / `MobileLayout.vue`（已被 `AppLayout.vue` 替代）
-- 所有业务页面中的 Emoji 结构性图标（替换为 AppIcon SVG）
+### 功能合并与清理
+- 「数据导入 / 数据导出」合并为「数据管理」统一入口
+- 「标签管理」彻底移除（页面 / 路由 / 组件 / 入口）
+
+### 交互修复
+- 行政安排：只能删除，不能修改（移除编辑路由 / `editWork`）
+- 待办：新增「已过期」分组，显示全部历史；移除工作页旧待办 Tab，统一 `/todo`
+- 今日心情：新增独立 `/mood` 页面，仅存 localStorage，不入库
+- 首页「今日课程」→ `/work?tab=课程表`
+- 日记模板支持随时切换
 
 ---
 
-## 4. 路由（保持不变）
+## 4. 路由
 
 | 路径 | 页面 | 认证 |
 |------|------|------|
 | `/login` | 登录 | 游客 |
 | `/` | 首页 | 可选 |
 | `/diary` `/diary/:id` `/diary/:id/edit` `/diary/new` | 日记 | 需登录 |
-| `/work` `/work/:id/edit` `/work/new` | 工作 | 需登录 |
+| `/work` `/work/new` | 工作 / 添加行政安排 | 需登录 |
 | `/expense` `/expense/:id/edit` `/expense/new` | 账本 | 需登录 |
 | `/time-center` | 时光中心 | 需登录 |
 | `/memory` | 大事记 | 需登录 |
 | `/todo` `/todo/:id/edit` `/todo/new` | 待办 | 需登录 |
+| `/mood` | 今日心情 | 可选 |
 | `/profile` | 我的 | 需登录 |
 | `/search` | 搜索 | 可选 |
 | `/statistics` | 年度统计 | 需登录 |
 | `/import` | 数据导入 | 需登录 |
 | `/settings` | 设置 | 需登录 |
 | `/settings/recycle-bin` | 回收站 | 需登录 |
-| `/settings/tags` | 标签管理 | 需登录 |
+
+> **已移除**：`/work/:id/edit`（编辑行政安排）、`/settings/tags`（标签管理）。
 
 ---
 
@@ -94,10 +91,16 @@
 
 - 设计令牌层面已完成（`variables.css` 中 `.dark` 规则覆盖所有颜色变量）
 - 通过页面顶栏/我的页或设置页的深色模式开关切换
-- 使用 CSS Variables 继承机制，大部分页面自动适配
 - 部分纯 CSS 装饰（Hero 雪山渐变、Wallet 渐变卡）在暗色模式下保留原效果（可后续逐页调优）
 
-## 6. 已知限制
+## 6. 数据库迁移（V5.5.1）
+
+```sql
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS school TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS subject TEXT;
+```
+
+## 7. 已知限制
 
 - 旅程路线节点为前端按比例计算，不可由用户自定义编辑
 - 统计分类图标（如 CATEGORY_ICONS）仍保留 emoji 映射但已不再使用

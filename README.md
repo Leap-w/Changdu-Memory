@@ -32,45 +32,40 @@
 ## 项目结构
 
 ```
-昌都记忆/
+Changdu Memory/
 ├── .env.example              # 环境变量模板
-├── .github/
-│   └── CONTRIBUTING.md       # 开发规范
-├── .vscode/
-│   ├── settings.json         # VS Code 编辑器配置
-│   └── extensions.json       # 推荐插件
-├── public/
-│   └── favicon.svg           # 应用图标
+├── public/                   # PWA 图标 + favicon
+├── supabase/
+│   └── schema.sql            # 完整数据库 Schema（可重复执行）
+├── docs/                     # 开发文档（V5.5-Development-Handbook / V5_STATUS）
 ├── src/
-│   ├── assets/               # 静态资源
-│   ├── components/           # 公共组件
-│   │   └── common/           # 基础组件（BaseCard / BaseButton / BaseEmpty）
-│   ├── layouts/              # 布局组件
-│   │   ├── MobileLayout.vue  # 移动端布局（底部导航）
-│   │   └── DesktopLayout.vue # 桌面端布局（侧边栏）
+│   ├── main.ts               # 入口
+│   ├── App.vue               # 根组件（登录全屏 / 其他统一外壳）
+│   ├── layouts/
+│   │   └── AppLayout.vue     # 统一外壳（顶部胶囊导航 + 移动端底栏）
 │   ├── pages/                # 业务页面
 │   │   ├── Login.vue         # 登录
 │   │   ├── Home.vue          # 首页 Dashboard
-│   │   ├── TimeCenter.vue    # 时光中心
-│   │   ├── Todo.vue          # 今日待办
-│   │   ├── Work.vue          # 工作安排
-│   │   ├── Expense.vue       # 花费记录
-│   │   ├── Diary.vue         # 日记
+│   │   ├── Mood.vue          # 今日心情（localStorage）
 │   │   ├── Profile.vue       # 我的
-│   │   └── Settings.vue      # 设置
+│   │   ├── Diary.vue         # 日记
+│   │   ├── Work.vue          # 工作安排（课程表/行政/学生）
+│   │   ├── Todo.vue          # 待办（过期/今日/未来/已完成）
+│   │   ├── Expense.vue       # 花费记录
+│   │   ├── TimeCenter.vue    # 时光中心
+│   │   └── ...               # Search / Statistics / Import / Settings / RecycleBin
 │   ├── router/               # 路由配置
-│   ├── stores/               # Pinia 状态管理
-│   │   ├── auth.ts           # 认证状态
-│   │   └── app.ts            # 应用全局状态
+│   ├── stores/               # Pinia 状态管理（13个）
 │   ├── services/             # 业务服务
 │   │   └── supabase.ts       # Supabase 客户端
-│   ├── repositories/         # 数据访问层
-│   ├── types/                # TypeScript 类型定义
+│   ├── repositories/         # 数据访问层（13个）
+│   ├── components/           # 组件
+│   │   ├── ui/               # 设计系统（AppCard/AppSection/AppIcon/AppAvatar...）
+│   │   └── ...               # dashboard / diary / work / todo / expense / schedule / student
+│   ├── types/
 │   │   └── database.ts       # 数据库表类型
-│   ├── utils/                # 工具函数
-│   └── styles/               # 全局样式
-│       ├── variables.css     # 主题变量
-│       └── global.css        # 全局重置样式
+│   ├── utils/                # 工具函数（export/import/search/mood...）
+│   └── styles/               # 全局样式（variables.css / global.css）
 ├── eslint.config.js          # ESLint 配置
 ├── .prettierrc               # Prettier 配置
 ├── vite.config.ts            # Vite 配置
@@ -163,7 +158,14 @@ chore: 工程配置
 | Phase 6-D ✅ | 年度数据统计中心（全模块数据可视化） |
 | Phase 6-E ✅ | 全局档案检索系统（跨模块内存搜索） |
 | Phase 6-F ✅ | 个人档案系统完善（软删除+回收站+时间轴+JSON恢复+PWA） |
+| Phase 7 ✅ | 全站设计系统升级（V5.4 UI：毛玻璃卡片 + 统一外壳 + AppIcon） |
+| Phase 8 ✅ | 交互优化与原型还原（V5.5.1） |
 
-## 版本
+## 版本记录
 
-V5.0 — 当前开发中
+- **V5.5.1（当前）** — 首页 Hero / 我的个人卡按原型还原；账号管理新增学校/科目；数据管理合并入口；今日心情独立功能（localStorage）；行政安排仅可删除；待办新增过期分组并统一页面；移除标签管理；日记模板随时切换
+- **V5.4** — 全站设计系统升级：毛玻璃卡片、统一 AppLayout 外壳、AppIcon SVG 图标、高原自然色系
+- **V5.3** — Profile 菜单修复、开发文档整理
+- **V5.2** — 全面重构与功能增强
+- **V5.1** — 个人数字档案系统全面升级
+- **V5.0** — 当前线上版本基线

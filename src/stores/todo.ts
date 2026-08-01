@@ -27,6 +27,12 @@ export const useTodoStore = defineStore('todo', () => {
     return todos.value.filter((t) => t.todo_date > today)
   })
 
+  /** 已过期待办（日期早于今天且未完成） */
+  const overdueTodos = computed(() => {
+    const today = new Date().toISOString().split('T')[0]
+    return todos.value.filter((t) => !t.completed && t.todo_date < today)
+  })
+
   /** 已完成 */
   const completedTodos = computed(() => {
     return todos.value.filter((t) => t.completed)
@@ -217,6 +223,7 @@ export const useTodoStore = defineStore('todo', () => {
     error,
     todayTodos,
     futureTodos,
+    overdueTodos,
     completedTodos,
     todayPendingCount,
     todayCompletedCount,

@@ -3,7 +3,6 @@ import { ref, computed } from 'vue'
 import {
   fetchWorks,
   createWork,
-  updateWork,
   softDeleteWork,
 } from '@/repositories/WorkRepository'
 import type { WorkPlan } from '@/repositories/WorkRepository'
@@ -75,26 +74,6 @@ export const useWorkStore = defineStore('work', () => {
     }
   }
 
-  /** 编辑 */
-  async function editWork(
-    id: string,
-    fields: { title: string; work_date: string; content: string },
-  ): Promise<WorkPlan> {
-    loading.value = true
-    error.value = null
-    try {
-      const work = await updateWork(id, fields)
-      const idx = works.value.findIndex((w) => w.id === id)
-      if (idx !== -1) works.value[idx] = work
-      return work
-    } catch (err: unknown) {
-      error.value = err instanceof Error ? err.message : '更新失败'
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
   /** 删除 */
   async function removeWork(id: string): Promise<void> {
     loading.value = true
@@ -118,7 +97,6 @@ export const useWorkStore = defineStore('work', () => {
     todayWorks,
     loadWorks,
     addWork,
-    editWork,
     removeWork,
   }
 })

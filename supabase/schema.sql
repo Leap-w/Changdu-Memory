@@ -37,6 +37,8 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   nickname    TEXT DEFAULT '新用户',
   avatar_url  TEXT,
   bio         TEXT DEFAULT '',
+  school      TEXT,
+  subject     TEXT,
   created_at  TIMESTAMPTZ DEFAULT now(),
   updated_at  TIMESTAMPTZ DEFAULT now()
 );
@@ -468,6 +470,12 @@ CREATE INDEX IF NOT EXISTS idx_diary_photos_diary ON public.diary_photos(diary_i
 -- 1b. profiles 添加 bio 字段 — V5.1
 -- ============================================================
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS bio TEXT DEFAULT '';
+
+-- ============================================================
+-- 1c. profiles 添加 school / subject 字段 — V5.5.1
+-- ============================================================
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS school TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS subject TEXT;
 
 -- ============================================================
 -- 10. schedules（课程表）— V5.1 新增

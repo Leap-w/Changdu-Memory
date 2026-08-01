@@ -13,12 +13,14 @@ interface Profile {
   nickname: string | null
   avatar_url: string | null
   bio: string | null
+  school: string | null
+  subject: string | null
 }
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const session = ref<Session | null>(null)
-  const profile = ref<Profile>({ nickname: null, avatar_url: null, bio: null })
+  const profile = ref<Profile>({ nickname: null, avatar_url: null, bio: null, school: null, subject: null })
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -107,7 +109,7 @@ export const useAuthStore = defineStore('auth', () => {
       } else if (event === 'SIGNED_OUT') {
         user.value = null
         session.value = null
-        profile.value = { nickname: null, avatar_url: null, bio: null }
+        profile.value = { nickname: null, avatar_url: null, bio: null, school: null, subject: null }
       }
     })
   }
@@ -127,13 +129,33 @@ export const useAuthStore = defineStore('auth', () => {
           nickname: data.nickname ?? null,
           avatar_url: data.avatar_url ?? null,
           bio: data.bio ?? null,
+          school: null,
+          subject: null,
         }
       }
+
+      // 学校/科目字段（数据库新增列后可读取；列不存在时静默降级）
+      try {
+        const { data: extra } = await s
+          .from('profiles')
+          .select('school, subject')
+          .single()
+        if (extra) {
+          profile.value.school = extra.school ?? null
+          profile.value.subject = extra.subject ?? null
+        }
+      } catch { /* 列不存在，忽略 */ }
     } catch { /* ignore */ }
   }
 
   /** 更新 profile */
-  async function updateProfile(fields: { nickname?: string | null; bio?: string | null; avatar_url?: string | null }) {
+  async function updateProfile(fields: {
+    nickname?: string | null
+    bio?: string | null
+    avatar_url?: string | null
+    school?: string | null
+    subject?: string | null
+  }) {
     loading.value = true
     error.value = null
     try {
@@ -147,6 +169,8 @@ export const useAuthStore = defineStore('auth', () => {
       if (fields.nickname !== undefined) profile.value.nickname = fields.nickname ?? null
       if (fields.bio !== undefined) profile.value.bio = fields.bio ?? null
       if (fields.avatar_url !== undefined) profile.value.avatar_url = fields.avatar_url ?? null
+      if (fields.school !== undefined) profile.value.school = fields.school ?? null
+      if (fields.subject !== undefined) profile.value.subject = fields.subject ?? null
     } catch (err: unknown) {
       error.value = err instanceof Error ? err.message : '更新失败'
       throw err

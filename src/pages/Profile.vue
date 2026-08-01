@@ -54,6 +54,20 @@ const dateRangeText = computed(() => {
   return `${s.substring(0, 7).replace('-', '年')}月 — ${e.substring(0, 7).replace('-', '年')}月`
 })
 
+// ====== Profile hero card (按 我的1.1.html 原型) ======
+const projectName = computed(() => timeStore.profile?.project_name || '')
+const heroLocation = computed(() => timeStore.profile?.location || '')
+/** 顶部徽标文案：优先项目名，其次位置 */
+const heroBadge = computed(() => projectName.value || heroLocation.value || '支教志愿者')
+/** 姓名下方的支教团信息：项目名 · 位置 */
+const heroSub = computed(() => {
+  if (projectName.value && heroLocation.value) return `${projectName.value} · ${heroLocation.value}`
+  return projectName.value || heroLocation.value
+})
+/** 服务学校 / 教学科目（数据库新增列后填充，未设置显示提示） */
+const heroSchool = computed(() => authStore.profile.school || '待设置')
+const heroSubject = computed(() => authStore.profile.subject || '待设置')
+
 // ====== Stats ======
 const statCards = computed(() => [
   { key: 'diary', label: '日记篇数', value: diaryStore.diaries.length, icon: 'book', color: 'rgba(75,143,140,0.1)', iconColor: 'var(--color-primary)' },
@@ -64,19 +78,29 @@ const statCards = computed(() => [
 
 // ====== Account modal (keep existing logic) ======
 const showAccount = ref(false)
-const accForm = ref({ nickname: '', bio: '' })
+const accForm = ref({ nickname: '', bio: '', school: '', subject: '' })
 const accLoading = ref(false)
 const avatarUploading = ref(false)
 
 function openAccount() {
-  accForm.value = { nickname: authStore.profile.nickname ?? '', bio: authStore.profile.bio ?? '' }
+  accForm.value = {
+    nickname: authStore.profile.nickname ?? '',
+    bio: authStore.profile.bio ?? '',
+    school: authStore.profile.school ?? '',
+    subject: authStore.profile.subject ?? '',
+  }
   showAccount.value = true
 }
 
 async function saveAccount() {
   accLoading.value = true
   try {
-    await authStore.updateProfile({ nickname: accForm.value.nickname || null, bio: accForm.value.bio || null })
+    await authStore.updateProfile({
+      nickname: accForm.value.nickname || null,
+      bio: accForm.value.bio || null,
+      school: accForm.value.school || null,
+      subject: accForm.value.subject || null,
+    })
     showAccount.value = false
   } catch { /* ignore */ }
   finally { accLoading.value = false }
@@ -123,21 +147,21 @@ const showAbout = ref(false)
 interface MenuItem { id: string; label: string; icon: string; route?: string; action?: () => void; desc?: string }
 
 const groupFeatures: MenuItem[] = [
-  { id: 'search',  label: '全局搜索', icon: 'search',  route: '/search',              desc: '搜索全部记录' },
-  { id: 'memory',  label: '大事记',   icon: 'star',    route: '/memory',              desc: '记忆时间轴' },
-  { id: 'stats',   label: '年度统计', icon: 'chart',   route: '/statistics',          desc: '数据统计' },
+  { id: 'mood',   label: '今日心情', icon: 'smile',  route: '/mood',                desc: '记录此刻心情' },
+  { id: 'search', label: '全局搜索', icon: 'search', route: '/search',              desc: '搜索全部记录' },
+  { id: 'memory', label: '大事记',   icon: 'star',   route: '/memory',              desc: '记忆时间轴' },
+  { id: 'stats',  label: '年度统计', icon: 'chart',  route: '/statistics',          desc: '数据统计' },
 ]
 
 const groupData: MenuItem[] = [
-  { id: 'import',  label: '数据导入', icon: 'upload',  route: '/import',               desc: 'Excel / JSON 批量导入' },
-  { id: 'export',  label: '数据导出', icon: 'download', action: () => { doExport() },   desc: '导出全部数据到 JSON' },
-  { id: 'tags',    label: '标签管理', icon: 'tag',     route: '/settings/tags',        desc: '管理分类标签' },
-  { id: 'recycle', label: '回收站',   icon: 'trash',   route: '/settings/recycle-bin',  desc: '恢复已删除数据' },
+  { id: 'data',    label: '数据管理', icon: 'upload', action: () => { showDataMgmt.value = true }, desc: '导入 / 导出全部数据' },
+  { id: 'recycle', label: '回收站',   icon: 'trash',  route: '/settings/recycle-bin',              desc: '恢复已删除数据' },
 ]
 
 const settingsMenu = computed<MenuItem[]>(() => [
   { id: 'theme', label: '深色模式', icon: 'moon', action: toggleDarkMode, desc: darkMode.value ? '已开启' : '已关闭' },
-  { id: 'about', label: '关于昌都记忆', icon: 'info', action: () => { showAbout.value = true }, desc: 'V5.4' },
+  { id: 'about', label: '关于昌都记忆', icon: 'info', action: () => { showAbout.value = true }, desc: 'V5.5.1' },
+  { id: 'logout', label: '退出登录', icon: 'logout', action: () => { handleLogout() }, desc: '退出当前账号' },
 ])
 
 function handleMenuClick(item: MenuItem) {
@@ -172,58 +196,79 @@ function goTo(path: string) {
            LEFT COLUMN
            ========================================== -->
       <div class="profile__left">
-        <!-- Personal Hero Card -->
+        <!-- Personal Hero Card (按 我的1.1.html 原型) -->
         <div class="profile-hero" @click="openAccount">
-          <!-- gradient bg layers -->
-          <div class="profile-hero__bg" />
-          <div class="profile-hero__glow" />
+          <!-- 背景雪山线稿纹理 -->
+          <svg
+            class="profile-hero__texture"
+            viewBox="0 0 500 150"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path d="M0 150L120 40L200 110L320 10L500 150H0Z" fill="currentColor" />
+          </svg>
 
           <div class="profile-hero__content">
-            <!-- Role badge -->
-            <div v-if="timeStore.profile?.location" class="profile-hero__badge">
-              {{ timeStore.profile.location }}
+            <!-- 顶部状态标签 -->
+            <div class="profile-hero__top">
+              <span class="profile-hero__badge">
+                {{ heroBadge }}
+              </span>
+              <span v-if="heroLocation" class="profile-hero__top-location">
+                {{ heroLocation }}
+              </span>
             </div>
 
-            <!-- Avatar -->
-            <div class="profile-hero__avatar-row">
-              <AppAvatar
-                :name="authStore.displayName"
-                :src="authStore.profile.avatar_url || undefined"
-                size="lg"
-              />
-              <button class="profile-hero__edit-btn" @click.stop="openAccount">
-                编辑资料
-              </button>
+            <!-- 头像与姓名信息 -->
+            <div class="profile-hero__profile">
+              <div class="profile-hero__avatar-wrap">
+                <div class="profile-hero__avatar-ring">
+                  <AppAvatar
+                    :name="authStore.displayName"
+                    :src="authStore.profile.avatar_url || undefined"
+                    :size="88"
+                  />
+                </div>
+                <!-- 右下角绿色勾选 -->
+                <div class="profile-hero__verified">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  ><path d="M5 13l4 4L19 7" /></svg>
+                </div>
+              </div>
+
+              <div class="profile-hero__name-wrap">
+                <h2 class="profile-hero__name">
+                  {{ authStore.displayName }}
+                </h2>
+                <p v-if="heroSub" class="profile-hero__sub">
+                  {{ heroSub }}
+                </p>
+              </div>
+
+              <p class="profile-hero__bio">
+                {{ authStore.displayBio || '记录在昌都的一年 · 山海有期，青春不负。' }}
+              </p>
             </div>
 
-            <!-- Name & Bio -->
-            <h2 class="profile-hero__name">
-              {{ authStore.displayName }}
-            </h2>
-            <p class="profile-hero__bio">
-              {{ authStore.displayBio || '点击编辑个人简介' }}
-            </p>
-
-            <!-- Quick info -->
-            <div class="profile-hero__meta">
-              <div v-if="timeStore.profile?.project_name" class="profile-hero__meta-item">
-                <AppIcon name="book" size="14" />
-                <span>{{ timeStore.profile.project_name }}</span>
+            <!-- 个人属性简徽 -->
+            <div class="profile-hero__attrs">
+              <div class="profile-hero__attr">
+                <span class="profile-hero__attr-label">服务学校</span>
+                <span class="profile-hero__attr-value">{{ heroSchool }}</span>
               </div>
-              <div v-if="timeStore.profile?.location" class="profile-hero__meta-item">
-                <AppIcon name="pin" size="14" />
-                <span>{{ timeStore.profile.location }}</span>
-              </div>
-              <div v-if="authStore.user?.email" class="profile-hero__meta-item">
-                <AppIcon name="mail" size="14" />
-                <span class="profile-hero__meta-email">{{ authStore.user.email }}</span>
+              <div class="profile-hero__attr">
+                <span class="profile-hero__attr-label">教学科目</span>
+                <span class="profile-hero__attr-value">{{ heroSubject }}</span>
               </div>
             </div>
-
-            <!-- Logout link -->
-            <button class="profile-hero__logout" @click.stop="handleLogout">
-              <AppIcon name="logout" size="14" /> 退出登录
-            </button>
           </div>
         </div>
 
@@ -234,7 +279,7 @@ function goTo(path: string) {
           </div>
           <div class="profile__about-text">
             <span class="profile__about-name">昌都记忆</span>
-            <span class="profile__about-version">V5.4</span>
+            <span class="profile__about-version">V5.5.1</span>
           </div>
         </div>
       </div>
@@ -300,7 +345,7 @@ function goTo(path: string) {
         </AppCard>
 
         <!-- Stats: 在昌都的印记 -->
-        <AppSection title="在昌都的印记" class="profile__section">
+        <AppSection title="在昌都的印记" class="profile__section profile__section--stats">
           <div class="profile__stats-grid">
             <div
               v-for="stat in statCards"
@@ -319,94 +364,88 @@ function goTo(path: string) {
           </div>
         </AppSection>
 
-        <!-- Menu: Features -->
-        <AppSection title="常用功能" class="profile__section">
-          <AppCard no-padding>
-            <button
-              v-for="item in groupFeatures"
-              :key="item.id"
-              class="profile__menu-row"
-              @click="handleMenuClick(item)"
-            >
-              <div
-                class="profile__menu-icon"
-                :class="`profile__menu-icon--${item.id}`"
+        <!-- ==========================================
+             Menus: 常用功能 + 数据管理 + 系统
+             电脑端两列（左:常用功能+系统 | 右:数据管理），手机端单列
+             ========================================== -->
+        <div class="profile__menus">
+          <!-- Menu: Features -->
+          <AppSection title="常用功能" class="profile__section profile__menus-item profile__menus-item--features">
+            <AppCard no-padding>
+              <button
+                v-for="item in groupFeatures"
+                :key="item.id"
+                class="profile__menu-row"
+                @click="handleMenuClick(item)"
               >
-                <AppIcon :name="item.icon" size="18" />
-              </div>
-              <span class="profile__menu-label">{{ item.label }}</span>
-              <span class="profile__menu-desc">{{ item.desc }}</span>
-              <AppIcon name="chevron-right" size="14" class="profile__menu-arrow" />
-            </button>
-          </AppCard>
-        </AppSection>
+                <div
+                  class="profile__menu-icon"
+                  :class="`profile__menu-icon--${item.id}`"
+                >
+                  <AppIcon :name="item.icon" size="18" />
+                </div>
+                <span class="profile__menu-label">{{ item.label }}</span>
+                <span class="profile__menu-desc">{{ item.desc }}</span>
+                <AppIcon name="chevron-right" size="14" class="profile__menu-arrow" />
+              </button>
+            </AppCard>
+          </AppSection>
 
-        <!-- Menu: Data -->
-        <AppSection title="数据与归档" class="profile__section">
-          <AppCard no-padding>
-            <button
-              v-for="item in groupData"
-              :key="item.id"
-              class="profile__menu-row"
-              @click="handleMenuClick(item)"
-            >
-              <div
-                class="profile__menu-icon"
-                :class="`profile__menu-icon--${item.id}`"
+          <!-- Menu: Data -->
+          <AppSection title="数据管理" class="profile__section profile__menus-item profile__menus-item--data">
+            <AppCard no-padding>
+              <button
+                v-for="item in groupData"
+                :key="item.id"
+                class="profile__menu-row"
+                @click="handleMenuClick(item)"
               >
-                <AppIcon :name="item.icon" size="18" />
-              </div>
-              <span class="profile__menu-label">{{ item.label }}</span>
-              <span class="profile__menu-desc">{{ item.desc }}</span>
-              <AppIcon
-                v-if="item.id !== 'export'"
-                name="chevron-right"
-                size="14"
-                class="profile__menu-arrow"
-              />
-              <span
-                v-else
-                class="profile__menu-arrow profile__menu-arrow--action"
-                :class="{ 'profile__menu-arrow--loading': exporting }"
-              >
-                {{ exporting ? '导出中…' : '导出' }}
-              </span>
-            </button>
-          </AppCard>
-        </AppSection>
+                <div
+                  class="profile__menu-icon"
+                  :class="`profile__menu-icon--${item.id}`"
+                >
+                  <AppIcon :name="item.icon" size="18" />
+                </div>
+                <span class="profile__menu-label">{{ item.label }}</span>
+                <span class="profile__menu-desc">{{ item.desc }}</span>
+                <AppIcon name="chevron-right" size="14" class="profile__menu-arrow" />
+              </button>
+            </AppCard>
+          </AppSection>
 
-        <!-- Menu: Settings -->
-        <AppSection title="系统" class="profile__section">
-          <AppCard no-padding>
-            <button
-              v-for="item in settingsMenu"
-              :key="item.id"
-              class="profile__menu-row"
-              @click="handleMenuClick(item)"
-            >
-              <div
-                class="profile__menu-icon"
-                :class="`profile__menu-icon--${item.id}`"
+          <!-- Menu: Settings -->
+          <AppSection title="系统" class="profile__section profile__menus-item profile__menus-item--system">
+            <AppCard no-padding>
+              <button
+                v-for="item in settingsMenu"
+                :key="item.id"
+                class="profile__menu-row"
+                @click="handleMenuClick(item)"
               >
-                <AppIcon :name="item.icon" size="18" />
-              </div>
-              <span class="profile__menu-label">{{ item.label }}</span>
-              <span class="profile__menu-desc">{{ item.desc }}</span>
-              <template v-if="item.id === 'theme'">
-                <label class="profile__toggle" @click.stop>
-                  <input type="checkbox" :checked="darkMode" @change="toggleDarkMode" />
-                  <span class="profile__toggle-slider" />
-                </label>
-              </template>
-              <AppIcon
-                v-else
-                name="chevron-right"
-                size="14"
-                class="profile__menu-arrow"
-              />
-            </button>
-          </AppCard>
-        </AppSection>
+                <div
+                  class="profile__menu-icon"
+                  :class="`profile__menu-icon--${item.id}`"
+                >
+                  <AppIcon :name="item.icon" size="18" />
+                </div>
+                <span class="profile__menu-label">{{ item.label }}</span>
+                <span class="profile__menu-desc">{{ item.desc }}</span>
+                <template v-if="item.id === 'theme'">
+                  <label class="profile__toggle" @click.stop>
+                    <input type="checkbox" :checked="darkMode" @change="toggleDarkMode" />
+                    <span class="profile__toggle-slider" />
+                  </label>
+                </template>
+                <AppIcon
+                  v-else
+                  name="chevron-right"
+                  size="14"
+                  class="profile__menu-arrow"
+                />
+              </button>
+            </AppCard>
+          </AppSection>
+        </div>
       </div>
     </div>
 
@@ -450,6 +489,20 @@ function goTo(path: string) {
                 class="modal-input"
                 placeholder="写一句话介绍自己…"
                 maxlength="50"
+              />
+              <label class="modal-label">服务学校</label>
+              <input
+                v-model="accForm.school"
+                class="modal-input"
+                placeholder="如：昌都市第一高级中学"
+                maxlength="30"
+              />
+              <label class="modal-label">教学科目</label>
+              <input
+                v-model="accForm.subject"
+                class="modal-input"
+                placeholder="如：高一思想政治"
+                maxlength="20"
               />
               <p class="modal-email">
                 {{ authStore.user?.email }}
@@ -521,7 +574,7 @@ function goTo(path: string) {
               Changdu Memory
             </p>
             <p class="about-version">
-              V5.4 — 个人数字记录平台
+              V5.5.1 — 个人数字记录平台
             </p>
             <p class="about-desc">
               记录在西藏昌都的一年支教生活
@@ -540,7 +593,7 @@ function goTo(path: string) {
 
 <style scoped>
 /* ================================================
-   Profile — V5.4
+   Profile — V5.5.1
    ================================================ */
 .profile {
   max-width: 1200px;
@@ -609,6 +662,47 @@ function goTo(path: string) {
   margin-bottom: var(--spacing-2xl);
 }
 
+/* 手机端：隐藏页面标题与「在昌都的印记」卡片（电脑端保持不变） */
+@media (max-width: 767px) {
+  .profile__header {
+    display: none;
+  }
+
+  .profile__section--stats {
+    display: none;
+  }
+}
+
+/* ==========================================
+   Menus — 电脑端两列 / 手机端单列
+   左列：常用功能 + 系统 | 右列：数据管理
+   ========================================== */
+.profile__menus {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 1024px) {
+  .profile__menus {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      'features data'
+      'system   data';
+    column-gap: var(--spacing-xl);
+    row-gap: var(--spacing-2xl);
+    align-items: start;
+  }
+
+  .profile__menus .profile__section {
+    margin-bottom: 0;
+  }
+
+  .profile__menus-item--features { grid-area: features; }
+  .profile__menus-item--data     { grid-area: data; }
+  .profile__menus-item--system   { grid-area: system; }
+}
+
 /* ==========================================
    LEFT — Personal Hero Card
    ========================================== */
@@ -622,133 +716,176 @@ function goTo(path: string) {
   position: relative;
   overflow: hidden;
   border-radius: var(--radius-2xl, 32px);
+  background: linear-gradient(145deg, #101820 0%, #1f343a 40%, var(--color-primary) 100%);
+  box-shadow: 0 20px 40px -15px rgba(16, 24, 32, 0.3);
+  color: #fff;
   cursor: pointer;
 }
 
-.profile-hero__bg {
+/* 背景雪山线稿纹理 */
+.profile-hero__texture {
   position: absolute;
-  inset: 0;
-  background: linear-gradient(160deg, #101820 0%, #1a3c3a 35%, var(--color-primary) 100%);
-  z-index: 0;
-}
-
-.profile-hero__glow {
-  position: absolute;
-  top: -40%;
-  right: -20%;
-  width: 60%;
-  height: 80%;
-  background: radial-gradient(ellipse, rgba(111, 168, 220, 0.25) 0%, transparent 70%);
-  z-index: 1;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 160px;
+  opacity: 0.1;
+  color: currentColor;
+  pointer-events: none;
 }
 
 .profile-hero__content {
   position: relative;
   z-index: 2;
-  padding: 28px 24px 24px;
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+@media (min-width: 768px) {
+  .profile-hero__content {
+    padding: 32px;
+  }
+}
+
+/* ---- 顶部状态标签 ---- */
+.profile-hero__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.profile-hero__badge {
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(178, 232, 226, 0.9);
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 72%;
+}
+
+.profile-hero__top-location {
+  font-size: 12px;
+  color: rgba(203, 213, 225, 0.8);
+  flex-shrink: 0;
+}
+
+/* ---- 头像与姓名信息 ---- */
+.profile-hero__profile {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
+  gap: 10px;
+}
+
+.profile-hero__avatar-wrap {
+  position: relative;
+}
+
+.profile-hero__avatar-ring {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  padding: 4px;
+  background: linear-gradient(135deg, var(--color-gold, #D6A84F), var(--color-sky, #6FA8DC), var(--color-primary));
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+}
+
+.profile-hero__avatar-ring .app-avatar {
+  border-radius: 50%;
+}
+
+/* 右下角绿色勾选 */
+.profile-hero__verified {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  border: 2px solid #101820;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: #fff;
 }
 
-.profile-hero__badge {
-  font-size: 11px;
-  font-weight: var(--font-weight-semibold);
-  padding: 4px 12px;
-  border-radius: var(--radius-full);
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(8px);
-  color: rgba(255, 255, 255, 0.85);
-  margin-bottom: 20px;
-  letter-spacing: 0.5px;
-}
-
-.profile-hero__avatar-row {
+.profile-hero__name-wrap {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.profile-hero__edit-btn {
-  padding: 4px 14px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  border-radius: var(--radius-full);
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 11px;
-  font-family: inherit;
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.profile-hero__edit-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
+  gap: 4px;
 }
 
 .profile-hero__name {
-  font-size: 22px;
-  font-weight: var(--font-weight-bold);
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.2;
+  font-weight: var(--font-weight-extrabold, 800);
+  letter-spacing: -0.02em;
   color: #fff;
-  margin: 0 0 4px;
+}
+
+.profile-hero__sub {
+  margin: 0;
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  color: rgba(204, 255, 250, 0.9);
 }
 
 .profile-hero__bio {
-  font-size: var(--font-caption);
-  color: rgba(255, 255, 255, 0.55);
-  margin: 0 0 20px;
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: rgba(203, 213, 225, 0.7);
   max-width: 280px;
-  line-height: var(--leading-relaxed);
+  line-height: 1.6;
+  font-style: italic;
 }
 
-.profile-hero__meta {
+/* ---- 个人属性简徽 ---- */
+.profile-hero__attrs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+
+.profile-hero__attr {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 20px;
-  width: 100%;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px 8px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.profile-hero__meta-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: var(--font-caption);
-  color: rgba(255, 255, 255, 0.65);
-  justify-content: center;
+.profile-hero__attr-label {
+  font-size: 11px;
+  color: rgba(148, 163, 184, 0.9);
 }
 
-.profile-hero__meta-email {
+.profile-hero__attr-value {
+  font-size: 12px;
+  font-weight: var(--font-weight-bold);
+  color: rgba(226, 232, 240, 0.95);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.profile-hero__logout {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 20px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: var(--radius-full);
-  background: transparent;
-  color: rgba(255, 255, 255, 0.45);
-  font-size: var(--font-caption);
-  font-family: inherit;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.profile-hero__logout:hover {
-  border-color: rgba(194, 103, 106, 0.5);
-  color: var(--color-accent);
-  background: rgba(194, 103, 106, 0.08);
 }
 
 /* About block */
@@ -1009,15 +1146,15 @@ function goTo(path: string) {
   flex-shrink: 0;
 }
 
+.profile__menu-icon--mood    { background: rgba(107, 158, 133, 0.12);  color: #6B9E85; }
 .profile__menu-icon--search  { background: rgba(107, 158, 133, 0.1);  color: var(--color-secondary); }
 .profile__menu-icon--memory  { background: rgba(142, 124, 181, 0.12);  color: #8E7CB5; }
 .profile__menu-icon--stats   { background: rgba(208, 135, 112, 0.1);  color: var(--color-accent-soft); }
 .profile__menu-icon--recycle { background: rgba(194, 103, 106, 0.1);  color: var(--color-error); }
-.profile__menu-icon--import  { background: rgba(75, 143, 140, 0.1);   color: var(--color-primary); }
-.profile__menu-icon--export  { background: rgba(75, 143, 140, 0.1);   color: var(--color-primary); }
-.profile__menu-icon--tags    { background: rgba(208, 135, 112, 0.1);  color: var(--color-accent-soft); }
+.profile__menu-icon--data    { background: rgba(75, 143, 140, 0.1);   color: var(--color-primary); }
 .profile__menu-icon--theme   { background: rgba(142, 124, 181, 0.12);  color: #8E7CB5; }
 .profile__menu-icon--about   { background: rgba(75, 143, 140, 0.1);   color: var(--color-primary); }
+.profile__menu-icon--logout  { background: rgba(194, 103, 106, 0.1);  color: var(--color-error); }
 
 .profile__menu-label {
   flex: 1;
@@ -1039,17 +1176,6 @@ function goTo(path: string) {
   color: var(--color-text-tertiary);
   opacity: 0.4;
   flex-shrink: 0;
-}
-
-.profile__menu-arrow--action {
-  font-size: var(--font-caption);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-primary);
-  opacity: 1;
-}
-
-.profile__menu-arrow--loading {
-  opacity: 0.5;
 }
 
 /* Toggle switch */

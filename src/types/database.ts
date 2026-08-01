@@ -7,6 +7,8 @@ export interface Database {
           nickname: string | null
           avatar_url: string | null
           bio: string | null
+          school: string | null
+          subject: string | null
           created_at: string
           updated_at: string
         }
@@ -15,6 +17,8 @@ export interface Database {
           nickname?: string | null
           avatar_url?: string | null
           bio?: string | null
+          school?: string | null
+          subject?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -22,6 +26,8 @@ export interface Database {
           nickname?: string | null
           avatar_url?: string | null
           bio?: string | null
+          school?: string | null
+          subject?: string | null
           updated_at?: string
         }
       }

@@ -552,7 +552,7 @@ async function handleWelfareSave() {
 
 <style scoped>
 /* ================================================
-   Expense Page — V5.4
+   Expense Page — V5.5.1
    ================================================ */
 .expense-page {
   max-width: 840px;

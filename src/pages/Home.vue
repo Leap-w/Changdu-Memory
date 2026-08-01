@@ -10,6 +10,7 @@ import { useExpenseStore } from '@/stores/expense'
 import { useMemoryStore } from '@/stores/memory'
 import { AppCard, AppSection, AppIcon } from '@/components/ui'
 import HeroSection from '@/components/dashboard/HeroSection.vue'
+import { getTodayMood } from '@/utils/mood'
 
 const router = useRouter()
 const timeStore = useTimeStore()
@@ -50,17 +51,14 @@ onMounted(async () => {
 // ==========================================
 // Today
 // ==========================================
-const today = computed(() => new Date().toISOString().split('T')[0])
-
 const todayWorks = computed(() => workStore.todayWorks)
 const todayTodos = computed(() => todoStore.todayTodos)
 const doneTodos = computed(() => todayTodos.value.filter((t) => t.completed))
 const pendingTodos = computed(() => todayTodos.value.filter((t) => !t.completed))
 const todayExpenseTotal = computed(() => expenseStore.todayExpenseTotal)
 
-const todayDiary = computed(() =>
-  diaryStore.diaries.find((d) => d.diary_date === today.value) || null,
-)
+// 今日心情（独立轻量功能，仅存 localStorage）
+const todayMood = computed(() => getTodayMood())
 
 // ==========================================
 // Recent memories (diaries + memories merged)
@@ -150,7 +148,7 @@ function goTo(path: string) {
     <AppSection title="今日状态" class="home__section">
       <div class="home__today-grid">
         <!-- 今日课程 -->
-        <AppCard hoverable class="home__today-card" @click="goTo('/work')">
+        <AppCard hoverable class="home__today-card" @click="goTo('/work?tab=课程表')">
           <div class="today-card__inner">
             <div class="today-card__head">
               <div class="today-card__icon today-card__icon--work">
@@ -227,8 +225,8 @@ function goTo(path: string) {
           </div>
         </AppCard>
 
-        <!-- 今日心情/日记 -->
-        <AppCard hoverable class="home__today-card" @click="goTo(todayDiary ? `/diary/${todayDiary.id}` : '/diary/new')">
+        <!-- 今日心情（独立轻量功能） -->
+        <AppCard hoverable class="home__today-card" @click="goTo('/mood')">
           <div class="today-card__inner">
             <div class="today-card__head">
               <div class="today-card__icon today-card__icon--mood">
@@ -236,18 +234,13 @@ function goTo(path: string) {
               </div>
               <span class="today-card__title">今日心情</span>
             </div>
-            <template v-if="ready && todayDiary">
+            <template v-if="todayMood">
               <div class="today-card__body">
                 <div class="today-card__mood">
-                  <template v-if="todayDiary.mood">
-                    {{ todayDiary.mood }}
-                  </template>
-                  <template v-if="todayDiary.weather">
-                    <span v-if="todayDiary.mood"> · </span>{{ todayDiary.weather }}
-                  </template>
+                  {{ todayMood.emoji }} {{ todayMood.label }}
                 </div>
-                <div v-if="todayDiary.content" class="today-card__diary-excerpt">
-                  {{ todayDiary.content.replace(/<[^>]+>/g, '').slice(0, 60) }}{{ (todayDiary.content || '').replace(/<[^>]+>/g, '').length > 60 ? '…' : '' }}
+                <div v-if="todayMood.note" class="today-card__diary-excerpt">
+                  {{ todayMood.note }}
                 </div>
               </div>
             </template>
@@ -343,7 +336,7 @@ function goTo(path: string) {
 
 <style scoped>
 /* ================================================
-   Home Page — V5.4
+   Home Page — V5.5.1
    ================================================ */
 .home {
   /* Hero handles its own background */

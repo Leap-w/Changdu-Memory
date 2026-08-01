@@ -25,8 +25,8 @@ const message = useMessage()
 // ==========================================
 // Tab state — synced with route query
 // ==========================================
-const tabs = ['待办', '课程表', '行政安排', '学生档案'] as const
-const activeTab = ref((route.query.tab as string) || '待办')
+const tabs = ['课程表', '行政安排', '学生档案'] as const
+const activeTab = ref((route.query.tab as string) || '课程表')
 
 watch(() => route.query.tab, (val) => {
   if (val && tabs.includes(val as typeof tabs[number])) {
@@ -53,8 +53,6 @@ onMounted(async () => {
 // ==========================================
 // Date
 // ==========================================
-const today = computed(() => new Date().toISOString().split('T')[0])
-
 function getTodayDisplay() {
   const d = new Date()
   const days = ['日', '一', '二', '三', '四', '五', '六']
@@ -162,9 +160,8 @@ async function handleDeleteSchedule(id: string) {
 }
 
 // ==========================================
-// Work tab (行政安排)
+// Work tab (行政安排) — 只能删除，不能修改
 // ==========================================
-function goWorkEdit(id: string) { router.push(`/work/${id}/edit`) }
 function goWorkCreate() { router.push('/work/new') }
 
 async function handleDeleteWork(id: string) {
@@ -241,15 +238,8 @@ async function handleBatchAdd() {
 }
 
 // ==========================================
-// Todo batch actions
+// 待办统一在 /todo 页面管理，这里仅展示今日时间轴
 // ==========================================
-async function doBatch(action: 'complete' | 'delete') {
-  if (action === 'complete') await todoStore.batchComplete()
-  else {
-    if (!confirm(`确定删除选中的 ${todoStore.selectedIds.size} 项？`)) return
-    await todoStore.batchDelete()
-  }
-}
 </script>
 
 <template>
@@ -276,11 +266,7 @@ async function doBatch(action: 'complete' | 'delete') {
             :key="`${item.type}-${item.id}`"
             class="today-timeline__item"
             :class="`today-timeline__item--${item.type}`"
-            @click="
-              item.type === 'todo' ? router.push(`/todo/${item.id}/edit`) :
-              item.type === 'work' ? goWorkEdit(item.id) :
-              null
-            "
+            @click="item.type === 'todo' ? router.push(`/todo/${item.id}/edit`) : null"
           >
             <div class="today-timeline__dot" />
             <div class="today-timeline__time">
@@ -316,114 +302,11 @@ async function doBatch(action: 'complete' | 'delete') {
         @click="activeTab = t"
       >
         {{ t }}
-        <span v-if="t === '待办' && todoStore.todayPendingCount > 0" class="work-tabs__badge">
-          {{ todoStore.todayPendingCount }}
-        </span>
       </button>
     </div>
 
     <!-- ================================================================ -->
-    <!-- TAB 1: 待办 -->
-    <!-- ================================================================ -->
-    <div v-if="activeTab === '待办'" class="work-tab">
-      <!-- Batch toolbar -->
-      <Transition name="fade">
-        <div v-if="todoStore.selectionMode" class="todo-batch-bar">
-          <span class="todo-batch-bar__count">已选 {{ todoStore.selectedIds.size }} 项</span>
-          <button class="todo-batch-bar__btn" @click="todoStore.toggleSelectAll()">
-            {{ todoStore.selectedIds.size === todayTodos.length ? '取消全选' : '全选' }}
-          </button>
-          <button class="todo-batch-bar__btn todo-batch-bar__btn--complete" @click="doBatch('complete')">
-            批量完成
-          </button>
-          <button class="todo-batch-bar__btn todo-batch-bar__btn--delete" @click="doBatch('delete')">
-            批量删除
-          </button>
-          <button class="todo-batch-bar__btn" @click="todoStore.clearSelection()">
-            取消
-          </button>
-        </div>
-      </Transition>
-
-      <div v-if="ready && todayTodos.length === 0" class="work-empty">
-        <div class="work-empty__icon">
-          <AppIcon name="check" size="40" color="var(--color-text-tertiary)" />
-        </div>
-        <p class="work-empty__text">
-          今日没有待办
-        </p>
-        <button class="work-empty__btn" @click="router.push('/todo/new')">
-          新建待办
-        </button>
-      </div>
-
-      <AppCard v-else no-padding>
-        <div class="todo-list__header">
-          <span class="todo-list__date">{{ today }}</span>
-          <span class="todo-list__stats">
-            {{ todoStore.todayCompletedCount }}/{{ todayTodos.length }} 完成
-          </span>
-        </div>
-        <div
-          v-for="t in todayTodos"
-          :key="t.id"
-          class="todo-row"
-          :class="{ 'todo-row--done': t.completed, 'todo-row--selected': todoStore.isSelected(t.id) }"
-        >
-          <span
-            class="todo-row__check"
-            :class="{ checked: t.completed }"
-            @click.stop="todoStore.selectionMode ? todoStore.toggleSelect(t.id) : todoStore.toggleTodo(t.id)"
-          >
-            <svg
-              v-if="t.completed"
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#fff"
-              stroke-width="3"
-            ><polyline points="20 6 9 17 4 12" /></svg>
-          </span>
-          <div
-            class="todo-row__body"
-            @click="todoStore.selectionMode ? todoStore.toggleSelect(t.id) : router.push(`/todo/${t.id}/edit`)"
-          >
-            <span class="todo-row__title" :class="{ done: t.completed }">{{ t.title }}</span>
-            <span
-              v-if="(t as any).deadline_date"
-              class="todo-row__deadline"
-            >
-              {{ (t as any).deadline_date }}{{ (t as any).deadline_time ? ' ' + (t as any).deadline_time : '' }}
-            </span>
-          </div>
-          <button
-            v-if="!todoStore.selectionMode"
-            class="todo-row__del"
-            title="删除"
-            @click.stop="todoStore.removeTodo(t.id)"
-          >
-            <AppIcon name="trash" size="13" />
-          </button>
-        </div>
-      </AppCard>
-
-      <div class="work-fab-row">
-        <button class="work-fab-btn" @click="router.push('/todo/new')">
-          <AppIcon name="plus" size="16" /> 新建待办
-        </button>
-        <button
-          v-if="todayTodos.length > 0"
-          class="work-fab-btn work-fab-btn--secondary"
-          @click="todoStore.selectionMode ? todoStore.clearSelection() : todoStore.selectionMode = true"
-        >
-          {{ todoStore.selectionMode ? '退出选择' : '批量操作' }}
-        </button>
-      </div>
-    </div>
-
-    <!-- ================================================================ -->
-    <!-- TAB 2: 课程表 -->
+    <!-- TAB 1: 课程表 -->
     <!-- ================================================================ -->
     <div v-if="activeTab === '课程表'" class="work-tab">
       <div v-if="ready && scheduleStore.schedules.length === 0" class="work-empty">
@@ -454,7 +337,7 @@ async function doBatch(action: 'complete' | 'delete') {
     </div>
 
     <!-- ================================================================ -->
-    <!-- TAB 3: 行政安排 -->
+    <!-- TAB 2: 行政安排（只能删除，不能修改） -->
     <!-- ================================================================ -->
     <div v-if="activeTab === '行政安排'" class="work-tab">
       <div v-if="ready && workStore.works.length === 0" class="work-empty">
@@ -480,7 +363,6 @@ async function doBatch(action: 'complete' | 'delete') {
               <WorkCard
                 :work="w"
                 class="work-item-row__card"
-                @click="goWorkEdit"
               />
               <button class="work-item-row__del" title="删除" @click.stop="handleDeleteWork(w.id)">
                 <AppIcon name="trash" size="13" />
@@ -498,7 +380,7 @@ async function doBatch(action: 'complete' | 'delete') {
     </div>
 
     <!-- ================================================================ -->
-    <!-- TAB 4: 学生档案 -->
+    <!-- TAB 3: 学生档案 -->
     <!-- ================================================================ -->
     <div v-if="activeTab === '学生档案'" class="work-tab">
       <div v-if="ready && studentStore.students.length === 0" class="work-empty">
@@ -631,7 +513,7 @@ async function doBatch(action: 'complete' | 'delete') {
 
 <style scoped>
 /* ================================================
-   Work Page — V5.4
+   Work Page — V5.5.1
    ================================================ */
 .work-page {
   max-width: 960px;
@@ -723,20 +605,6 @@ async function doBatch(action: 'complete' | 'delete') {
   font-weight: var(--font-weight-semibold);
 }
 
-.work-tabs__badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  border-radius: 9px;
-  background: rgba(255, 255, 255, 0.25);
-  color: #fff;
-  font-size: 11px;
-  font-weight: var(--font-weight-bold);
-}
-
 .work-tab {
   min-height: 300px;
 }
@@ -758,8 +626,7 @@ async function doBatch(action: 'complete' | 'delete') {
   cursor: default;
 }
 
-.today-timeline__item--todo,
-.today-timeline__item--work {
+.today-timeline__item--todo {
   cursor: pointer;
 }
 
@@ -896,153 +763,6 @@ async function doBatch(action: 'complete' | 'delete') {
   background: var(--color-bg);
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm);
-}
-
-/* ---- Todo Batch Bar ---- */
-.todo-batch-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  background: var(--color-primary-bg);
-  border-radius: var(--radius-md);
-  margin-bottom: var(--spacing-md);
-  flex-wrap: wrap;
-}
-
-.todo-batch-bar__count {
-  font-size: var(--font-caption);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-primary);
-  margin-right: auto;
-}
-
-.todo-batch-bar__btn {
-  padding: 5px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-bg-white);
-  font-size: var(--font-caption);
-  font-family: inherit;
-  cursor: pointer;
-  color: var(--color-text-secondary);
-  transition: all var(--transition-fast);
-}
-
-.todo-batch-bar__btn:hover {
-  background: var(--color-bg);
-}
-
-.todo-batch-bar__btn--complete {
-  color: var(--color-secondary);
-  border-color: rgba(107, 158, 133, 0.3);
-}
-
-.todo-batch-bar__btn--delete {
-  color: var(--color-error);
-  border-color: rgba(191, 97, 106, 0.3);
-}
-
-/* ---- Todo List ---- */
-.todo-list__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 14px 18px 10px;
-}
-
-.todo-list__date {
-  font-size: var(--font-caption);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-secondary);
-}
-
-.todo-list__stats {
-  font-size: var(--font-caption);
-  color: var(--color-text-tertiary);
-}
-
-.todo-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 18px;
-  transition: background var(--transition-fast);
-  border-top: 1px solid var(--color-border-light);
-}
-
-.todo-row:hover {
-  background: var(--color-bg);
-}
-
-.todo-row--done {
-  opacity: 0.5;
-}
-
-.todo-row--selected {
-  background: var(--color-primary-bg);
-}
-
-.todo-row__check {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: 2px solid var(--color-border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.todo-row__check.checked {
-  background: var(--color-secondary);
-  border-color: var(--color-secondary);
-}
-
-.todo-row__body {
-  flex: 1;
-  min-width: 0;
-  cursor: pointer;
-}
-
-.todo-row__title {
-  display: block;
-  font-size: var(--font-content);
-  color: var(--color-text-primary);
-}
-
-.todo-row__title.done {
-  text-decoration: line-through;
-  color: var(--color-text-tertiary);
-}
-
-.todo-row__deadline {
-  font-size: 11px;
-  color: var(--color-accent-soft);
-  font-weight: var(--font-weight-medium);
-}
-
-.todo-row__del {
-  padding: 6px;
-  border: none;
-  background: transparent;
-  color: var(--color-text-tertiary);
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-  opacity: 0;
-  transition: all var(--transition-fast);
-  flex-shrink: 0;
-}
-
-.todo-row:hover .todo-row__del {
-  opacity: 1;
-}
-
-.todo-row__del:hover {
-  color: var(--color-error);
-  background: rgba(194, 103, 106, 0.08);
 }
 
 /* ---- Work Groups ---- */
@@ -1268,16 +988,6 @@ async function doBatch(action: 'complete' | 'delete') {
 }
 
 /* ---- Transitions ---- */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
 .modal-enter-active,
 .modal-leave-active {
   transition: all 0.25s;

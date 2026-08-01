@@ -34,10 +34,6 @@ async function handleLogout() {
   }
 }
 
-function goTagManage() {
-  router.push('/settings/tags')
-}
-
 function goImport() {
   router.push('/import')
 }
@@ -138,19 +134,6 @@ function goRecycleBin() {
         </div>
       </NCard>
 
-      <!-- 自定义 -->
-      <NCard class="settings-card" title="自定义">
-        <div class="settings-item">
-          <div class="settings-item__info">
-            <span class="settings-item__label">标签管理</span>
-            <span class="settings-item__desc">管理日记、照片、地点共用的标签。</span>
-          </div>
-          <NButton secondary @click="goTagManage">
-            管理
-          </NButton>
-        </div>
-      </NCard>
-
       <!-- 账户 -->
       <NCard class="settings-card" title="账户">
         <div v-if="authStore.user" class="settings-item">
@@ -178,7 +161,7 @@ function goRecycleBin() {
         <div class="settings-item">
           <div class="settings-item__info">
             <span class="settings-item__label">昌都记忆 Changdu Memory</span>
-            <span class="settings-item__desc">V5.4 — 个人数字记录平台</span>
+            <span class="settings-item__desc">V5.5.1 — 个人数字记录平台</span>
           </div>
         </div>
       </NCard>

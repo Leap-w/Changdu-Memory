@@ -52,10 +52,10 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '添加工作', requiresAuth: true },
   },
   {
-    path: '/work/:id/edit',
-    name: 'WorkEdit',
-    component: () => import('@/pages/WorkEdit.vue'),
-    meta: { title: '编辑工作', requiresAuth: true },
+    path: '/mood',
+    name: 'Mood',
+    component: () => import('@/pages/Mood.vue'),
+    meta: { title: '今日心情' },
   },
   {
     path: '/expense',
@@ -140,12 +140,6 @@ const routes: RouteRecordRaw[] = [
     name: 'RecycleBin',
     component: () => import('@/pages/RecycleBin.vue'),
     meta: { title: '回收站', requiresAuth: true },
-  },
-  {
-    path: '/settings/tags',
-    name: 'TagManage',
-    component: () => import('@/pages/TagManage.vue'),
-    meta: { title: '标签管理', requiresAuth: true },
   },
   {
     path: '/:pathMatch(.*)*',

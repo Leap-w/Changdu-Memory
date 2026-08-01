@@ -56,11 +56,14 @@ const templates = [
   { key: 'custom', label: '自定义', icon: 'edit', content: '' },
 ]
 
+const activeTemplate = ref<string | null>(null)
+
 function applyTemplate(key: string) {
   const t = templates.find((x) => x.key === key)
-  if (t && !localContent.value) {
-    localContent.value = t.content
-  }
+  if (!t) return
+  // 允许随时切换模板：点击模板即应用对应内容
+  activeTemplate.value = key
+  localContent.value = t.content
 }
 
 // ==========================================
@@ -192,6 +195,7 @@ function handleSubmit() {
           v-for="t in templates"
           :key="t.key"
           class="de__tpl-btn"
+          :class="{ 'de__tpl-btn--active': activeTemplate === t.key }"
           @click="applyTemplate(t.key)"
         >
           <div class="de__tpl-icon">
@@ -344,6 +348,9 @@ function handleSubmit() {
 .de__templates { display:flex;gap:6px;flex-wrap:wrap; }
 .de__tpl-btn { display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 14px;border:1px solid var(--color-border-light);border-radius:var(--radius-lg);background:var(--color-bg-white);cursor:pointer;font-family:inherit;transition:all var(--transition-fast);min-width:72px; }
 .de__tpl-btn:hover { border-color:var(--color-primary);background:var(--color-primary-bg); }
+.de__tpl-btn--active { border-color:var(--color-primary);background:var(--color-primary-bg);box-shadow:0 0 0 1px var(--color-primary) inset; }
+.de__tpl-btn--active .de__tpl-icon { color:var(--color-primary);background:var(--color-primary-light); }
+.de__tpl-btn--active .de__tpl-label { color:var(--color-primary);font-weight:var(--font-weight-semibold); }
 .de__tpl-icon { width:32px;height:32px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;background:var(--color-bg);color:var(--color-text-secondary);transition:all var(--transition-fast); }
 .de__tpl-btn:hover .de__tpl-icon { color:var(--color-primary);background:var(--color-primary-light); }
 .de__tpl-label { font-size:11px;color:var(--color-text-secondary);white-space:nowrap;font-weight:var(--font-weight-medium); }

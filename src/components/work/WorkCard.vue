@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { WorkPlan } from '@/repositories/WorkRepository'
-import { AppCard, AppIcon } from '@/components/ui'
+import { AppCard } from '@/components/ui'
 
 const periodLabels: Record<string, string> = {
   morning: '上午', afternoon: '下午', evening: '晚上',
@@ -9,14 +9,10 @@ const periodLabels: Record<string, string> = {
 defineProps<{
   work: WorkPlan
 }>()
-
-const emit = defineEmits<{
-  click: [id: string]
-}>()
 </script>
 
 <template>
-  <AppCard hoverable class="wc" @click="emit('click', work.id)">
+  <AppCard class="wc">
     <div class="wc__inner">
       <div class="wc__body">
         <div class="wc__head">
@@ -30,7 +26,6 @@ const emit = defineEmits<{
           {{ work.content.length > 80 ? work.content.slice(0, 80) + '…' : work.content }}
         </span>
       </div>
-      <AppIcon name="chevron-right" size="14" class="wc__arrow" />
     </div>
   </AppCard>
 </template>
@@ -81,11 +76,5 @@ const emit = defineEmits<{
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.wc__arrow {
-  color: var(--color-text-tertiary);
-  opacity: 0.3;
-  flex-shrink: 0;
 }
 </style>
