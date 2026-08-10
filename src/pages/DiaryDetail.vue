@@ -252,7 +252,7 @@ function goDiary(id: string) {
 
 <style scoped>
 /* ==========================================
-   Diary Detail — V5.5.2 Immersive Reading
+   Diary Detail — v5.1.3 Immersive Reading
    ========================================== */
 .detail {
   max-width: 780px;

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * AppLayout — V5.5.2 统一应用外壳
+ * AppLayout — v5.1.3 统一应用外壳
  *
  * 包含：顶部悬浮胶囊导航 + 主内容区 + 移动端底部导航
  * PC（>=768px）：顶部导航含全部链接
@@ -83,9 +83,11 @@ const isDesktop = computed(() => !appStore.isMobile)
           aria-label="回到首页"
           @click="navigateTo('/')"
         >
-          <div class="top-nav__logo-circle">
-            昌
-          </div>
+          <img
+            class="top-nav__logo-circle"
+            src="/icon-180.png"
+            alt="昌都记忆"
+          />
           <span class="top-nav__logo-text">昌都记忆</span>
         </div>
 
@@ -311,13 +313,8 @@ export const BottomNavIcon = defineComponent({
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--color-primary);
-  color: #fff;
-  font-size: 14px;
-  font-weight: var(--font-weight-extrabold);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
+  object-fit: cover;
   box-shadow: var(--shadow-xs);
   flex-shrink: 0;
 }

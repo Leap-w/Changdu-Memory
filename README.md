@@ -37,7 +37,7 @@ Changdu Memory/
 ├── public/                   # PWA 图标 + favicon
 ├── supabase/
 │   └── schema.sql            # 完整数据库 Schema（可重复执行）
-├── docs/                     # 开发文档（V5.5-Development-Handbook / V5_STATUS）
+├── docs/                     # 开发文档（v5.1.3-Development-Handbook / V5_STATUS）
 ├── src/
 │   ├── main.ts               # 入口
 │   ├── App.vue               # 根组件（登录全屏 / 其他统一外壳）
@@ -103,8 +103,12 @@ npm run type-check
 |--------|------|
 | `VITE_SUPABASE_URL` | Supabase 项目 URL |
 | `VITE_SUPABASE_ANON_KEY` | Supabase Anon Key（公开密钥） |
+| `SUPABASE_URL` | Supabase 项目 URL（仅保活函数服务端使用，可选） |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service_role 密钥（仅保活函数服务端使用，可选） |
 
-部署到 Vercel 时，需要在项目的 **Settings → Environment Variables** 中分别配置这两个变量，并至少勾选 **Production**。`.env` 文件不会被提交或自动上传到 Vercel。修改变量后需要重新部署；值不要包含引号、换行或多余空格。
+部署到 Vercel 时，需要在项目的 **Settings → Environment Variables** 中分别配置变量，并至少勾选 **Production**。`.env` 文件不会被提交或自动上传到 Vercel。修改变量后需要重新部署；值不要包含引号、换行或多余空格。
+
+> **保活机制（v5.1.3+）**：Supabase 免费项目连续 7 天无活动会被自动暂停。项目内置了 Vercel Cron 每日定时任务（`api/keepalive.ts`），每天自动向 Supabase 发起一次数据库查询以保持项目活跃。若配置 `SUPABASE_URL` 与 `SUPABASE_SERVICE_ROLE_KEY`，保活即可生效（后者是敏感密钥，`没有 VITE_ 前缀`，不会进入前端 bundle）。已暂停的项目需先在 Supabase Dashboard 手动点击 **Resume project** 恢复。
 
 ## 代码规范
 
@@ -164,7 +168,8 @@ chore: 工程配置
 
 ## 版本记录
 
-- **V5.5.2（当前）** — 「我的」页功能入口重构（常用功能+系统管理分组卡片、退出登录移入账号弹窗）；大事记取消固定分类、支持自定义地点、新增「大事记/一年旅程」Tab；一年旅程节点改为日期设置；今日心情数据库化（一天多条+自定义心情选项）；首页 Hero 可自定义展示倒计时；时光页大事记展示优化
+- **v5.1.3（当前）** — 全站图标改为用户提供的图片（favicon + 顶部导航 + 登录页 + 我的页）；首页日期字体加大并新增农历日期、今日状态与日期横线拉开间距；修复日期选择器选 31 日保存后变 30 日的时区 bug；全站日期/时间选择器统一为 Naive UI 中文界面；首页时间/日期/农历实时化（跨午夜自动更新）
+- **V5.5.2** — 「我的」页功能入口重构（常用功能+系统管理分组卡片、退出登录移入账号弹窗）；大事记取消固定分类、支持自定义地点、新增「大事记/一年旅程」Tab；一年旅程节点改为日期设置；今日心情数据库化（一天多条+自定义心情选项）；首页 Hero 可自定义展示倒计时；时光页大事记展示优化
 - **V5.5.1** — 首页 Hero / 我的个人卡按原型还原；账号管理新增学校/科目；数据管理合并入口；今日心情独立功能（localStorage）；行政安排仅可删除；待办新增过期分组并统一页面；移除标签管理；日记模板随时切换
 - **V5.4** — 全站设计系统升级：毛玻璃卡片、统一 AppLayout 外壳、AppIcon SVG 图标、高原自然色系
 - **V5.3** — Profile 菜单修复、开发文档整理

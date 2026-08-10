@@ -5,6 +5,7 @@ import { useMemoryStore } from '@/stores/memory'
 import type { Countdown } from '@/repositories/TimeRepository'
 import type { Memory } from '@/repositories/MemoryRepository'
 import { AppCard, AppSection, AppIcon } from '@/components/ui'
+import { tsToDateStr, dateStrToTs } from '@/utils/date'
 import {
   NButton, NInput, NDatePicker, NForm, NFormItem,
   NModal, NSpace, NSpin,
@@ -58,8 +59,8 @@ function openEditModal() {
   editForm.value = {
     project_name: p.project_name ?? '',
     location: p.location ?? '',
-    start_date: p.start_date ? new Date(p.start_date).getTime() : null,
-    end_date: p.end_date ? new Date(p.end_date).getTime() : null,
+    start_date: p.start_date ? dateStrToTs(p.start_date) : null,
+    end_date: p.end_date ? dateStrToTs(p.end_date) : null,
   }
   showEditModal.value = true
 }
@@ -70,7 +71,7 @@ async function handleSave() {
   }
   editLoading.value = true
   try {
-    const toDateStr = (ts: number) => new Date(ts).toISOString().split('T')[0]
+    const toDateStr = (ts: number) => tsToDateStr(ts)
     await timeStore.updateProfile({
       project_name: editForm.value.project_name,
       location: editForm.value.location,
@@ -109,7 +110,7 @@ async function handleCdSave() {
   if (!cdForm.value.target_date) { message.warning('请选择目标日'); return }
   cdLoading.value = true
   try {
-    const dateStr = new Date(cdForm.value.target_date).toISOString().split('T')[0]
+    const dateStr = tsToDateStr(cdForm.value.target_date)
     if (editingCountdown.value) {
       await timeStore.editCountdown(editingCountdown.value.id, {
         title: cdForm.value.title.trim(), end_date: dateStr,

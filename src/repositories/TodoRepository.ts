@@ -1,5 +1,6 @@
 import { supabase } from '@/services/supabase'
 import type { Database } from '@/types/database'
+import { formatLocalDate } from '@/utils/date'
 
 export type Todo = Database['public']['Tables']['todos']['Row']
 type TodoInsert = Database['public']['Tables']['todos']['Insert']
@@ -16,7 +17,7 @@ export async function fetchTodos(): Promise<Todo[]> {
 }
 
 export async function fetchTodayTodos(): Promise<Todo[]> {
-  const today = new Date().toISOString().split('T')[0]
+  const today = formatLocalDate()
   const { data, error } = await db.from('todos').select('*').is('deleted_at', null)
     .eq('todo_date', today).order('created_at', { ascending: false })
   if (error) throw error
@@ -32,7 +33,7 @@ export async function createTodo(
     user_id: user.id,
     title: fields.title,
     description: fields.description ?? null,
-    todo_date: fields.todo_date ?? new Date().toISOString().split('T')[0],
+    todo_date: fields.todo_date ?? formatLocalDate(),
     deadline_date: fields.deadline_date ?? null,
     deadline_time: fields.deadline_time ?? null,
     priority: fields.priority ?? 'medium',

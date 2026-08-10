@@ -9,6 +9,7 @@ import {
   deleteMoodOption,
 } from '@/repositories/MoodRepository'
 import type { MoodRecord, MoodOption } from '@/repositories/MoodRepository'
+import { formatLocalDate } from '@/utils/date'
 
 /** 预设心情（可自定义扩充） */
 export const PRESET_MOODS: { label: string; emoji: string }[] = [
@@ -29,7 +30,7 @@ export const EMOJI_CHOICES: string[] = [
 ]
 
 export function todayStr(): string {
-  return new Date().toISOString().split('T')[0]
+  return formatLocalDate()
 }
 
 export const useMoodStore = defineStore('mood', () => {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * AppPillTabs — 胶囊切换组件 (V5.5.2)
+ * AppPillTabs — 胶囊切换组件 (v5.1.3)
  *
  * 用于「支出 | 补贴」等双态或多态切换。
  * 选中：白底 + 轻阴影；未选中：透明 + 次级色。

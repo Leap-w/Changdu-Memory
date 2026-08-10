@@ -328,9 +328,7 @@ function goTo(path: string) {
 
         <!-- About / 昌都记忆品牌卡片 (按 我的1.3.html 原型) -->
         <div class="profile__about-card">
-          <div class="profile__about-logo">
-            昌
-          </div>
+          <img class="profile__about-logo" src="/icon-180.png" alt="昌都记忆" />
           <div class="profile__about-info">
             <h3 class="profile__about-name">
               Changdu Memory
@@ -340,7 +338,7 @@ function goTo(path: string) {
             </p>
           </div>
           <div class="profile__about-foot">
-            <span class="profile__about-version">当前版本 V5.5.2</span>
+            <span class="profile__about-version">当前版本 v5.1.3</span>
             <span class="profile__about-update">检查更新</span>
           </div>
         </div>
@@ -579,7 +577,7 @@ function goTo(path: string) {
 
 <style scoped>
 /* ================================================
-   Profile — V5.5.2
+   Profile — v5.1.3
    ================================================ */
 .profile {
   max-width: 1200px;
@@ -860,13 +858,8 @@ function goTo(path: string) {
   width: 48px;
   height: 48px;
   border-radius: 16px;
-  background: var(--color-primary);
-  color: #fff;
-  font-size: 20px;
-  font-weight: var(--font-weight-extrabold);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
+  object-fit: cover;
   box-shadow: var(--shadow-sm);
 }
 

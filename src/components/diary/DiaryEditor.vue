@@ -8,7 +8,9 @@ import {
   getDiaryPhotoUrl,
 } from '@/repositories/DiaryPhotoRepository'
 import type { DiaryPhoto } from '@/repositories/DiaryPhotoRepository'
+import { NDatePicker } from 'naive-ui'
 import { AppIcon } from '@/components/ui'
+import { dateStrToTs, tsToDateStr } from '@/utils/date'
 
 // ==========================================
 // Props / Emits
@@ -39,7 +41,9 @@ const tagStore = useTagStore()
 // ==========================================
 const localTitle = ref(props.title)
 const localContent = ref(props.content)
-const localDate = ref(props.diaryDate || new Date().toISOString().split('T')[0])
+const localDate = ref<number | null>(
+  props.diaryDate ? dateStrToTs(props.diaryDate) : Date.now(),
+)
 const localTagIds = ref<string[]>([...props.tagIds])
 const errorMsg = ref('')
 
@@ -178,7 +182,7 @@ function handleSubmit() {
   emit('submit', {
     title: localTitle.value.trim(),
     content: localContent.value,
-    diary_date: localDate.value,
+    diary_date: tsToDateStr(localDate.value),
     tag_ids: [...localTagIds.value],
     pendingImages: pendingImages.value.length > 0 ? [...pendingImages.value] : undefined,
   })
@@ -220,7 +224,12 @@ function handleSubmit() {
     <!-- ====== Date ====== -->
     <div class="de__section">
       <label class="de__label">日期</label>
-      <input v-model="localDate" type="date" class="de__input" />
+      <NDatePicker
+        v-model:value="localDate"
+        type="date"
+        size="large"
+        style="width:100%"
+      />
     </div>
 
     <!-- ====== Content ====== -->

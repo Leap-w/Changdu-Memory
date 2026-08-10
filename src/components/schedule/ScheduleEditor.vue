@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import type { Schedule } from '@/repositories/ScheduleRepository'
+import { NTimePicker } from 'naive-ui'
+import { timeStrToTs, tsToTimeStr } from '@/utils/date'
 
 interface Props {
   schedule?: Schedule | null
@@ -53,6 +55,16 @@ function selectTimeSlot(slot: typeof timeSlots[number]) {
   startTime.value = slot.start
   endTime.value = slot.end
 }
+
+// NTimePicker 绑定时间戳，与 'HH:mm' 字符串之间桥接
+const startTimeTs = computed({
+  get: () => timeStrToTs(startTime.value),
+  set: (v: number | null) => { startTime.value = v ? tsToTimeStr(v) : '' },
+})
+const endTimeTs = computed({
+  get: () => timeStrToTs(endTime.value),
+  set: (v: number | null) => { endTime.value = v ? tsToTimeStr(v) : '' },
+})
 
 function handleSubmit() {
   errorMsg.value = ''
@@ -119,11 +131,21 @@ function handleSubmit() {
     <div class="se__row">
       <div class="se__field se__field--half">
         <label class="se__label">开始</label>
-        <input v-model="startTime" type="time" class="se__input" />
+        <NTimePicker
+          v-model:value="startTimeTs"
+          format="HH:mm"
+          size="large"
+          style="width:100%"
+        />
       </div>
       <div class="se__field se__field--half">
         <label class="se__label">结束</label>
-        <input v-model="endTime" type="time" class="se__input" />
+        <NTimePicker
+          v-model:value="endTimeTs"
+          format="HH:mm"
+          size="large"
+          style="width:100%"
+        />
       </div>
     </div>
 

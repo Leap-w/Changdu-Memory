@@ -9,6 +9,7 @@ import {
   softDeleteTodo,
 } from '@/repositories/TodoRepository'
 import type { Todo } from '@/repositories/TodoRepository'
+import { formatLocalDate } from '@/utils/date'
 
 export const useTodoStore = defineStore('todo', () => {
   const todos = ref<Todo[]>([])
@@ -17,19 +18,19 @@ export const useTodoStore = defineStore('todo', () => {
 
   /** 今日待办 */
   const todayTodos = computed(() => {
-    const today = new Date().toISOString().split('T')[0]
+    const today = formatLocalDate()
     return todos.value.filter((t) => t.todo_date === today)
   })
 
   /** 未来待办 */
   const futureTodos = computed(() => {
-    const today = new Date().toISOString().split('T')[0]
+    const today = formatLocalDate()
     return todos.value.filter((t) => t.todo_date > today)
   })
 
   /** 已过期待办（日期早于今天且未完成） */
   const overdueTodos = computed(() => {
-    const today = new Date().toISOString().split('T')[0]
+    const today = formatLocalDate()
     return todos.value.filter((t) => !t.completed && t.todo_date < today)
   })
 

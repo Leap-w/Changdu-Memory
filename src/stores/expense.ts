@@ -4,6 +4,7 @@ import {
   fetchExpenses, fetchTodayExpenses, createExpense, updateExpense, softDeleteExpense,
 } from '@/repositories/ExpenseRepository'
 import type { Expense } from '@/repositories/ExpenseRepository'
+import { formatLocalDate } from '@/utils/date'
 
 export const useExpenseStore = defineStore('expense', () => {
   const expenses = ref<Expense[]>([])
@@ -30,7 +31,7 @@ export const useExpenseStore = defineStore('expense', () => {
   })
 
   const todayExpenseTotal = computed(() => {
-    const today = new Date().toISOString().split('T')[0]
+    const today = formatLocalDate()
     const t = expenseList.value.filter((e) => e.expense_date === today).reduce((s, e) => s + Number(e.amount), 0)
     return Math.round(t * 100) / 100
   })

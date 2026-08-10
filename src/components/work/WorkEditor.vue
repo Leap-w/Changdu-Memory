@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { NDatePicker, useMessage } from 'naive-ui'
+import { tsToDateStr, formatLocalDate } from '@/utils/date'
 
 interface Props {
   title?: string; content?: string; workDate?: string
@@ -26,11 +27,10 @@ const localDate = ref<number | null>(
 
 function handleSubmit() {
   if (!localTitle.value.trim()) { message.warning('请输入标题'); return }
-  const toDateStr = (ts: number) => new Date(ts).toISOString().split('T')[0]
   emit('submit', {
     title: localTitle.value.trim(),
     content: localContent.value.trim(),
-    work_date: localDate.value ? toDateStr(localDate.value) : new Date().toISOString().split('T')[0],
+    work_date: localDate.value ? tsToDateStr(localDate.value) : formatLocalDate(),
   })
 }
 </script>

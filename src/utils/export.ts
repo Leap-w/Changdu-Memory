@@ -7,6 +7,7 @@
  */
 
 import { supabase } from '@/services/supabase'
+import { formatLocalDate } from '@/utils/date'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type JsonValue = any
@@ -31,7 +32,7 @@ export interface ExportData {
 export async function exportAllData(): Promise<ExportData> {
   const data: ExportData = {
     exported_at: new Date().toISOString(),
-    version: '5.5.2',
+    version: '5.1.3',
     profile: null,
     time_profile: null,
     diaries: [],
@@ -120,7 +121,7 @@ export function downloadJson(data: ExportData, filename?: string) {
 
   const a = document.createElement('a')
   a.href = url
-  a.download = filename || `昌都记忆_数据导出_${new Date().toISOString().split('T')[0]}.json`
+  a.download = filename || `昌都记忆_数据导出_${formatLocalDate()}.json`
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)

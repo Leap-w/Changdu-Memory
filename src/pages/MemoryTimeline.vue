@@ -12,6 +12,7 @@ import {
   NDatePicker, NSpin, useMessage,
 } from 'naive-ui'
 import type { Memory } from '@/repositories/MemoryRepository'
+import { tsToDateStr, formatLocalDate } from '@/utils/date'
 
 const memoryStore = useMemoryStore()
 const authStore = useAuthStore()
@@ -141,7 +142,7 @@ async function handleSave() {
   if (!form.value.event_date) { message.warning('请选择日期'); return }
   modalLoading.value = true
   try {
-    const dateStr = new Date(form.value.event_date).toISOString().split('T')[0]
+    const dateStr = tsToDateStr(form.value.event_date)
     const existingUrls = existingPhotos.value.map((p) => p.url)
 
     let memoryId: string
@@ -297,8 +298,8 @@ async function saveJourney() {
       label: n.label,
       description: n.description,
       start_date: n.start_date
-        ? new Date(n.start_date).toISOString().split('T')[0]
-        : new Date().toISOString().split('T')[0],
+        ? tsToDateStr(n.start_date)
+        : formatLocalDate(),
     }))
     await journeyStore.persistMilestones(items)
     showJourney.value = false

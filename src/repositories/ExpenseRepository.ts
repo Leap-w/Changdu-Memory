@@ -1,5 +1,6 @@
 import { supabase } from '@/services/supabase'
 import type { Database } from '@/types/database'
+import { formatLocalDate } from '@/utils/date'
 
 export type Expense = Database['public']['Tables']['expenses']['Row']
 type ExpenseInsert = Database['public']['Tables']['expenses']['Insert']
@@ -25,7 +26,7 @@ export async function fetchMonthExpenses(year: number, month: number): Promise<E
 }
 
 export async function fetchTodayExpenses(): Promise<Expense[]> {
-  const today = new Date().toISOString().split('T')[0]
+  const today = formatLocalDate()
   const { data, error } = await db.from('expenses').select('*').is('deleted_at', null)
     .eq('expense_date', today).order('created_at', { ascending: false })
   if (error) throw error

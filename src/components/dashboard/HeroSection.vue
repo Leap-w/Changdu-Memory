@@ -371,6 +371,7 @@ function selectOption(id: string) {
 }
 
 /* ---- 右侧：可自定义选择的倒计时半透明卡片 ---- */
+/* 参照 首页1.1.html 原型：min-w + shrink-0，固定紧凑宽度，不随 flex 拉满 */
 .hero__countdown {
   position: relative;
   background: rgba(255, 255, 255, 0.12);
@@ -379,8 +380,6 @@ function selectOption(id: string) {
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 20px;
   padding: 16px;
-  min-width: 220px;
-  max-width: 100%;
   width: 100%;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
   display: flex;
@@ -389,9 +388,11 @@ function selectOption(id: string) {
   flex-shrink: 0;
 }
 
+/* 桌面端（左右布局）：右侧卡片固定宽度 240px，不拉伸 */
 @media (min-width: 768px) {
   .hero__countdown {
-    min-width: 240px;
+    width: 240px;
+    max-width: 240px;
   }
 }
 

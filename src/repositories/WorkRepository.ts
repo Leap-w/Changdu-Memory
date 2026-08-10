@@ -1,5 +1,6 @@
 import { supabase } from '@/services/supabase'
 import type { Database } from '@/types/database'
+import { formatLocalDate } from '@/utils/date'
 
 export type WorkPlan = Database['public']['Tables']['work_plans']['Row']
 type WorkPlanInsert = Database['public']['Tables']['work_plans']['Insert']
@@ -30,7 +31,7 @@ export async function createWork(
   const insertData = {
     user_id: user.id,
     title: fields.title,
-    work_date: fields.work_date ?? new Date().toISOString().split('T')[0],
+    work_date: fields.work_date ?? formatLocalDate(),
     content: fields.content ?? null,
     period: fields.period ?? 'morning',
     category: fields.category ?? 'other',

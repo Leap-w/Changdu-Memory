@@ -77,9 +77,7 @@ function toggleMode() {
     <div class="login-container">
       <!-- 品牌区域 -->
       <div class="login-brand">
-        <div class="login-logo">
-          昌
-        </div>
+        <img class="login-logo" src="/icon-180.png" alt="昌都记忆" />
         <h1 class="login-title">
           昌都记忆
         </h1>
@@ -150,7 +148,7 @@ function toggleMode() {
 
       <!-- 底部版本信息 -->
       <p class="login-version">
-        V5.5.2
+        v5.1.3
       </p>
     </div>
   </div>
@@ -182,13 +180,8 @@ function toggleMode() {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: var(--color-primary);
-  color: #fff;
-  font-size: 28px;
-  font-weight: var(--font-weight-extrabold);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
+  object-fit: cover;
   margin: 0 auto 12px;
 }
 

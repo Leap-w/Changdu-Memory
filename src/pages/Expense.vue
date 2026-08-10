@@ -6,6 +6,8 @@ import { useAssetStore } from '@/stores/asset'
 import { useWelfareStore } from '@/stores/welfare'
 import ExpenseCard from '@/components/expense/ExpenseCard.vue'
 import { AppCard, AppPillTabs, AppIcon } from '@/components/ui'
+import { NDatePicker } from 'naive-ui'
+import { tsToDateStr } from '@/utils/date'
 
 const router = useRouter()
 const expenseStore = useExpenseStore()
@@ -161,14 +163,14 @@ const showWelfareModal = ref(false)
 const editingWelfareId = ref('')
 const welfareForm = ref({
   title: '', category: 'material', description: '',
-  value_estimate: '', received_date: new Date().toISOString().split('T')[0],
+  value_estimate: '', received_date: Date.now() as number | null,
 })
 
 function openAddWelfare() {
   editingWelfareId.value = ''
   welfareForm.value = {
     title: '', category: 'material', description: '',
-    value_estimate: '', received_date: new Date().toISOString().split('T')[0],
+    value_estimate: '', received_date: Date.now(),
   }
   showWelfareModal.value = true
 }
@@ -176,10 +178,15 @@ function openAddWelfare() {
 async function handleWelfareSave() {
   if (!welfareForm.value.title.trim()) return
   const ve = parseFloat(welfareForm.value.value_estimate) || 0
+  const payload = {
+    ...welfareForm.value,
+    value_estimate: ve,
+    received_date: tsToDateStr(welfareForm.value.received_date ?? Date.now()),
+  }
   if (editingWelfareId.value) {
-    await welfareStore.editItem(editingWelfareId.value, { ...welfareForm.value, value_estimate: ve })
+    await welfareStore.editItem(editingWelfareId.value, payload)
   } else {
-    await welfareStore.addItem({ ...welfareForm.value, value_estimate: ve })
+    await welfareStore.addItem(payload)
   }
   showWelfareModal.value = false
 }
@@ -529,10 +536,11 @@ async function handleWelfareSave() {
                 class="modal-input"
                 placeholder="备注"
               />
-              <input
-                v-model="welfareForm.received_date"
+              <NDatePicker
+                v-model:value="welfareForm.received_date"
                 type="date"
-                class="modal-input"
+                size="large"
+                style="width:100%"
               />
               <div class="modal-form__actions">
                 <button class="modal-btn modal-btn--cancel" @click="showWelfareModal = false">
@@ -552,7 +560,7 @@ async function handleWelfareSave() {
 
 <style scoped>
 /* ================================================
-   Expense Page — V5.5.2
+   Expense Page — v5.1.3
    ================================================ */
 .expense-page {
   max-width: 840px;

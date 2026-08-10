@@ -11,6 +11,7 @@ import { useMemoryStore } from '@/stores/memory'
 import { useMoodStore } from '@/stores/mood'
 import { AppCard, AppSection, AppIcon } from '@/components/ui'
 import HeroSection from '@/components/dashboard/HeroSection.vue'
+import { getLunarText } from '@/utils/lunar'
 
 const router = useRouter()
 const timeStore = useTimeStore()
@@ -97,30 +98,33 @@ const recentMemories = computed(() => {
 })
 
 // ==========================================
-// Date display
+// Date display — 统一实时驱动
 // ==========================================
-function getTodayDisplay() {
-  const d = new Date()
-  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`
-}
+// 用单个响应式 `now` 状态 + 一个定时器驱动：时钟、日期、星期、农历全部从它派生，
+// 跨过午夜后下一次刷新（30 秒内）自动翻到新一天，无需手动刷新页面。
+const WEEKDAYS = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
 
-function getWeekday() {
-  const days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
-  return days[new Date().getDay()]
-}
-
-const currentTime = ref(getCurrentTimeStr())
+const now = ref(new Date())
 let clockTimer: ReturnType<typeof setInterval> | null = null
 
-function getCurrentTimeStr() {
-  const d = new Date()
+function formatDateText(d: Date) {
+  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`
+}
+function formatTimeText(d: Date) {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
+const dateText = computed(() => formatDateText(now.value))
+const weekdayText = computed(() => WEEKDAYS[now.value.getDay()])
+const timeText = computed(() => formatTimeText(now.value))
+const lunarText = computed(() =>
+  getLunarText(now.value.getFullYear(), now.value.getMonth() + 1, now.value.getDate()),
+)
+
 onMounted(() => {
   clockTimer = setInterval(() => {
-    currentTime.value = getCurrentTimeStr()
-  }, 30000) // update every 30s
+    now.value = new Date()
+  }, 30000) // 30s 刷新一次；日期/星期/农历随 now 变化自动重算
 })
 
 onUnmounted(() => {
@@ -143,14 +147,18 @@ function goTo(path: string) {
     <!-- ====== Date bar ====== -->
     <div class="home__date-bar">
       <div class="home__date-main">
-        <span class="home__date-text">{{ getTodayDisplay() }}</span>
-        <span class="home__date-weekday">{{ getWeekday() }}</span>
+        <span class="home__date-text">{{ dateText }}</span>
+        <span class="home__date-weekday">{{ weekdayText }}</span>
       </div>
-      <span class="home__date-time">{{ currentTime }}</span>
+      <div class="home__date-right">
+        <span class="home__date-time">{{ timeText }}</span>
+        <span class="home__date-divider">|</span>
+        <span class="home__date-lunar">农历{{ lunarText }}</span>
+      </div>
     </div>
 
     <!-- ====== Today Status ====== -->
-    <AppSection title="今日状态" class="home__section">
+    <AppSection title="今日状态" class="home__section home__section--today">
       <div class="home__today-grid">
         <!-- 今日课程 -->
         <AppCard hoverable class="home__today-card" @click="goTo('/work?tab=课程表')">
@@ -341,7 +349,7 @@ function goTo(path: string) {
 
 <style scoped>
 /* ================================================
-   Home Page — V5.5.2
+   Home Page — v5.1.3
    ================================================ */
 .home {
   /* Hero handles its own background */
@@ -351,11 +359,19 @@ function goTo(path: string) {
   margin-bottom: var(--spacing-2xl, 40px);
 }
 
+/* 今日状态区块：与上方日期横线拉开间距 */
+.home__section--today {
+  margin-top: var(--spacing-xl, 24px);
+}
+
 /* ---- Date bar ---- */
+/* 参照 首页1.1.html 原型「独立日期时间区域（Apple 锁屏极简风）」 */
 .home__date-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
   padding: 0 4px 12px;
   margin-top: var(--spacing-lg, 20px);
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
@@ -365,27 +381,47 @@ function goTo(path: string) {
   display: flex;
   align-items: baseline;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .home__date-text {
-  font-size: var(--font-section-title, 20px);
-  font-weight: var(--font-weight-extrabold);
+  font-size: var(--font-page-title, 32px); /* 原型 .text-page-title: 32px */
+  line-height: 1.2;
+  font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
+  letter-spacing: -0.01em;
 }
 
 .home__date-weekday {
-  font-size: var(--font-secondary);
+  font-size: var(--font-section-title, 20px); /* 原型 .text-section-title: 20px */
   color: var(--color-text-secondary);
   font-weight: var(--font-weight-medium);
 }
 
+.home__date-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .home__date-time {
   font-size: var(--font-secondary);
-  color: var(--color-text-secondary);
+  color: var(--color-text-primary);
   font-weight: var(--font-weight-semibold);
   padding: 4px 12px;
   border-radius: var(--radius-full);
   background: rgba(0, 0, 0, 0.03);
+}
+
+.home__date-divider {
+  color: var(--color-text-tertiary);
+}
+
+.home__date-lunar {
+  font-size: var(--font-secondary);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
 }
 
 /* ---- Today Status Grid ---- */

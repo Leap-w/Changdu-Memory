@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { NDatePicker } from 'naive-ui'
 import { AppIcon } from '@/components/ui'
+import { dateStrToTs, tsToDateStr } from '@/utils/date'
 
 interface Props {
   amount?: number
@@ -25,7 +27,9 @@ const localType = ref(props.type || 'expense')
 const localAmount = ref<string>(props.amount ? String(props.amount) : '')
 const localCategory = ref(props.category || 'food')
 const localDesc = ref(props.description)
-const localDate = ref(props.expenseDate || new Date().toISOString().split('T')[0])
+const localDate = ref<number | null>(
+  props.expenseDate ? dateStrToTs(props.expenseDate) : Date.now(),
+)
 const errorMsg = ref('')
 
 const expenseCategories = [
@@ -75,7 +79,7 @@ function handleSubmit() {
     type: localType.value,
     category: localCategory.value,
     description: localDesc.value,
-    expense_date: localDate.value,
+    expense_date: tsToDateStr(localDate.value),
   })
 }
 </script>
@@ -145,7 +149,12 @@ function handleSubmit() {
     <!-- Date -->
     <div class="ee__field">
       <label class="ee__label">日期</label>
-      <input v-model="localDate" type="date" class="ee__input" />
+      <NDatePicker
+        v-model:value="localDate"
+        type="date"
+        size="large"
+        style="width:100%"
+      />
     </div>
 
     <!-- Note -->

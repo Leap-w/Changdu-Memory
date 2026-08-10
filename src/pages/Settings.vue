@@ -161,7 +161,7 @@ function goRecycleBin() {
         <div class="settings-item">
           <div class="settings-item__info">
             <span class="settings-item__label">昌都记忆 Changdu Memory</span>
-            <span class="settings-item__desc">V5.5.2 — 个人数字记录平台</span>
+            <span class="settings-item__desc">v5.1.3 — 个人数字记录平台</span>
           </div>
         </div>
       </NCard>

@@ -1,7 +1,13 @@
 {
+  "crons": [
+    {
+      "path": "/api/keepalive",
+      "schedule": "27 4 * * *"
+    }
+  ],
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
   ]

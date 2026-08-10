@@ -6,6 +6,7 @@ import {
   softDeleteWork,
 } from '@/repositories/WorkRepository'
 import type { WorkPlan } from '@/repositories/WorkRepository'
+import { formatLocalDate } from '@/utils/date'
 
 /** 时间段排序权重 */
 const PERIOD_ORDER: Record<string, number> = {
@@ -37,7 +38,7 @@ export const useWorkStore = defineStore('work', () => {
 
   /** 今日工作 */
   const todayWorks = computed(() => {
-    const today = new Date().toISOString().split('T')[0]
+    const today = formatLocalDate()
     return works.value
       .filter((w) => w.work_date === today)
       .sort((a, b) => (PERIOD_ORDER[a.period] ?? 9) - (PERIOD_ORDER[b.period] ?? 9))

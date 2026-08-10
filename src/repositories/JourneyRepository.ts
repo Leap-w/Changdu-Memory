@@ -1,5 +1,6 @@
 import { supabase } from '@/services/supabase'
 import type { Database } from '@/types/database'
+import { formatLocalDate } from '@/utils/date'
 
 export type JourneyMilestone = Database['public']['Tables']['journey_milestones']['Row']
 
@@ -71,7 +72,7 @@ export async function fetchMilestones(startDate?: string, endDate?: string): Pro
   }
 
   // 首次使用：写入默认节点
-  const s = startDate || new Date().toISOString().split('T')[0]
+  const s = startDate || formatLocalDate()
   const e = endDate || computeMilestoneDate(s, s, 0.999) // 无结束日时退回约 1 年后
   const rows = DEFAULT_MILESTONES.map((m, i) => ({
     user_id: user.id,
