@@ -127,13 +127,13 @@ const MONTH_CN = ['正', '二', '三', '四', '五', '六', '七', '八', '九',
 const DAY_UNIT_CN = ['一', '二', '三', '四', '五', '六', '七', '八', '九']
 
 /** 农历月份中文（含闰月前缀） */
-export function lunarMonthText(lunar: LunarDate): string {
+function lunarMonthText(lunar: LunarDate): string {
   const prefix = lunar.isLeap ? '闰' : ''
   return `${prefix}${MONTH_CN[lunar.month - 1]}月`
 }
 
 /** 农历日期中文（初一 ~ 三十） */
-export function lunarDayText(day: number): string {
+function lunarDayText(day: number): string {
   if (day === 10) return '初十'
   if (day === 20) return '二十'
   if (day === 30) return '三十'
@@ -145,7 +145,7 @@ export function lunarDayText(day: number): string {
 }
 
 /** 农历完整中文（如「六月廿八」） */
-export function lunarText(lunar: LunarDate): string {
+function lunarText(lunar: LunarDate): string {
   return `${lunarMonthText(lunar)}${lunarDayText(lunar.day)}`
 }
 

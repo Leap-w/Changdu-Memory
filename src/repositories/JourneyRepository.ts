@@ -5,7 +5,7 @@ import { formatLocalDate } from '@/utils/date'
 export type JourneyMilestone = Database['public']['Tables']['journey_milestones']['Row']
 
 /** 默认旅程节点（按起止日期比例推算日期，可自定义） */
-export const DEFAULT_MILESTONES: { label: string; description: string; ratio: number }[] = [
+const DEFAULT_MILESTONES: { label: string; description: string; ratio: number }[] = [
   { label: '启程', description: '抵达昌都，开始支教旅程', ratio: 0 },
   { label: '适应', description: '适应高原环境与教学节奏', ratio: 0.08 },
   { label: '深耕', description: '深入教学，融入校园生活', ratio: 0.30 },
@@ -18,7 +18,7 @@ export const DEFAULT_MILESTONES: { label: string; description: string; ratio: nu
 const db = supabase as any
 
 /** 按起止日期 + 比例计算节点开始日期 */
-export function computeMilestoneDate(startDate: string, endDate: string, ratio: number): string {
+function computeMilestoneDate(startDate: string, endDate: string, ratio: number): string {
   const start = new Date(startDate + 'T00:00:00').getTime()
   const end = new Date(endDate + 'T00:00:00').getTime()
   const t = start + (end - start) * Math.max(0, Math.min(1, ratio))

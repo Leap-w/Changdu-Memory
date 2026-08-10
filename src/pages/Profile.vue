@@ -917,8 +917,9 @@ function goTo(path: string) {
   margin-bottom: var(--spacing-2xl);
   padding: 24px;
   border-radius: var(--radius-card, 24px);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(247, 249, 248, 0.85) 100%);
-  border: 1px solid rgba(75, 143, 140, 0.2);
+  /* 与「在昌都的印记」(AppCard) 保持一致的毛玻璃背景，浅色白 / 深色自适应 */
+  background: var(--glass-bg-card, rgba(255, 255, 255, 0.85));
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.75));
   box-shadow: var(--shadow-card, 0 10px 30px -8px rgba(16, 24, 32, 0.04));
 }
 

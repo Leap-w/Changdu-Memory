@@ -167,11 +167,13 @@ export const useTodoStore = defineStore('todo', () => {
   }
 
   function toggleSelectAll() {
-    if (selectedIds.value.size === todayTodos.value.length) {
+    const allIds = todos.value.map((t) => t.id)
+    const allSelected = allIds.length > 0 && allIds.every((id) => selectedIds.value.has(id))
+    if (allSelected) {
       selectedIds.value = new Set()
       selectionMode.value = false
     } else {
-      selectedIds.value = new Set(todayTodos.value.map((t) => t.id))
+      selectedIds.value = new Set(allIds)
       selectionMode.value = true
     }
   }

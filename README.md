@@ -46,7 +46,7 @@ Changdu Memory/
 │   ├── pages/                # 业务页面
 │   │   ├── Login.vue         # 登录
 │   │   ├── Home.vue          # 首页 Dashboard
-│   │   ├── Mood.vue          # 今日心情（localStorage）
+│   │   ├── Mood.vue          # 今日心情（数据库）
 │   │   ├── Profile.vue       # 我的
 │   │   ├── Diary.vue         # 日记
 │   │   ├── Work.vue          # 工作安排（课程表/行政/学生）
@@ -55,16 +55,16 @@ Changdu Memory/
 │   │   ├── TimeCenter.vue    # 时光中心
 │   │   └── ...               # Search / Statistics / Import / Settings / RecycleBin
 │   ├── router/               # 路由配置
-│   ├── stores/               # Pinia 状态管理（13个）
+│   ├── stores/               # Pinia 状态管理（15个）
 │   ├── services/             # 业务服务
 │   │   └── supabase.ts       # Supabase 客户端
-│   ├── repositories/         # 数据访问层（13个）
+│   ├── repositories/         # 数据访问层（15个）
 │   ├── components/           # 组件
 │   │   ├── ui/               # 设计系统（AppCard/AppSection/AppIcon/AppAvatar...）
 │   │   └── ...               # dashboard / diary / work / todo / expense / schedule / student
 │   ├── types/
 │   │   └── database.ts       # 数据库表类型
-│   ├── utils/                # 工具函数（export/import/search/mood...）
+│   ├── utils/                # 工具函数（date/lunar/export/import/search/statistics/templates）
 │   └── styles/               # 全局样式（variables.css / global.css）
 ├── eslint.config.js          # ESLint 配置
 ├── .prettierrc               # Prettier 配置
@@ -152,9 +152,9 @@ chore: 工程配置
 | Phase 3-B ✅ | 待办系统 |
 | Phase 3-C ✅ | 花费记录系统 |
 | Phase 3-D ✅ | 工作安排系统 |
-| Phase 4-A ✅ | 地点档案系统 |
-| Phase 4-B ✅ | 照片档案系统 |
-| Phase 4-C ✅ | 统一标签系统 |
+| Phase 4-A ❌ | 地点档案系统（已取消，schema 中 locations 表保留未用） |
+| Phase 4-B ❌ | 照片档案系统（已取消，并入大事记照片功能） |
+| Phase 4-C ✅ | 统一标签系统（日记标签） |
 | Phase 5 ✅ | 上线准备（Schema整合 + 数据导出 + 设置） |
 | Phase 6-A ✅ | 首页记忆化改造（TodayMemoryCard） |
 | Phase 6-B ✅ | 数据批量导入系统（Excel模板导入） |
@@ -168,7 +168,7 @@ chore: 工程配置
 
 ## 版本记录
 
-- **v5.1.3（当前）** — 全站图标改为用户提供的图片（favicon + 顶部导航 + 登录页 + 我的页）；首页日期字体加大并新增农历日期、今日状态与日期横线拉开间距；修复日期选择器选 31 日保存后变 30 日的时区 bug；全站日期/时间选择器统一为 Naive UI 中文界面；首页时间/日期/农历实时化（跨午夜自动更新）
+- **v5.1.3（当前）** — 全站图标改为用户提供的图片；首页 Hero 倒计时卡片固定 240px、日期字体加大并新增农历日期、时间/日期/农历实时化；修复日期选择器选 31 日变 30 日的时区 bug；全站日期/时间选择器统一为 Naive UI 中文界面；行政安排支持编辑 + 开始/结束时间 + 批量删除；待办卡片 UI 统一 + 批量选择删除 + 图标文字对齐修复；课程表默认科目改为数学；「我的」支教时光卡片深色模式修复；全面清理无用文件与代码（删除 AppFab 组件、未用函数、冗余图标、未接线 eslint 依赖）；新增 Supabase 保活 cron
 - **V5.5.2** — 「我的」页功能入口重构（常用功能+系统管理分组卡片、退出登录移入账号弹窗）；大事记取消固定分类、支持自定义地点、新增「大事记/一年旅程」Tab；一年旅程节点改为日期设置；今日心情数据库化（一天多条+自定义心情选项）；首页 Hero 可自定义展示倒计时；时光页大事记展示优化
 - **V5.5.1** — 首页 Hero / 我的个人卡按原型还原；账号管理新增学校/科目；数据管理合并入口；今日心情独立功能（localStorage）；行政安排仅可删除；待办新增过期分组并统一页面；移除标签管理；日记模板随时切换
 - **V5.4** — 全站设计系统升级：毛玻璃卡片、统一 AppLayout 外壳、AppIcon SVG 图标、高原自然色系

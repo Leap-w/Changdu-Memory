@@ -16,7 +16,10 @@ defineProps<{
     <div class="wc__inner">
       <div class="wc__body">
         <div class="wc__head">
-          <span class="wc__period">{{ periodLabels[work.period] || work.period }}</span>
+          <span v-if="work.start_time || work.end_time" class="wc__time">
+            {{ work.start_time }}{{ work.end_time ? `–${work.end_time}` : '' }}
+          </span>
+          <span v-else class="wc__period">{{ periodLabels[work.period] || work.period }}</span>
           <span class="wc__title">{{ work.title }}</span>
         </div>
         <span
@@ -51,7 +54,8 @@ defineProps<{
   gap: 8px;
 }
 
-.wc__period {
+.wc__period,
+.wc__time {
   font-size: 11px;
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-tertiary);
@@ -59,6 +63,12 @@ defineProps<{
   padding: 2px 8px;
   border-radius: var(--radius-xs);
   flex-shrink: 0;
+}
+
+.wc__time {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-primary);
+  background: var(--color-primary-bg);
 }
 
 .wc__title {

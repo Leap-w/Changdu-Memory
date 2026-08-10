@@ -9,7 +9,7 @@ type Row = Record<string, any>
 // ====== 通用工具 ======
 
 /** 按 YYYY-MM 分组计数 */
-export function groupByMonth<T extends Row>(
+function groupByMonth<T extends Row>(
   items: T[],
   dateField: string,
 ): { month: string; count: number }[] {
@@ -26,7 +26,7 @@ export function groupByMonth<T extends Row>(
 }
 
 /** 按某字段分组计数 */
-export function groupByField<T extends Row>(
+function groupByField<T extends Row>(
   items: T[],
   field: string,
 ): { key: string; count: number }[] {
@@ -139,23 +139,4 @@ export const CATEGORY_LABELS: Record<string, string> = {
   morning: '上午',
   afternoon: '下午',
   evening: '晚上',
-}
-
-export const CATEGORY_ICONS: Record<string, string> = {
-  school: '🏫',
-  life: '🏠',
-  travel: '🏔️',
-  people: '👤',
-  food: '🍜',
-  transport: '🚌',
-  daily: '🛒',
-  study: '📚',
-  medical: '💊',
-  teaching: '📚',
-  meeting: '💬',
-  training: '📝',
-  city: '🏙️',
-  morning: '☀️',
-  afternoon: '🌤️',
-  evening: '🌙',
 }

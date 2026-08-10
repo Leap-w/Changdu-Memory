@@ -49,6 +49,21 @@
 ### 保活机制
 - 新增 `api/keepalive.ts` + Vercel Cron 每日保活，防止 Supabase 免费项目 7 天无活动被暂停（需配置 `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`）
 
+### 行政安排增强
+- 支持编辑（`/work/:id/edit` 路由 + store `updateWork`）；新增开始/结束时间（`work_plans.start_time/end_time` 选填，`schema.sql` 第 27 段迁移）
+- 列表新增编辑按钮 + 多选批量删除（`softDeleteWorks` 软删除，进回收站）
+
+### 待办增强
+- TodoCard 毛玻璃化统一 UI、截止时间图标与文字垂直居中对齐
+- hover 显示编辑/删除按钮；多选批量删除（store 已有 `batchDelete`）；全选覆盖全部待办
+
+### 其他修复
+- 课程表默认科目 政治 → 数学；「我的」支教时光卡片深色模式背景修复
+
+### 项目清理
+- 删除死文件：`AppFab.vue`、未用函数 `fetchMonthExpenses`/`fetchWorksByDate`、`CATEGORY_ICONS`、`--z-fab` 令牌、未引用 PNG 图标、空目录
+- 移除仅内部使用的 `export` 关键字；移除未接线的 eslint-prettier 依赖
+
 ---
 
 ## 4. V5.5.2 更新摘要
@@ -104,8 +119,9 @@
 | `/settings` | 设置 | 需登录 |
 | `/settings/recycle-bin` | 回收站 | 需登录 |
 
-> **已移除**：`/work/:id/edit`（编辑行政安排）、`/settings/tags`（标签管理）。
+> **已移除**：`/settings/tags`（标签管理）。
 > **V5.5.2 变更**：`/mood` 由可选改为需登录（数据入库）。
+> **v5.1.3 变更**：行政安排新增 `/work/:id/edit` 编辑路由；待办批量选择删除。
 
 ---
 

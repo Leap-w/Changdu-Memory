@@ -37,7 +37,7 @@ export async function uploadMemoryPhoto(
 }
 
 /** 获取某条大事记的图片列表 */
-export async function fetchMemoryPhotos(memoryId: string): Promise<MemoryPhoto[]> {
+async function fetchMemoryPhotos(memoryId: string): Promise<MemoryPhoto[]> {
   const { data, error } = await db
     .from('memory_photos')
     .select('*')

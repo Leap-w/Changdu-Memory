@@ -40,7 +40,7 @@ function matchesDateRange(dateStr: string, month: string): boolean {
   return dateStr.startsWith(month)
 }
 
-export function searchDiaries(diaries: Row[], keyword: string, month: string): SearchResult[] {
+function searchDiaries(diaries: Row[], keyword: string, month: string): SearchResult[] {
   return diaries
     .filter((d) => {
       const k = (d.title || '') + ' ' + (d.content || '')
@@ -55,7 +55,7 @@ export function searchDiaries(diaries: Row[], keyword: string, month: string): S
     }))
 }
 
-export function searchWorks(works: Row[], keyword: string, month: string): SearchResult[] {
+function searchWorks(works: Row[], keyword: string, month: string): SearchResult[] {
   return works
     .filter((w) => {
       const text = (w.title || '') + ' ' + (w.content || '') + ' ' + (w.category || '')
@@ -71,7 +71,7 @@ export function searchWorks(works: Row[], keyword: string, month: string): Searc
     }))
 }
 
-export function searchByTag(
+function searchByTag(
   tagName: string,
   tags: Row[],
   diaries: Row[],

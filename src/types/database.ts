@@ -111,6 +111,8 @@ export interface Database {
 	          period: string
 	          content: string | null
 	          category: string
+	          start_time: string | null
+	          end_time: string | null
 	          created_at: string
 	          updated_at: string
 	          deleted_at: string | null
@@ -123,6 +125,8 @@ export interface Database {
 	          period?: string
 	          content?: string | null
 	          category?: string
+	          start_time?: string | null
+	          end_time?: string | null
 	          created_at?: string
 	          updated_at?: string
 	        }
@@ -132,6 +136,8 @@ export interface Database {
 	          period?: string
 	          content?: string | null
 	          category?: string
+	          start_time?: string | null
+	          end_time?: string | null
 	          updated_at?: string
 	        }
 	      }

@@ -1,29 +1,36 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { NDatePicker, useMessage } from 'naive-ui'
-import { tsToDateStr, formatLocalDate } from '@/utils/date'
+import { NDatePicker, NTimePicker, useMessage } from 'naive-ui'
+import { tsToDateStr, formatLocalDate, timeStrToTs, tsToTimeStr } from '@/utils/date'
 
 interface Props {
-  title?: string; content?: string; workDate?: string
+  title?: string | null; content?: string | null; workDate?: string
+  startTime?: string | null; endTime?: string | null
   loading?: boolean; submitLabel?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  title: '', content: '', workDate: '', loading: false, submitLabel: '保存',
+  title: '', content: '', workDate: '',
+  startTime: null, endTime: null,
+  loading: false, submitLabel: '保存',
 })
 
 const emit = defineEmits<{
-  submit: [data: { title: string; content: string; work_date: string }]
+  submit: [data: { title: string; content: string; work_date: string; start_time: string | null; end_time: string | null }]
   cancel: []
 }>()
 
 const message = useMessage()
 
-const localTitle = ref(props.title)
-const localContent = ref(props.content)
+const localTitle = ref(props.title ?? '')
+const localContent = ref(props.content ?? '')
 const localDate = ref<number | null>(
   props.workDate ? new Date(props.workDate + 'T00:00:00').getTime() : Date.now(),
 )
+
+// 开始/结束时间（选填）：NTimePicker 绑定时间戳，与 'HH:mm' 字符串桥接
+const startTimeTs = ref<number | null>(props.startTime ? timeStrToTs(props.startTime) : null)
+const endTimeTs = ref<number | null>(props.endTime ? timeStrToTs(props.endTime) : null)
 
 function handleSubmit() {
   if (!localTitle.value.trim()) { message.warning('请输入标题'); return }
@@ -31,6 +38,8 @@ function handleSubmit() {
     title: localTitle.value.trim(),
     content: localContent.value.trim(),
     work_date: localDate.value ? tsToDateStr(localDate.value) : formatLocalDate(),
+    start_time: startTimeTs.value ? tsToTimeStr(startTimeTs.value) : null,
+    end_time: endTimeTs.value ? tsToTimeStr(endTimeTs.value) : null,
   })
 }
 </script>
@@ -54,6 +63,28 @@ function handleSubmit() {
         size="large"
         style="width:100%"
       />
+    </div>
+    <div class="we__field">
+      <label class="we__label">时间（选填）</label>
+      <div class="we__time-row">
+        <NTimePicker
+          v-model:value="startTimeTs"
+          format="HH:mm"
+          placeholder="开始时间"
+          size="large"
+          clearable
+          style="flex:1"
+        />
+        <span class="we__time-sep">—</span>
+        <NTimePicker
+          v-model:value="endTimeTs"
+          format="HH:mm"
+          placeholder="结束时间"
+          size="large"
+          clearable
+          style="flex:1"
+        />
+      </div>
     </div>
     <div class="we__field">
       <label class="we__label">详细内容（选填）</label>
@@ -117,6 +148,17 @@ function handleSubmit() {
 .we__input:focus {
   border-color: var(--color-primary);
   background: var(--color-bg-white);
+}
+
+.we__time-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.we__time-sep {
+  color: var(--color-text-tertiary);
+  flex-shrink: 0;
 }
 
 .we__textarea {

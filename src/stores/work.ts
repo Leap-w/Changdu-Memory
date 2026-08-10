@@ -3,7 +3,9 @@ import { ref, computed } from 'vue'
 import {
   fetchWorks,
   createWork,
+  updateWork as updateWorkRepo,
   softDeleteWork,
+  softDeleteWorks,
 } from '@/repositories/WorkRepository'
 import type { WorkPlan } from '@/repositories/WorkRepository'
 import { formatLocalDate } from '@/utils/date'
@@ -59,7 +61,7 @@ export const useWorkStore = defineStore('work', () => {
 
   /** 创建 */
   async function addWork(
-    fields: { title: string; work_date: string; content: string },
+    fields: { title: string; work_date: string; content: string; start_time?: string | null; end_time?: string | null },
   ): Promise<WorkPlan> {
     loading.value = true
     error.value = null
@@ -69,6 +71,27 @@ export const useWorkStore = defineStore('work', () => {
       return work
     } catch (err: unknown) {
       error.value = err instanceof Error ? err.message : '创建失败'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /** 编辑 */
+  async function updateWork(
+    id: string,
+    fields: { title: string; work_date: string; content: string; start_time?: string | null; end_time?: string | null },
+  ): Promise<WorkPlan> {
+    loading.value = true
+    error.value = null
+    try {
+      const work = await updateWorkRepo(id, fields)
+      const idx = works.value.findIndex((w) => w.id === id)
+      if (idx >= 0) works.value[idx] = work
+      else works.value.unshift(work)
+      return work
+    } catch (err: unknown) {
+      error.value = err instanceof Error ? err.message : '更新失败'
       throw err
     } finally {
       loading.value = false
@@ -90,6 +113,23 @@ export const useWorkStore = defineStore('work', () => {
     }
   }
 
+  /** 批量删除（软删除，进回收站） */
+  async function batchRemove(ids: string[]): Promise<void> {
+    if (ids.length === 0) return
+    loading.value = true
+    error.value = null
+    try {
+      await softDeleteWorks(ids)
+      const set = new Set(ids)
+      works.value = works.value.filter((w) => !set.has(w.id))
+    } catch (err: unknown) {
+      error.value = err instanceof Error ? err.message : '批量删除失败'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     works,
     loading,
@@ -98,6 +138,8 @@ export const useWorkStore = defineStore('work', () => {
     todayWorks,
     loadWorks,
     addWork,
+    updateWork,
     removeWork,
+    batchRemove,
   }
 })

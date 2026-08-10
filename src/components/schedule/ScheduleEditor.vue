@@ -24,7 +24,7 @@ const emit = defineEmits<{
 
 const isEdit = !!props.schedule
 
-const courseName = ref(props.schedule?.course_name || '政治')
+const courseName = ref(props.schedule?.course_name || '数学')
 const className = ref(props.schedule?.class_name || '')
 const dayOfWeek = ref(props.schedule?.day_of_week || 1)
 const startTime = ref(props.schedule?.start_time || '08:00')
@@ -71,7 +71,7 @@ function handleSubmit() {
   if (!startTime.value) { errorMsg.value = '请选择开始时间'; return }
   if (!endTime.value) { errorMsg.value = '请选择结束时间'; return }
   emit('submit', {
-    course_name: courseName.value.trim() || '政治',
+    course_name: courseName.value.trim() || '数学',
     class_name: className.value.trim(),
     day_of_week: dayOfWeek.value,
     start_time: startTime.value,
@@ -155,7 +155,7 @@ function handleSubmit() {
       <input
         v-model="courseName"
         class="se__input"
-        placeholder="政治"
+        placeholder="数学"
         maxlength="20"
       />
     </div>

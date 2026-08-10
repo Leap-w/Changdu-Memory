@@ -22,13 +22,13 @@ export interface ImportPreview<T> {
 
 // ====== 各模块字段类型 ======
 
-export interface DiaryImportRow {
+interface DiaryImportRow {
   diary_date: string
   title: string
   content: string
 }
 
-export interface WorkImportRow {
+interface WorkImportRow {
   work_date: string
   period: string
   title: string
@@ -36,28 +36,28 @@ export interface WorkImportRow {
   content: string
 }
 
-export interface ExpenseImportRow {
+interface ExpenseImportRow {
   expense_date: string
   category: string
   amount: number
   description: string
 }
 
-export interface TodoImportRow {
+interface TodoImportRow {
   todo_date: string
   title: string
   category: string
   priority: string
 }
 
-export interface StudentImportRow {
+interface StudentImportRow {
   name: string
   class_name: string
   role: string
   notes: string
 }
 
-export interface ScheduleImportRow {
+interface ScheduleImportRow {
   course_name: string
   class_name: string
   day_of_week: number
@@ -67,7 +67,7 @@ export interface ScheduleImportRow {
   notes: string
 }
 
-export type ImportRow =
+type ImportRow =
   | DiaryImportRow
   | WorkImportRow
   | ExpenseImportRow
@@ -115,7 +115,7 @@ const VALID_EXPENSE_CATEGORIES = ['food', 'transport', 'daily', 'study', 'medica
 const VALID_TODO_CATEGORIES = ['teaching', 'life', 'growth']
 const VALID_PRIORITIES = ['high', 'medium', 'low']
 
-export function parseAndValidateDiaries(rows: string[][]): ImportPreview<DiaryImportRow> {
+function parseAndValidateDiaries(rows: string[][]): ImportPreview<DiaryImportRow> {
   const validRows: DiaryImportRow[] = []
   const errors: ImportError[] = []
   const dataRows = rows.slice(1) // 跳过表头
@@ -151,7 +151,7 @@ export function parseAndValidateDiaries(rows: string[][]): ImportPreview<DiaryIm
   return { validRows, errors, totalRows: dataRows.filter((r) => r && r.some((c) => c)).length }
 }
 
-export function parseAndValidateWorks(rows: string[][]): ImportPreview<WorkImportRow> {
+function parseAndValidateWorks(rows: string[][]): ImportPreview<WorkImportRow> {
   const validRows: WorkImportRow[] = []
   const errors: ImportError[] = []
   const dataRows = rows.slice(1)
@@ -200,7 +200,7 @@ export function parseAndValidateWorks(rows: string[][]): ImportPreview<WorkImpor
   return { validRows, errors, totalRows: dataRows.filter((r) => r && r.some((c) => c)).length }
 }
 
-export function parseAndValidateExpenses(rows: string[][]): ImportPreview<ExpenseImportRow> {
+function parseAndValidateExpenses(rows: string[][]): ImportPreview<ExpenseImportRow> {
   const validRows: ExpenseImportRow[] = []
   const errors: ImportError[] = []
   const dataRows = rows.slice(1)
@@ -247,7 +247,7 @@ export function parseAndValidateExpenses(rows: string[][]): ImportPreview<Expens
   return { validRows, errors, totalRows: dataRows.filter((r) => r && r.some((c) => c)).length }
 }
 
-export function parseAndValidateTodos(rows: string[][]): ImportPreview<TodoImportRow> {
+function parseAndValidateTodos(rows: string[][]): ImportPreview<TodoImportRow> {
   const validRows: TodoImportRow[] = []
   const errors: ImportError[] = []
   const dataRows = rows.slice(1)
@@ -297,7 +297,7 @@ export function parseAndValidateTodos(rows: string[][]): ImportPreview<TodoImpor
 }
 
 /** 解析学生 Excel */
-export function parseAndValidateStudents(rows: string[][]): ImportPreview<StudentImportRow> {
+function parseAndValidateStudents(rows: string[][]): ImportPreview<StudentImportRow> {
   const validRows: StudentImportRow[] = []
   const errors: ImportError[] = []
   const dataRows = rows.slice(1)
@@ -312,7 +312,7 @@ export function parseAndValidateStudents(rows: string[][]): ImportPreview<Studen
 }
 
 /** 解析课程表 Excel */
-export function parseAndValidateSchedules(rows: string[][]): ImportPreview<ScheduleImportRow> {
+function parseAndValidateSchedules(rows: string[][]): ImportPreview<ScheduleImportRow> {
   const validRows: ScheduleImportRow[] = []
   const errors: ImportError[] = []
   const dataRows = rows.slice(1)

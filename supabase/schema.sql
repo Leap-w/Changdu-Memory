@@ -898,6 +898,14 @@ ALTER TABLE public.journey_milestones ADD COLUMN IF NOT EXISTS start_date DATE;
 ALTER TABLE public.journey_milestones DROP COLUMN IF EXISTS position;
 
 -- ============================================================
+-- 27. work_plans 行政安排添加开始/结束时间点（选填）— v5.1.3
+-- ============================================================
+-- 格式 'HH:mm'，可空；不填则不显示。与 schedules.start_time/end_time 一致。
+
+ALTER TABLE public.work_plans ADD COLUMN IF NOT EXISTS start_time TEXT;
+ALTER TABLE public.work_plans ADD COLUMN IF NOT EXISTS end_time TEXT;
+
+-- ============================================================
 -- 完成
 -- ============================================================
 -- 总计: 17 张数据表 + 3 张关联表 = 20 张表

@@ -16,15 +16,6 @@ export async function fetchExpenses(): Promise<Expense[]> {
   return (data ?? []) as Expense[]
 }
 
-export async function fetchMonthExpenses(year: number, month: number): Promise<Expense[]> {
-  const start = `${year}-${String(month).padStart(2, '0')}-01`
-  const end = `${year}-${String(month).padStart(2, '0')}-31`
-  const { data, error } = await db.from('expenses').select('*').is('deleted_at', null)
-    .gte('expense_date', start).lte('expense_date', end).order('expense_date', { ascending: false })
-  if (error) throw error
-  return (data ?? []) as Expense[]
-}
-
 export async function fetchTodayExpenses(): Promise<Expense[]> {
   const today = formatLocalDate()
   const { data, error } = await db.from('expenses').select('*').is('deleted_at', null)

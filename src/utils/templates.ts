@@ -5,7 +5,7 @@
 import * as XLSX from 'xlsx'
 
 /** 所有模板定义 */
-export interface TemplateDef {
+interface TemplateDef {
   label: string
   fileName: string
   headers: string[]

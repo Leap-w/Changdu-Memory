@@ -16,15 +16,8 @@ export async function fetchWorks(): Promise<WorkPlan[]> {
   return (data ?? []) as WorkPlan[]
 }
 
-export async function fetchWorksByDate(date: string): Promise<WorkPlan[]> {
-  const { data, error } = await db.from('work_plans').select('*').is('deleted_at', null)
-    .eq('work_date', date).order('created_at', { ascending: false })
-  if (error) throw error
-  return (data ?? []) as WorkPlan[]
-}
-
 export async function createWork(
-  fields: Pick<WorkPlanInsert, 'title' | 'work_date' | 'content'> & Partial<Pick<WorkPlanInsert, 'period' | 'category'>>,
+  fields: Pick<WorkPlanInsert, 'title' | 'work_date' | 'content'> & Partial<Pick<WorkPlanInsert, 'period' | 'category' | 'start_time' | 'end_time'>>,
 ): Promise<WorkPlan> {
   const user = (await supabase.auth.getUser()).data.user
   if (!user) throw new Error('未登录')
@@ -35,6 +28,8 @@ export async function createWork(
     content: fields.content ?? null,
     period: fields.period ?? 'morning',
     category: fields.category ?? 'other',
+    start_time: fields.start_time ?? null,
+    end_time: fields.end_time ?? null,
   }
   const { data, error } = await db.from('work_plans')
     .insert(insertData).select('*').single()
@@ -43,7 +38,7 @@ export async function createWork(
 }
 
 export async function updateWork(
-  id: string, fields: Pick<WorkPlanUpdate, 'title' | 'work_date' | 'content'> & Partial<Pick<WorkPlanUpdate, 'period' | 'category'>>,
+  id: string, fields: Pick<WorkPlanUpdate, 'title' | 'work_date' | 'content'> & Partial<Pick<WorkPlanUpdate, 'period' | 'category' | 'start_time' | 'end_time'>>,
 ): Promise<WorkPlan> {
   const { data, error } = await db.from('work_plans')
     .update({ ...fields, updated_at: new Date().toISOString() }).eq('id', id).select('*').single()
@@ -54,6 +49,14 @@ export async function updateWork(
 export async function softDeleteWork(id: string): Promise<void> {
   const { error } = await db.from('work_plans')
     .update({ deleted_at: new Date().toISOString() }).eq('id', id)
+  if (error) throw error
+}
+
+/** 批量软删除多个行政安排（进回收站） */
+export async function softDeleteWorks(ids: string[]): Promise<void> {
+  if (ids.length === 0) return
+  const { error } = await db.from('work_plans')
+    .update({ deleted_at: new Date().toISOString() }).in('id', ids)
   if (error) throw error
 }
 

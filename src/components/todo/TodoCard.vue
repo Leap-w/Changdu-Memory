@@ -4,15 +4,25 @@ import { NCheckbox } from 'naive-ui'
 
 const props = defineProps<{
   todo: Todo
+  /** 批量选择模式：显示左侧选择框 */
+  selectable?: boolean
+  /** 是否已选中 */
+  selected?: boolean
 }>()
 
 const emit = defineEmits<{
   toggle: [id: string]
-  click: [id: string]
+  click: [id: string]      // 点击卡片 → 编辑
+  delete: [id: string]
+  select: [id: string]
 }>()
 
 function onCheck() {
   emit('toggle', props.todo.id)
+}
+
+function onSelect() {
+  emit('select', props.todo.id)
 }
 
 function formatDeadline(todo: Todo): string {
@@ -27,15 +37,27 @@ function formatDeadline(todo: Todo): string {
 <template>
   <div
     class="todo-card"
-    :class="{ 'todo-card--done': todo.completed }"
+    :class="{ 'todo-card--done': todo.completed, 'todo-card--selected': selected }"
     @click="emit('click', todo.id)"
   >
     <div class="todo-card__inner">
+      <!-- 批量选择框 -->
+      <NCheckbox
+        v-if="selectable"
+        :checked="selected"
+        :on-update:checked="onSelect"
+        class="todo-card__select"
+        @click.stop
+      />
+
+      <!-- 完成勾选 -->
       <NCheckbox
         :checked="todo.completed"
         :on-update:checked="onCheck"
+        class="todo-card__check"
         @click.stop
       />
+
       <div class="todo-card__body">
         <span class="todo-card__title" :class="{ 'line-through': todo.completed }">
           {{ todo.title }}
@@ -45,6 +67,7 @@ function formatDeadline(todo: Todo): string {
         </div>
         <div v-if="formatDeadline(todo)" class="todo-card__deadline">
           <svg
+            class="todo-card__deadline-icon"
             width="12"
             height="12"
             viewBox="0 0 24 24"
@@ -53,7 +76,6 @@ function formatDeadline(todo: Todo): string {
             stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
-            style="display:inline-block;vertical-align:middle;margin-right:3px"
           >
             <rect
               x="3"
@@ -79,20 +101,61 @@ function formatDeadline(todo: Todo): string {
               y2="10"
             />
           </svg>
-          {{ formatDeadline(todo) }}
+          <span>{{ formatDeadline(todo) }}</span>
         </div>
+      </div>
+
+      <!-- 操作区：编辑 / 删除（hover 显示） -->
+      <div class="todo-card__actions">
+        <button
+          class="todo-card__action"
+          title="编辑"
+          @click.stop="emit('click', todo.id)"
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          ><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
+        </button>
+        <button
+          class="todo-card__action todo-card__action--danger"
+          title="删除"
+          @click.stop="emit('delete', todo.id)"
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          ><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+/* ================================================
+   TodoCard — 与系统毛玻璃卡片(AppCard)风格统一
+   ================================================ */
 .todo-card {
-  background: #fff;
-  border: 1px solid var(--color-border-light);
+  background: var(--glass-bg-card, rgba(255, 255, 255, 0.85));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.75));
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-sm);
-  transition: all 0.15s ease;
+  transition: box-shadow var(--transition-fast), transform var(--transition-fast), border-color var(--transition-fast);
   cursor: pointer;
   padding: 14px 16px;
 }
@@ -103,11 +166,23 @@ function formatDeadline(todo: Todo): string {
 .todo-card--done {
   opacity: 0.55;
 }
+.todo-card--selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-bg);
+}
+
 .todo-card__inner {
   display: flex;
   align-items: flex-start;
   gap: 12px;
 }
+
+.todo-card__select,
+.todo-card__check {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
 .todo-card__body {
   flex: 1;
   min-width: 0;
@@ -115,15 +190,18 @@ function formatDeadline(todo: Todo): string {
   flex-direction: column;
   gap: 4px;
 }
+
 .todo-card__title {
   font-size: 15px;
   color: var(--color-text-primary);
   font-weight: 500;
+  overflow-wrap: break-word;
 }
 .todo-card__title.line-through {
   text-decoration: line-through;
   color: var(--color-text-secondary);
 }
+
 .todo-card__desc {
   font-size: 13px;
   color: var(--color-text-secondary);
@@ -131,9 +209,59 @@ function formatDeadline(todo: Todo): string {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* 截止时间：flex 布局让图标与文字垂直居中（修复图标偏上） */
 .todo-card__deadline {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 12px;
   color: var(--color-accent-soft);
   font-weight: 500;
+  line-height: 1.2;
+}
+
+.todo-card__deadline-icon {
+  flex-shrink: 0;
+  display: block;
+}
+
+/* 操作区：hover 显示 */
+.todo-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.todo-card:hover .todo-card__actions {
+  opacity: 1;
+}
+
+.todo-card__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.todo-card__action:hover {
+  color: var(--color-primary);
+  background: var(--color-primary-bg);
+}
+
+.todo-card__action--danger:hover {
+  color: var(--color-error);
+  background: rgba(194, 103, 106, 0.08);
 }
 </style>
