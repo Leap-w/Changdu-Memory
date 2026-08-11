@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import type { Expense } from '@/repositories/ExpenseRepository'
 import { AppCard, AppIcon } from '@/components/ui'
+import { formatTimeHM } from '@/utils/date'
 
-defineProps<{ expense: Expense }>()
+const props = defineProps<{ expense: Expense }>()
 const emit = defineEmits<{ click: [id: string] }>()
+
+const timeText = formatTimeHM(props.expense.expense_time)
 
 const labels: Record<string, string> = {
   food: '餐饮', transport: '交通', shopping: '零食', accommodation: '住宿',
@@ -60,7 +63,10 @@ function fmt(n: number) {
         />
       </div>
       <div class="ec__body">
-        <span class="ec__label">{{ labels[expense.category] || expense.category }}</span>
+        <div class="ec__label-row">
+          <span class="ec__label">{{ labels[expense.category] || expense.category }}</span>
+          <span v-if="timeText" class="ec__time">{{ timeText }}</span>
+        </div>
         <span v-if="expense.description" class="ec__desc">{{ expense.description }}</span>
       </div>
       <span class="ec__amt" :class="{ 'ec__amt--in': expense.type === 'income' }">
@@ -95,10 +101,23 @@ function fmt(n: number) {
   gap: 2px;
 }
 
+.ec__label-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
 .ec__label {
   font-size: var(--font-content);
   color: var(--color-text-primary);
   font-weight: var(--font-weight-medium);
+}
+
+.ec__time {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  font-weight: var(--font-weight-medium);
+  flex-shrink: 0;
 }
 
 .ec__desc {

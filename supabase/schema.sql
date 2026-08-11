@@ -906,6 +906,14 @@ ALTER TABLE public.work_plans ADD COLUMN IF NOT EXISTS start_time TEXT;
 ALTER TABLE public.work_plans ADD COLUMN IF NOT EXISTS end_time TEXT;
 
 -- ============================================================
+-- 28. expenses 账本添加具体时间点（选填）— v5.1.5
+-- ============================================================
+-- 格式 'HH:mm'（如 '14:30'），可空；不填则不显示。
+-- 同日多条记录按时间倒序展示（无时间的排在后面）。
+
+ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS expense_time TEXT;
+
+-- ============================================================
 -- 完成
 -- ============================================================
 -- 总计: 17 张数据表 + 3 张关联表 = 20 张表

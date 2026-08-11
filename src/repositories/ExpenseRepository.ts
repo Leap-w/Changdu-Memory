@@ -11,9 +11,17 @@ const db = supabase as any
 
 export async function fetchExpenses(): Promise<Expense[]> {
   const { data, error } = await db.from('expenses').select('*').is('deleted_at', null)
-    .order('expense_date', { ascending: false }).order('created_at', { ascending: false })
+    .order('expense_date', { ascending: false })
+    .order('expense_time', { ascending: false, nullsFirst: false })
+    .order('created_at', { ascending: false })
   if (error) throw error
   return (data ?? []) as Expense[]
+}
+
+export async function fetchExpenseById(id: string): Promise<Expense | null> {
+  const { data, error } = await db.from('expenses').select('*').eq('id', id).is('deleted_at', null).maybeSingle()
+  if (error) throw error
+  return data as Expense | null
 }
 
 export async function fetchTodayExpenses(): Promise<Expense[]> {
@@ -25,7 +33,7 @@ export async function fetchTodayExpenses(): Promise<Expense[]> {
 }
 
 export async function createExpense(
-  fields: Pick<ExpenseInsert, 'amount' | 'type' | 'category' | 'description' | 'expense_date'>,
+  fields: Pick<ExpenseInsert, 'amount' | 'type' | 'category' | 'description' | 'expense_date' | 'expense_time'>,
 ): Promise<Expense> {
   const user = (await supabase.auth.getUser()).data.user
   if (!user) throw new Error('未登录')
@@ -36,7 +44,7 @@ export async function createExpense(
 }
 
 export async function updateExpense(
-  id: string, fields: Pick<ExpenseUpdate, 'amount' | 'type' | 'category' | 'description' | 'expense_date'>,
+  id: string, fields: Pick<ExpenseUpdate, 'amount' | 'type' | 'category' | 'description' | 'expense_date' | 'expense_time'>,
 ): Promise<Expense> {
   const { data, error } = await db.from('expenses')
     .update({ ...fields, updated_at: new Date().toISOString() }).eq('id', id).select('*').single()

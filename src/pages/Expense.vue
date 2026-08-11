@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useExpenseStore } from '@/stores/expense'
 import { useAssetStore } from '@/stores/asset'
 import { useWelfareStore } from '@/stores/welfare'
@@ -10,12 +10,14 @@ import { NDatePicker } from 'naive-ui'
 import { tsToDateStr } from '@/utils/date'
 
 const router = useRouter()
+const route = useRoute()
 const expenseStore = useExpenseStore()
 const assetStore = useAssetStore()
 const welfareStore = useWelfareStore()
 const ready = ref(false)
 
-const activeTab = ref('支出')
+// 从记一笔/编辑页返回时带 ?type=income|expense，据此定位到对应 Tab
+const activeTab = ref<string>(route.query.type === 'income' ? '收入' : '支出')
 
 onMounted(async () => {
   const jobs = [
@@ -25,6 +27,8 @@ onMounted(async () => {
   ]
   await Promise.allSettled(jobs.map((j) => j()))
   ready.value = true
+  // 消费掉定位 query，避免后续刷新/Tab 切换残留
+  if (route.query.type) router.replace({ query: {} })
 })
 
 // ==========================================
@@ -116,7 +120,9 @@ const welfareLabels: Record<string, string> = {
 function goCreate() {
   if (activeTab.value === '资产') { openAddAsset(); return }
   if (activeTab.value === '福利') { openAddWelfare(); return }
-  router.push('/expense/new')
+  // 记录当前 Tab（收入/支出），让记一笔页默认对应类型，返回时也能回到同一 Tab
+  const type = activeTab.value === '收入' ? 'income' : 'expense'
+  router.push({ path: '/expense/new', query: { type } })
 }
 function goEdit(id: string) { router.push(`/expense/${id}/edit`) }
 

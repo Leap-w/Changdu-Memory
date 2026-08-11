@@ -188,6 +188,7 @@ export interface Database {
           category: string
           description: string | null
           expense_date: string
+          expense_time: string | null
           created_at: string
           updated_at: string
           deleted_at: string | null
@@ -200,6 +201,7 @@ export interface Database {
           category?: string
           description?: string | null
           expense_date?: string
+          expense_time?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -209,6 +211,7 @@ export interface Database {
           category?: string
           description?: string | null
           expense_date?: string
+          expense_time?: string | null
           updated_at?: string
         }
       }

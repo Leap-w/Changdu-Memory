@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { NDatePicker } from 'naive-ui'
+import { ref, computed, watch } from 'vue'
+import { NDatePicker, NTimePicker } from 'naive-ui'
 import { AppIcon } from '@/components/ui'
-import { dateStrToTs, tsToDateStr } from '@/utils/date'
+import { dateStrToTs, tsToDateStr, timeStrToTs, tsToTimeStr } from '@/utils/date'
 
 interface Props {
   amount?: number
@@ -10,27 +10,55 @@ interface Props {
   category?: string
   description?: string
   expenseDate?: string
+  /** 具体时间 'HH:mm'，可空 */
+  expenseTime?: string | null
+  /** 编辑模式：编辑旧记录时时间默认留空，新建时默认当前时刻 */
+  isEdit?: boolean
   loading?: boolean
   submitLabel?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  amount: 0, type: 'expense', category: 'food', description: '', expenseDate: '', loading: false, submitLabel: '保存',
+  amount: 0, type: 'expense', category: 'food', description: '', expenseDate: '',
+  expenseTime: null, isEdit: false, loading: false, submitLabel: '保存',
 })
 
 const emit = defineEmits<{
-  submit: [data: { amount: number; type: string; category: string; description: string; expense_date: string }]
+  submit: [data: { amount: number; type: string; category: string; description: string; expense_date: string; expense_time: string | null }]
   cancel: []
 }>()
 
 const localType = ref(props.type || 'expense')
 const localAmount = ref<string>(props.amount ? String(props.amount) : '')
-const localCategory = ref(props.category || 'food')
+const localCategory = ref(props.category || (props.type === 'income' ? 'salary' : 'food'))
 const localDesc = ref(props.description)
 const localDate = ref<number | null>(
   props.expenseDate ? dateStrToTs(props.expenseDate) : Date.now(),
 )
+const localTime = ref<number | null>(
+  props.expenseTime ? timeStrToTs(props.expenseTime) : (props.isEdit ? null : Date.now()),
+)
 const errorMsg = ref('')
+
+// 编辑页数据是异步加载后传入的（ExpenseEdit 从 store / 数据库读取），
+// 首次挂载时 props 可能还是默认值；监听 props 变化同步本地状态，
+// 否则会出现「编辑时原信息不显示」的问题。
+watch(
+  () => [props.type, props.category, props.amount, props.description, props.expenseDate, props.expenseTime],
+  () => {
+    localType.value = props.type || 'expense'
+    localAmount.value = props.amount ? String(props.amount) : ''
+    localCategory.value = props.category || (props.type === 'income' ? 'salary' : 'food')
+    localDesc.value = props.description
+    localDate.value = props.expenseDate ? dateStrToTs(props.expenseDate) : Date.now()
+    if (props.expenseTime) {
+      localTime.value = timeStrToTs(props.expenseTime)
+    } else {
+      localTime.value = props.isEdit ? null : Date.now()
+    }
+  },
+  { immediate: true },
+)
 
 const expenseCategories = [
   { value: 'food', label: '餐饮', icon: 'check' },
@@ -80,6 +108,7 @@ function handleSubmit() {
     category: localCategory.value,
     description: localDesc.value,
     expense_date: tsToDateStr(localDate.value),
+    expense_time: localTime.value ? tsToTimeStr(localTime.value) : null,
   })
 }
 </script>
@@ -153,6 +182,19 @@ function handleSubmit() {
         v-model:value="localDate"
         type="date"
         size="large"
+        style="width:100%"
+      />
+    </div>
+
+    <!-- Time (optional) -->
+    <div class="ee__field">
+      <label class="ee__label">时间（选填）</label>
+      <NTimePicker
+        v-model:value="localTime"
+        format="HH:mm"
+        placeholder="选择几点几分"
+        size="large"
+        clearable
         style="width:100%"
       />
     </div>

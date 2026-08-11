@@ -1,7 +1,7 @@
-# 昌都记忆 Changdu Memory v5.1.4 — 开发状态
+# 昌都记忆 Changdu Memory v5.1.5 — 开发状态
 
 > 最新更新: 2026-08-11
-> 版本: v5.1.4
+> 版本: v5.1.5
 > Build: `npm run build` ✅ 0 errors
 > Type Check: `vue-tsc -b --noEmit` ✅ 0 errors
 > Lint: `eslint` ✅ 0 errors（106 条历史 warning）
@@ -30,7 +30,22 @@
 
 ---
 
-## 3. v5.1.4 更新摘要
+## 3. v5.1.5 更新摘要
+
+### 账本编辑体验修复
+- **修复编辑记录原信息不显示**：根因是 `ExpenseEdit` 里 `expenseStore.expenses.find()` 是同步操作，`loading` 在同一 tick 内翻转，`v-if="!loading"` 的子组件 `ExpenseEditor` 从未真正卸载重挂，其本地 ref 停留在首次挂载的默认值。修复：`ExpenseEditor` 增加 `watch`（immediate）同步 props → 本地状态；编辑页新增 `store.getExpenseById`（缓存未命中时直连数据库 `fetchExpenseById`），刷新/直达编辑页也能正常预填
+- **编辑页新增删除**：底部危险操作区「删除这条记录」按钮（软删除进回收站，`confirm` 确认），与保存操作明确区分
+- **账本 Tab 返回定位**：记一笔/编辑/删除后统一 `router.push('/expense?type=income|expense')`，`Expense.vue` 按 query 定位初始 Tab（进入后 `router.replace` 清理 query）
+- **收入 Tab 进入记一笔默认收入**：`goCreate()` 把当前 Tab 写入 `?type=` query，`ExpenseEdit.formType` 读取并传给编辑器
+
+### 账本具体时间（HH:mm）
+- `expenses` 表新增 `expense_time TEXT`（选填，'HH:mm'）；编辑页 `NTimePicker`，新建默认当前时刻、编辑预填已有时间（旧记录无时间则留空）
+- 卡片显示时间（分类旁小字），同日多条按时间倒序（无时间排最后）；`fetchExpenses` 排序加入 `expense_time`，store 侧 `sortExpenses` 保证新增/编辑后有序
+- 需手动执行迁移：`ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS expense_time TEXT;`
+
+---
+
+## 3a. v5.1.4 更新摘要
 
 ### P1 — 路由 / 数据逻辑修复
 - 行政安排编辑页"取消"不再随机跳课程表：`Work.vue` Tab 状态同步写入 URL query（`router.replace`），`router.back()` 稳定返回原 Tab
@@ -194,6 +209,9 @@ ALTER TABLE public.journey_milestones ADD COLUMN IF NOT EXISTS start_date DATE;
 ALTER TABLE public.journey_milestones DROP COLUMN IF EXISTS position;
 
 -- 完整建表（journey_milestones / moods / mood_options）见 supabase/schema.sql 第 22/24/25 段
+
+-- v5.1.5 账本具体时间点（选填，'HH:mm'）
+ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS expense_time TEXT;
 ```
 
 ## 8. 已知限制

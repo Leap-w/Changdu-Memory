@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import {
-  fetchExpenses, fetchTodayExpenses, createExpense, updateExpense, softDeleteExpense,
+  fetchExpenses, fetchExpenseById, fetchTodayExpenses, createExpense, updateExpense, softDeleteExpense,
 } from '@/repositories/ExpenseRepository'
 import type { Expense } from '@/repositories/ExpenseRepository'
 import { formatLocalDate } from '@/utils/date'
@@ -10,6 +10,19 @@ export const useExpenseStore = defineStore('expense', () => {
   const expenses = ref<Expense[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
+
+  /** 排序：日期倒序 → 时间倒序（无时间最后）→ 创建时间倒序 */
+  function sortExpenses(list: Expense[]): Expense[] {
+    return list.sort((a, b) => {
+      if (a.expense_date !== b.expense_date) return a.expense_date < b.expense_date ? 1 : -1
+      const ta = a.expense_time ?? ''
+      const tb = b.expense_time ?? ''
+      if (ta && tb && ta !== tb) return ta < tb ? 1 : -1
+      if (ta && !tb) return -1
+      if (!ta && tb) return 1
+      return (a.created_at ?? '') < (b.created_at ?? '') ? 1 : -1
+    })
+  }
 
   const currentMonth = computed(() => {
     const n = new Date()
@@ -60,21 +73,28 @@ export const useExpenseStore = defineStore('expense', () => {
 
   async function loadExpenses() {
     loading.value = true; error.value = null
-    try { expenses.value = await fetchExpenses() }
+    try { expenses.value = sortExpenses(await fetchExpenses()) }
     catch (err: unknown) { error.value = err instanceof Error ? err.message : '加载失败' }
     finally { loading.value = false }
   }
 
-  async function addExpense(fields: { amount: number; type: string; category: string; description: string; expense_date: string }) {
+  /** 按 id 取一条：优先 store 缓存，未命中则直接查库（编辑页刷新/直达时用） */
+  async function getExpenseById(id: string): Promise<Expense | null> {
+    const cached = expenses.value.find((e) => e.id === id)
+    if (cached) return cached
+    return await fetchExpenseById(id)
+  }
+
+  async function addExpense(fields: { amount: number; type: string; category: string; description: string; expense_date: string; expense_time?: string | null }) {
     loading.value = true; error.value = null
-    try { const e = await createExpense({ amount: Math.round(fields.amount * 100) / 100, type: fields.type, category: fields.category, description: fields.description, expense_date: fields.expense_date }); expenses.value.unshift(e); return e }
+    try { const e = await createExpense({ amount: Math.round(fields.amount * 100) / 100, type: fields.type, category: fields.category, description: fields.description, expense_date: fields.expense_date, expense_time: fields.expense_time ?? null }); expenses.value = sortExpenses([e, ...expenses.value]); return e }
     catch (err: unknown) { error.value = err instanceof Error ? err.message : '创建失败'; throw err }
     finally { loading.value = false }
   }
 
-  async function editExpense(id: string, fields: { amount: number; type: string; category: string; description: string; expense_date: string }) {
+  async function editExpense(id: string, fields: { amount: number; type: string; category: string; description: string; expense_date: string; expense_time?: string | null }) {
     loading.value = true; error.value = null
-    try { const e = await updateExpense(id, { amount: Math.round(fields.amount * 100) / 100, type: fields.type, category: fields.category, description: fields.description, expense_date: fields.expense_date }); const i = expenses.value.findIndex((x) => x.id === id); if (i >= 0) expenses.value[i] = e; return e }
+    try { const e = await updateExpense(id, { amount: Math.round(fields.amount * 100) / 100, type: fields.type, category: fields.category, description: fields.description, expense_date: fields.expense_date, expense_time: fields.expense_time ?? null }); const i = expenses.value.findIndex((x) => x.id === id); if (i >= 0) expenses.value[i] = e; expenses.value = sortExpenses(expenses.value); return e }
     catch (err: unknown) { error.value = err instanceof Error ? err.message : '更新失败'; throw err }
     finally { loading.value = false }
   }
@@ -93,5 +113,5 @@ export const useExpenseStore = defineStore('expense', () => {
     finally { loading.value = false }
   }
 
-  return { expenses, loading, error, currentMonth, expenseList, incomeList, monthlyExpenseTotal, monthlyIncomeTotal, todayExpenseTotal, groupedByDate, incomeGroupedByDate, loadExpenses, addExpense, editExpense, removeExpense, loadTodayExpenses }
+  return { expenses, loading, error, currentMonth, expenseList, incomeList, monthlyExpenseTotal, monthlyIncomeTotal, todayExpenseTotal, groupedByDate, incomeGroupedByDate, loadExpenses, getExpenseById, addExpense, editExpense, removeExpense, loadTodayExpenses }
 })
