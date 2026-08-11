@@ -70,6 +70,14 @@ export async function softDeleteWork(id: string): Promise<void> {
   if (error) throw error
 }
 
+/** 批量软删除多个行政安排（进回收站，批量编辑多选删除用） */
+export async function softDeleteWorks(ids: string[]): Promise<void> {
+  if (ids.length === 0) return
+  const { error } = await db.from('work_plans')
+    .update({ deleted_at: new Date().toISOString() }).in('id', ids)
+  if (error) throw error
+}
+
 export async function fetchDeletedWorks(): Promise<WorkPlan[]> {
   const { data, error } = await db.from('work_plans').select('*')
     .not('deleted_at', 'is', null).order('deleted_at', { ascending: false })

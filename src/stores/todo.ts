@@ -179,6 +179,23 @@ export const useTodoStore = defineStore('todo', () => {
     }
   }
 
+  /** 批量删除指定待办（软删除，进回收站，批量编辑用） */
+  async function batchRemove(ids: string[]): Promise<void> {
+    if (ids.length === 0) return
+    loading.value = true
+    error.value = null
+    try {
+      await softDeleteTodos(ids)
+      const set = new Set(ids)
+      todos.value = todos.value.filter((t) => !set.has(t.id))
+    } catch (err: unknown) {
+      error.value = err instanceof Error ? err.message : '批量删除失败'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     todos,
     loading,
@@ -197,5 +214,6 @@ export const useTodoStore = defineStore('todo', () => {
     toggleTodo,
     removeTodo,
     clearCompleted,
+    batchRemove,
   }
 })

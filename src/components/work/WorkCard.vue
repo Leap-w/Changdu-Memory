@@ -16,7 +16,6 @@ defineProps<{
           <span v-if="work.start_time || work.end_time" class="wc__time">
             {{ formatTimeHM(work.start_time) }}{{ work.end_time ? ` – ${formatTimeHM(work.end_time)}` : '' }}
           </span>
-          <span v-else class="wc__period">未设置时间</span>
           <span class="wc__title">{{ work.title }}</span>
         </div>
         <span
@@ -51,21 +50,15 @@ defineProps<{
   gap: 8px;
 }
 
-.wc__period,
 .wc__time {
   font-size: 11px;
   font-weight: var(--font-weight-semibold);
-  color: var(--color-text-tertiary);
-  background: var(--color-bg);
+  color: var(--color-primary);
+  background: var(--color-primary-bg);
   padding: 2px 8px;
   border-radius: var(--radius-xs);
   flex-shrink: 0;
-}
-
-.wc__time {
   font-variant-numeric: tabular-nums;
-  color: var(--color-primary);
-  background: var(--color-primary-bg);
 }
 
 .wc__title {

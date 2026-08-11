@@ -13,6 +13,7 @@ import { AppCard, AppSection, AppIcon } from '@/components/ui'
 import type { Schedule } from '@/repositories/ScheduleRepository'
 import type { Student } from '@/repositories/StudentRepository'
 import { formatTimeHM } from '@/utils/date'
+import { useMessage } from 'naive-ui'
 
 const router = useRouter()
 const route = useRoute()
@@ -20,6 +21,7 @@ const todoStore = useTodoStore()
 const scheduleStore = useScheduleStore()
 const workStore = useWorkStore()
 const studentStore = useStudentStore()
+const message = useMessage()
 
 // ==========================================
 // Tab state — synced with route query
@@ -177,6 +179,52 @@ async function handleDeleteSchedule(id: string) {
 function goWorkCreate() { router.push('/work/new') }
 function goWorkEdit(id: string) { router.push(`/work/${id}/edit`) }
 
+// ---- 批量编辑模式 ----
+const workBatchMode = ref(false)
+const selectedWorkIds = ref<string[]>([])
+
+function enterWorkBatch() {
+  workBatchMode.value = true
+  selectedWorkIds.value = []
+}
+
+function exitWorkBatch() {
+  workBatchMode.value = false
+  selectedWorkIds.value = []
+}
+
+function toggleSelectWork(id: string) {
+  const idx = selectedWorkIds.value.indexOf(id)
+  if (idx >= 0) selectedWorkIds.value.splice(idx, 1)
+  else selectedWorkIds.value.push(id)
+}
+
+const allWorksSelected = computed(() =>
+  workStore.works.length > 0 && selectedWorkIds.value.length === workStore.works.length,
+)
+
+function toggleSelectAll() {
+  selectedWorkIds.value = allWorksSelected.value ? [] : workStore.works.map((w) => w.id)
+}
+
+/** 单选：可编辑或删除；多选：仅删除 */
+const canEditSelected = computed(() => selectedWorkIds.value.length === 1)
+
+async function handleBatchEditSelected() {
+  if (selectedWorkIds.value.length !== 1) return
+  goWorkEdit(selectedWorkIds.value[0])
+}
+
+async function handleBatchDeleteSelected() {
+  if (selectedWorkIds.value.length === 0) { message.warning('请先选择要删除的安排'); return }
+  if (!confirm(`确定删除选中的 ${selectedWorkIds.value.length} 项安排？`)) return
+  try {
+    await workStore.batchRemove([...selectedWorkIds.value])
+    message.success('已删除')
+    exitWorkBatch()
+  } catch { message.error('删除失败') }
+}
+
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00')
   const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
@@ -320,13 +368,32 @@ async function handleBatchAdd() {
         >
           <AppIcon name="plus" size="14" /> 添加课程
         </button>
-        <button
-          v-else-if="activeTab === '行政安排'"
-          class="work-tabs-action"
-          @click="goWorkCreate()"
-        >
-          <AppIcon name="plus" size="14" /> 添加安排
-        </button>
+        <template v-else-if="activeTab === '行政安排'">
+          <!-- 批量编辑模式：取消批量编辑 + 全选 -->
+          <template v-if="workBatchMode">
+            <button
+              class="work-tabs-action work-tabs-action--secondary"
+              @click="exitWorkBatch"
+            >
+              取消批量编辑
+            </button>
+            <button class="work-tabs-action" @click="toggleSelectAll">
+              <AppIcon name="check" size="14" /> {{ allWorksSelected ? '取消全选' : '全选' }}
+            </button>
+          </template>
+          <!-- 普通模式：批量编辑 + 添加安排 -->
+          <template v-else>
+            <button
+              class="work-tabs-action work-tabs-action--secondary"
+              @click="enterWorkBatch"
+            >
+              <AppIcon name="check-circle" size="14" /> 批量编辑
+            </button>
+            <button class="work-tabs-action" @click="goWorkCreate()">
+              <AppIcon name="plus" size="14" /> 添加安排
+            </button>
+          </template>
+        </template>
         <template v-else-if="activeTab === '学生档案'">
           <button
             class="work-tabs-action work-tabs-action--secondary"
@@ -390,14 +457,52 @@ async function handleBatchAdd() {
           </div>
           <div class="work-group__list">
             <div v-for="w in group.items" :key="w.id" class="work-item-row">
+              <!-- 批量编辑模式：左侧多选圆圈 -->
+              <button
+                v-if="workBatchMode"
+                class="work-item-row__select"
+                :class="{ 'work-item-row__select--checked': selectedWorkIds.includes(w.id) }"
+                :aria-pressed="selectedWorkIds.includes(w.id)"
+                @click.stop="toggleSelectWork(w.id)"
+              >
+                <AppIcon v-if="selectedWorkIds.includes(w.id)" name="check" size="11" />
+              </button>
               <WorkCard
                 :work="w"
                 class="work-item-row__card"
               />
-              <button class="work-item-row__edit" title="编辑" @click.stop="goWorkEdit(w.id)">
+              <!-- 普通模式：单个编辑按钮 -->
+              <button
+                v-if="!workBatchMode"
+                class="work-item-row__edit"
+                title="编辑"
+                @click.stop="goWorkEdit(w.id)"
+              >
                 <AppIcon name="edit" size="13" />
               </button>
             </div>
+          </div>
+        </div>
+
+        <!-- 批量编辑底部操作条：单选可编辑/删除，多选仅删除 -->
+        <div v-if="workBatchMode && selectedWorkIds.length > 0" class="work-batch-bar">
+          <span class="work-batch-bar__count">
+            已选 {{ selectedWorkIds.length }} 项
+          </span>
+          <div class="work-batch-bar__actions">
+            <button
+              v-if="canEditSelected"
+              class="work-batch-bar__btn"
+              @click="handleBatchEditSelected"
+            >
+              <AppIcon name="edit" size="13" /> 编辑
+            </button>
+            <button
+              class="work-batch-bar__btn work-batch-bar__btn--danger"
+              @click="handleBatchDeleteSelected"
+            >
+              <AppIcon name="trash" size="13" /> 删除
+            </button>
           </div>
         </div>
       </div>
@@ -829,6 +934,35 @@ async function handleBatchAdd() {
   min-width: 0;
 }
 
+/* 批量编辑：左侧多选圆圈 */
+.work-item-row__select {
+  width: 22px;
+  height: 22px;
+  margin-top: 14px;
+  margin-left: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1.8px solid var(--color-border-medium);
+  background: var(--color-bg-white);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  padding: 0;
+  transition: all var(--transition-fast);
+}
+
+.work-item-row__select:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-bg);
+}
+
+.work-item-row__select--checked {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
 .work-item-row__edit {
   flex-shrink: 0;
   padding: 8px;
@@ -849,6 +983,72 @@ async function handleBatchAdd() {
 .work-item-row__edit:hover {
   color: var(--color-primary);
   background: var(--color-primary-bg);
+}
+
+/* ---- 批量编辑底部操作条 ---- */
+.work-batch-bar {
+  position: sticky;
+  bottom: calc(var(--bottom-nav-height, 72px) + 16px);
+  z-index: var(--z-sticky, 150);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+  margin-top: var(--spacing-lg);
+  border-radius: var(--radius-xl);
+  background: var(--glass-bg-card, rgba(255, 255, 255, 0.9));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.75));
+  box-shadow: var(--shadow-lg);
+}
+
+@media (min-width: 768px) {
+  .work-batch-bar {
+    bottom: 16px;
+  }
+}
+
+.work-batch-bar__count {
+  font-size: var(--font-caption);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.work-batch-bar__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.work-batch-bar__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 18px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: #fff;
+  font-size: var(--font-caption);
+  font-family: inherit;
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.work-batch-bar__btn:hover {
+  background: var(--color-primary-dark);
+}
+
+.work-batch-bar__btn--danger {
+  background: rgba(194, 103, 106, 0.12);
+  color: var(--color-error);
+}
+
+.work-batch-bar__btn--danger:hover {
+  background: var(--color-error);
+  color: #fff;
 }
 
 /* ---- Student Groups ---- */

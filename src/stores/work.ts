@@ -5,6 +5,7 @@ import {
   createWork,
   updateWork as updateWorkRepo,
   softDeleteWork,
+  softDeleteWorks,
 } from '@/repositories/WorkRepository'
 import type { WorkPlan } from '@/repositories/WorkRepository'
 import { formatLocalDate } from '@/utils/date'
@@ -112,6 +113,23 @@ export const useWorkStore = defineStore('work', () => {
     }
   }
 
+  /** 批量删除（软删除，进回收站，批量编辑多选删除用） */
+  async function batchRemove(ids: string[]): Promise<void> {
+    if (ids.length === 0) return
+    loading.value = true
+    error.value = null
+    try {
+      await softDeleteWorks(ids)
+      const set = new Set(ids)
+      works.value = works.value.filter((w) => !set.has(w.id))
+    } catch (err: unknown) {
+      error.value = err instanceof Error ? err.message : '批量删除失败'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     works,
     loading,
@@ -122,5 +140,6 @@ export const useWorkStore = defineStore('work', () => {
     addWork,
     updateWork,
     removeWork,
+    batchRemove,
   }
 })

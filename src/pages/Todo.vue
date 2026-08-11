@@ -5,7 +5,6 @@ import { useTodoStore } from '@/stores/todo'
 import TodoCard from '@/components/todo/TodoCard.vue'
 import { AppIcon } from '@/components/ui'
 import { NSpin, useMessage } from 'naive-ui'
-import { formatLocalDate } from '@/utils/date'
 
 const router = useRouter()
 const todoStore = useTodoStore()
@@ -16,19 +15,9 @@ onMounted(() => {
 })
 
 // ==========================================
-// 快速添加
+// 搜索：搜索所有待办（标题 / 备注）
 // ==========================================
-const quickTitle = ref('')
-
-async function handleQuickAdd() {
-  const title = quickTitle.value.trim()
-  if (!title) return
-  try {
-    await todoStore.addTodo({ title, description: '', todo_date: formatLocalDate() })
-    quickTitle.value = ''
-    message.success('已添加')
-  } catch { message.error('添加失败') }
-}
+const searchKeyword = ref('')
 
 // ==========================================
 // 筛选：全部 / 进行中 / 已完成
@@ -41,12 +30,27 @@ const filters: { value: FilterValue; label: string }[] = [
 ]
 const activeFilter = ref<FilterValue>('all')
 
+/** 倒序展示：最新添加的在上方；已完成同样按添加时间晚的在上 */
 const filteredTodos = computed(() => {
-  const list = todoStore.todos
-  if (activeFilter.value === 'active') return list.filter((t) => !t.completed)
-  if (activeFilter.value === 'completed') return list.filter((t) => t.completed)
-  // 全部：未完成在前，已完成在后（各自保持日期序）
-  return [...list].sort((a, b) => Number(a.completed) - Number(b.completed))
+  let list = todoStore.todos
+
+  // 搜索
+  const kw = searchKeyword.value.trim().toLowerCase()
+  if (kw) {
+    list = list.filter((t) =>
+      (t.title || '').toLowerCase().includes(kw) ||
+      (t.description || '').toLowerCase().includes(kw),
+    )
+  }
+
+  // 筛选
+  if (activeFilter.value === 'active') list = list.filter((t) => !t.completed)
+  else if (activeFilter.value === 'completed') list = list.filter((t) => t.completed)
+
+  // 按创建时间倒序（最新在上）
+  return [...list].sort((a, b) =>
+    (b.created_at || '').localeCompare(a.created_at || ''),
+  )
 })
 
 // ==========================================
@@ -77,11 +81,64 @@ function goEdit(id: string) {
   router.push(`/todo/${id}/edit`)
 }
 
+/** 添加：进入原来的添加界面（/todo/new） */
+function goCreate() {
+  router.push('/todo/new')
+}
+
 async function handleDelete(id: string) {
   if (!confirm('确定删除该待办？')) return
   try {
     await todoStore.removeTodo(id)
     message.success('已删除')
+  } catch { message.error('删除失败') }
+}
+
+// ==========================================
+// 批量编辑（与行政安排一致）
+// ==========================================
+const todoBatchMode = ref(false)
+const selectedTodoIds = ref<string[]>([])
+
+function enterTodoBatch() {
+  todoBatchMode.value = true
+  selectedTodoIds.value = []
+}
+
+function exitTodoBatch() {
+  todoBatchMode.value = false
+  selectedTodoIds.value = []
+}
+
+function toggleSelectTodo(id: string) {
+  const idx = selectedTodoIds.value.indexOf(id)
+  if (idx >= 0) selectedTodoIds.value.splice(idx, 1)
+  else selectedTodoIds.value.push(id)
+}
+
+const allVisibleSelected = computed(() =>
+  filteredTodos.value.length > 0 && selectedTodoIds.value.length === filteredTodos.value.length,
+)
+
+function toggleSelectAllVisible() {
+  selectedTodoIds.value = allVisibleSelected.value ? [] : filteredTodos.value.map((t) => t.id)
+}
+
+/** 单选：可编辑或删除；多选：仅删除 */
+const canEditSelectedTodo = computed(() => selectedTodoIds.value.length === 1)
+
+function handleBatchEditSelectedTodo() {
+  if (selectedTodoIds.value.length !== 1) return
+  goEdit(selectedTodoIds.value[0])
+}
+
+async function handleBatchDeleteSelectedTodo() {
+  if (selectedTodoIds.value.length === 0) { message.warning('请先选择要删除的待办'); return }
+  if (!confirm(`确定删除选中的 ${selectedTodoIds.value.length} 项待办？`)) return
+  try {
+    await todoStore.batchRemove([...selectedTodoIds.value])
+    message.success('已删除')
+    exitTodoBatch()
   } catch { message.error('删除失败') }
 }
 
@@ -142,40 +199,58 @@ const footerCountText = computed(() =>
       </div>
     </header>
 
-    <!-- ====== 快速添加 ====== -->
-    <div class="todo-add">
+    <!-- ====== 搜索 + 添加 ====== -->
+    <div class="todo-search">
+      <AppIcon name="search" size="16" class="todo-search__icon" />
       <input
-        v-model="quickTitle"
-        class="todo-add__input"
-        placeholder="想做点什么…"
+        v-model="searchKeyword"
+        class="todo-search__input"
+        placeholder="搜索所有待办…"
         maxlength="120"
         autocomplete="off"
-        @keydown.enter.prevent="handleQuickAdd"
       />
-      <button
-        class="todo-add__btn"
-        :disabled="todoStore.loading"
-        aria-label="添加待办"
-        title="添加"
-        @click="handleQuickAdd"
-      >
-        <AppIcon name="plus" size="18" />
+      <button class="todo-search__add" @click="goCreate">
+        <AppIcon name="plus" size="15" /> 添加
       </button>
     </div>
 
-    <!-- ====== 筛选 ====== -->
-    <div class="todo-filters" role="tablist">
-      <button
-        v-for="f in filters"
-        :key="f.value"
-        class="todo-filters__btn"
-        :class="{ active: activeFilter === f.value }"
-        role="tab"
-        :aria-selected="activeFilter === f.value"
-        @click="activeFilter = f.value"
-      >
-        {{ f.label }}
-      </button>
+    <!-- ====== 筛选 + 批量编辑 ====== -->
+    <div class="todo-filter-row">
+      <div class="todo-filters" role="tablist">
+        <button
+          v-for="f in filters"
+          :key="f.value"
+          class="todo-filters__btn"
+          :class="{ active: activeFilter === f.value }"
+          role="tab"
+          :aria-selected="activeFilter === f.value"
+          @click="activeFilter = f.value"
+        >
+          {{ f.label }}
+        </button>
+      </div>
+
+      <!-- 批量编辑操作（与行政安排一致） -->
+      <div class="todo-filter-actions">
+        <template v-if="todoBatchMode">
+          <button
+            class="todo-fa-btn todo-fa-btn--secondary"
+            @click="exitTodoBatch"
+          >
+            取消批量编辑
+          </button>
+          <button class="todo-fa-btn" @click="toggleSelectAllVisible">
+            <AppIcon name="check" size="13" /> {{ allVisibleSelected ? '取消全选' : '全选' }}
+          </button>
+        </template>
+        <button
+          v-else
+          class="todo-fa-btn todo-fa-btn--secondary"
+          @click="enterTodoBatch"
+        >
+          <AppIcon name="check-circle" size="14" /> 批量编辑
+        </button>
+      </div>
     </div>
 
     <!-- ====== 列表 ====== -->
@@ -185,26 +260,59 @@ const footerCountText = computed(() =>
           <AppIcon name="pen" size="30" />
         </div>
         <h3 class="todo-empty__title">
-          暂无待办
+          {{ searchKeyword.trim() ? '未找到待办' : '暂无待办' }}
         </h3>
         <p class="todo-empty__desc">
-          把今天想完成的事写下来吧
+          {{ searchKeyword.trim() ? '换个关键词试试' : '把今天想完成的事写下来吧' }}
         </p>
       </div>
       <div v-else class="todo-list">
-        <TodoCard
-          v-for="t in filteredTodos"
-          :key="t.id"
-          :todo="t"
-          @toggle="todoStore.toggleTodo"
-          @click="goEdit"
-          @delete="handleDelete"
-        />
+        <div v-for="t in filteredTodos" :key="t.id" class="todo-item-row">
+          <!-- 批量编辑模式：左侧多选圆圈 -->
+          <button
+            v-if="todoBatchMode"
+            class="todo-item-row__select"
+            :class="{ 'todo-item-row__select--checked': selectedTodoIds.includes(t.id) }"
+            :aria-pressed="selectedTodoIds.includes(t.id)"
+            @click.stop="toggleSelectTodo(t.id)"
+          >
+            <AppIcon v-if="selectedTodoIds.includes(t.id)" name="check" size="11" />
+          </button>
+          <TodoCard
+            :todo="t"
+            class="todo-item-row__card"
+            @toggle="todoStore.toggleTodo"
+            @click="todoBatchMode ? toggleSelectTodo(t.id) : goEdit(t.id)"
+            @delete="handleDelete"
+          />
+        </div>
       </div>
     </NSpin>
 
+    <!-- 批量编辑底部操作条：单选可编辑/删除，多选仅删除 -->
+    <div v-if="todoBatchMode && selectedTodoIds.length > 0" class="todo-batch-bar">
+      <span class="todo-batch-bar__count">
+        已选 {{ selectedTodoIds.length }} 项
+      </span>
+      <div class="todo-batch-bar__actions">
+        <button
+          v-if="canEditSelectedTodo"
+          class="todo-batch-bar__btn"
+          @click="handleBatchEditSelectedTodo"
+        >
+          <AppIcon name="edit" size="13" /> 编辑
+        </button>
+        <button
+          class="todo-batch-bar__btn todo-batch-bar__btn--danger"
+          @click="handleBatchDeleteSelectedTodo"
+        >
+          <AppIcon name="trash" size="13" /> 删除
+        </button>
+      </div>
+    </div>
+
     <!-- ====== 页脚：统计 + 清除已完成 ====== -->
-    <div v-if="todoStore.todos.length > 0" class="todo-footer">
+    <div v-if="!todoBatchMode && todoStore.todos.length > 0" class="todo-footer">
       <span class="todo-footer__count">{{ footerCountText }}</span>
       <button class="todo-footer__clear" @click="handleClearCompleted">
         清除已完成
@@ -311,82 +419,135 @@ const footerCountText = computed(() =>
   font-weight: 500;
 }
 
-/* ---- 快速添加 ---- */
-.todo-add {
+/* ---- 搜索 + 添加 ---- */
+.todo-search {
   background: var(--color-bg-white);
   border-radius: 22px;
   box-shadow: var(--shadow-md);
-  padding: 8px;
-  margin-bottom: 20px;
+  padding: 6px 8px 6px 14px;
+  margin-bottom: 16px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   border: 1px solid var(--color-border-light);
   transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
 }
 
-.todo-add:focus-within {
+.todo-search:focus-within {
   box-shadow: var(--shadow-lg);
   border-color: rgba(75, 143, 140, 0.3);
 }
 
-.todo-add__input {
+.todo-search__icon {
+  color: var(--color-text-tertiary);
+  flex-shrink: 0;
+}
+
+.todo-search__input {
   flex: 1;
   border: none;
   outline: none;
   background: transparent;
-  font-size: 16px;
-  padding: 12px 14px;
+  font-size: 15px;
+  padding: 8px 0;
   color: var(--color-text-primary);
   font-weight: 400;
   min-width: 0;
   font-family: inherit;
 }
 
-.todo-add__input::placeholder {
+.todo-search__input::placeholder {
   color: var(--color-text-tertiary);
   font-weight: 400;
 }
 
-.todo-add__btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
+.todo-search__add {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 9px 16px;
+  border: none;
+  border-radius: var(--radius-full);
   background: var(--color-primary);
   color: #fff;
-  border: none;
+  font-size: var(--font-caption, 12px);
+  font-family: inherit;
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-xs);
+}
+
+.todo-search__add:hover {
+  background: var(--color-primary-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ---- 筛选 + 批量编辑行 ---- */
+.todo-filter-row {
   display: flex;
   align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: background var(--transition-fast), transform 0.15s ease, box-shadow var(--transition-fast);
-  box-shadow: 0 1px 2px rgba(75, 143, 140, 0.3);
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 18px;
 }
 
-.todo-add__btn:hover {
-  background: var(--color-primary-dark);
-}
-
-.todo-add__btn:active {
-  background: var(--color-primary-pressed, #115e59);
-  transform: scale(0.94);
-}
-
-.todo-add__btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* ---- 筛选 ---- */
 .todo-filters {
   display: flex;
   gap: 6px;
-  margin-bottom: 18px;
   padding: 3px;
   background: rgba(0, 0, 0, 0.035);
   border-radius: var(--radius-full);
   width: fit-content;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.todo-filters::-webkit-scrollbar { display: none; }
+
+.todo-filter-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.todo-fa-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 14px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: #fff;
+  font-size: var(--font-caption, 12px);
+  font-family: inherit;
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-xs);
+}
+
+.todo-fa-btn:hover {
+  background: var(--color-primary-dark);
+  transform: translateY(-1px);
+}
+
+.todo-fa-btn--secondary {
+  background: var(--color-bg-white);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-light);
+  box-shadow: var(--shadow-xs);
+}
+
+.todo-fa-btn--secondary:hover {
+  background: var(--color-bg);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 .todo-filters__btn {
@@ -423,6 +584,112 @@ const footerCountText = computed(() =>
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.todo-item-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.todo-item-row__card {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 批量编辑：左侧多选圆圈 */
+.todo-item-row__select {
+  width: 22px;
+  height: 22px;
+  margin-top: 14px;
+  margin-left: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1.8px solid var(--color-border-medium);
+  background: var(--color-bg-white);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  padding: 0;
+  transition: all var(--transition-fast);
+}
+
+.todo-item-row__select:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-bg);
+}
+
+.todo-item-row__select--checked {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+/* ---- 批量编辑底部操作条 ---- */
+.todo-batch-bar {
+  position: sticky;
+  bottom: calc(var(--bottom-nav-height, 72px) + 16px);
+  z-index: var(--z-sticky, 150);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+  margin-top: var(--spacing-lg);
+  border-radius: var(--radius-xl);
+  background: var(--glass-bg-card, rgba(255, 255, 255, 0.9));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.75));
+  box-shadow: var(--shadow-lg);
+}
+
+@media (min-width: 768px) {
+  .todo-batch-bar {
+    bottom: 16px;
+  }
+}
+
+.todo-batch-bar__count {
+  font-size: var(--font-caption);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.todo-batch-bar__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.todo-batch-bar__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 18px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: #fff;
+  font-size: var(--font-caption);
+  font-family: inherit;
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.todo-batch-bar__btn:hover {
+  background: var(--color-primary-dark);
+}
+
+.todo-batch-bar__btn--danger {
+  background: rgba(194, 103, 106, 0.12);
+  color: var(--color-error);
+}
+
+.todo-batch-bar__btn--danger:hover {
+  background: var(--color-error);
+  color: #fff;
 }
 
 /* ---- 空状态 ---- */
@@ -522,15 +789,19 @@ const footerCountText = computed(() =>
     font-size: 10px;
   }
 
-  .todo-add__input {
-    font-size: 16px;
-    padding: 11px 12px;
+  .todo-search__input {
+    font-size: 15px;
+  }
+
+  .todo-filter-row {
+    flex-wrap: wrap;
+    gap: 8px;
   }
 }
 
 @media (max-width: 360px) {
   .todo-filters {
-    width: 100%;
+    flex: 1;
     justify-content: space-between;
   }
 
