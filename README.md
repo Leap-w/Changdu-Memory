@@ -64,7 +64,7 @@ Changdu Memory/
 │   │   └── ...               # dashboard / diary / work / todo / expense / schedule / student
 │   ├── types/
 │   │   └── database.ts       # 数据库表类型
-│   ├── utils/                # 工具函数（date/lunar/export/import/search/statistics/templates/diaryMeta）
+│   ├── utils/                # 工具函数（date/lunar/export/exportExcel/import/search/statistics/templates/diaryMeta）
 │   └── styles/               # 全局样式（variables.css / global.css）
 ├── eslint.config.js          # ESLint 配置
 ├── .prettierrc               # Prettier 配置
@@ -168,12 +168,23 @@ chore: 工程配置
 
 ## 版本记录
 
-- **v5.1.5（当前）** — 账本编辑体验与具体时间：
+- **v5.1.5（当前）** — 账本编辑体验、具体时间、Excel 导出与收入分类扩展：
   - 修复编辑支出/收入记录时原信息不显示（`ExpenseEditor` 增加 props 同步 watch；编辑页支持 store 未命中时直连数据库 `getExpenseById`，刷新/直达也可正常编辑）
   - 编辑页底部新增「删除这条记录」危险操作按钮（软删除，可到回收站恢复）
   - 从收入 Tab 进入「记一笔」默认收入类型；保存/取消后返回账本时定位到对应 Tab（支出/收入），不再固定跳回支出
   - 收入/支出新增可选「时间（几点几分）」：编辑页 `NTimePicker`（HH:mm），卡片展示时间，同日记录按时间倒序排列
-  - 需要手动执行 DB 迁移：`ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS expense_time TEXT;`
+  - **账本数据导出 Excel**：数据管理 → 导出数据 弹窗可选「导出所有数据」（JSON 备份）或「账本数据」（支出/收入/资产/福利 4 类账目 → 单个 Excel，每类一个 sheet，分类中文标签、金额数值可求和）；`xlsx` 按需动态加载不拖大入口包
+  - **收入分类新增「红包」「出二手」**：收入分类 4 → 6 个（`red_packet` / `second_hand`），新增红包/交换图标，编辑页、账本卡片、Excel 导出同步支持
+  - 需要手动执行 DB 迁移（`expenses` 新列 + 收入分类约束，见 `supabase/schema.sql` 第 28-29 段）：
+    ```sql
+    ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS expense_time TEXT;
+    ALTER TABLE public.expenses DROP CONSTRAINT IF EXISTS expenses_category_check;
+    ALTER TABLE public.expenses ADD CONSTRAINT expenses_category_check
+      CHECK (category IN (
+        'food', 'transport', 'shopping', 'accommodation', 'study', 'entertainment', 'medical', 'other',
+        'salary', 'subsidy', 'bonus', 'part_time', 'red_packet', 'second_hand'
+      ));
+    ```
 - **v5.1.4** — 五大阶段稳定化：① 修复行政安排编辑页取消误跳课程表（Tab 状态同步 URL query）、首页课程表卡片只显示课程（数据源切为 schedules）、行政安排未设时间不再显示"上午"；② 待办移除批量选择、修复待办无法修改（刷新/直达可正常编辑）、待办 UI 重写、行政安排列表仅编辑/删除移至编辑页、开始时间必填、时间只显示 HH:mm；③ 移动端「我的」卡片顺序重排、底部导航同一图形仅颜色变化、修复设置项点击后颜色残留（hover 收进 `@media (hover:hover)`）；④ 支出分类"购物"→"零食"（DB 值不变仅标签，历史数据兼容）、首页时间字体放大、检查更新离线弹窗；⑤ 日记新增天气/心情手动选择（编辑/详情/列表展示）、深色模式 Naive UI 组件跟随主题、版本号统一 5.1.4
   - 后续增强：待办页参照 `参考文件/待办1.1.html` 重构（进度环 + 筛选 + 点击卡片进入编辑）；工作页三 Tab 添加按钮移至顶部与导航同行；行政安排批量编辑（单选可编辑/删除、多选仅删除）+ 整卡点击编辑 + 未设时间不显示；待办搜索框 / 批量编辑 / 倒序展示 / 添加跳转原编辑页；学生档案移除批量添加（保留单个添加 + 设置中 Excel 导入）
 - **v5.1.3** — 全站图标改为用户提供的图片；首页 Hero 倒计时卡片固定 240px、日期字体加大并新增农历日期、时间/日期/农历实时化；修复日期选择器选 31 日变 30 日的时区 bug；全站日期/时间选择器统一为 Naive UI 中文界面；行政安排支持编辑 + 开始/结束时间 + 批量删除；待办卡片 UI 统一 + 批量选择删除 + 图标文字对齐修复；课程表默认科目改为数学；「我的」支教时光卡片深色模式修复；全面清理无用文件与代码（删除 AppFab 组件、未用函数、冗余图标、未接线 eslint 依赖）；新增 Supabase 保活 cron

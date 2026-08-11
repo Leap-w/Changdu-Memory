@@ -10,8 +10,8 @@ import { useMemoryStore } from '@/stores/memory'
 import { useStudentStore } from '@/stores/student'
 import { useJourneyStore } from '@/stores/journey'
 import { supabase } from '@/services/supabase'
-import { exportAllData, downloadJson } from '@/utils/export'
 import { AppCard, AppAvatar, AppIcon } from '@/components/ui'
+import ExportDataModal from '@/components/settings/ExportDataModal.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -165,15 +165,10 @@ async function handleLogout() {
 
 // ====== Data management modal ======
 const showDataMgmt = ref(false)
-const exporting = ref(false)
-async function doExport() {
-  exporting.value = true
-  try { const data = await exportAllData(); downloadJson(data) } catch { /* ignore */ }
-  finally { exporting.value = false }
-}
+const showExportModal = ref(false)
 
 // ====== 版本检查（当前为本地离线检查，预留未来接入真实版本服务） ======
-const APP_VERSION = '5.1.4'
+const APP_VERSION = '5.1.5'
 const showUpdateCheck = ref(false)
 
 function openUpdateCheck() {
@@ -556,13 +551,13 @@ function goTo(path: string) {
               数据管理
             </h3>
             <div class="data-mgmt">
-              <button class="data-mgmt__btn" :disabled="exporting" @click="doExport">
+              <button class="data-mgmt__btn" @click="showExportModal = true">
                 <div class="data-mgmt__icon-wrap">
                   <AppIcon name="download" size="22" />
                 </div>
                 <div class="data-mgmt__info">
                   <span class="data-mgmt__label">导出数据</span>
-                  <span class="data-mgmt__desc">{{ exporting ? '导出中…' : '导出全部数据到 JSON 文件' }}</span>
+                  <span class="data-mgmt__desc">导出所有数据 / 账本 Excel</span>
                 </div>
               </button>
               <button class="data-mgmt__btn" @click="showDataMgmt = false; router.push('/import')">
@@ -621,12 +616,14 @@ function goTo(path: string) {
       </Transition>
     </Teleport>
 
+    <!-- 导出数据子弹窗（组件自带 Teleport，放外层 Teleport 之外） -->
+    <ExportDataModal v-model:show="showExportModal" />
   </div>
 </template>
 
 <style scoped>
 /* ================================================
-   Profile — v5.1.4
+   Profile — v5.1.5
    ================================================ */
 .profile {
   max-width: 1200px;

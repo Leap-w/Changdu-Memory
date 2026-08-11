@@ -76,6 +76,8 @@ const incomeCategories = [
   { value: 'subsidy', label: '补贴', icon: 'gift' },
   { value: 'bonus', label: '奖金', icon: 'star' },
   { value: 'part_time', label: '兼职', icon: 'briefcase' },
+  { value: 'red_packet', label: '红包', icon: 'red-envelope' },
+  { value: 'second_hand', label: '出二手', icon: 'swap' },
   { value: 'other', label: '其他', icon: 'grid' },
 ]
 
@@ -90,6 +92,7 @@ const catColors: Record<string, string> = {
   medical: '#E8B04C', other: 'var(--color-text-tertiary)',
   salary: 'var(--color-secondary)', subsidy: 'var(--color-primary)',
   bonus: 'var(--color-gold)', part_time: 'var(--color-sky)',
+  red_packet: 'var(--color-accent)', second_hand: 'var(--color-accent-soft)',
 }
 
 function switchType(t: string) {

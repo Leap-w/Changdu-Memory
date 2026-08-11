@@ -43,6 +43,27 @@
 - 卡片显示时间（分类旁小字），同日多条按时间倒序（无时间排最后）；`fetchExpenses` 排序加入 `expense_time`，store 侧 `sortExpenses` 保证新增/编辑后有序
 - 需手动执行迁移：`ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS expense_time TEXT;`
 
+### 账本数据导出 Excel
+- 数据管理入口（「我的」系统管理 → 数据管理 → 导出数据，或设置页 → 数据管理 → 导出）新增**小弹窗**，两个选项：
+  - **导出所有数据**：沿用原完整 JSON 备份（日记/工作/待办等全部数据，用于恢复）
+  - **账本数据**：账本 4 类账目（支出/收入/资产/福利）导出为一个 Excel 文件，每类一个 sheet，分类英文值转中文标签，金额为数值型两位小数（可求和）
+- 实现：`src/utils/exportExcel.ts`（SheetJS 按需动态导入，不拖大入口包）+ `src/components/settings/ExportDataModal.vue`
+- 导出范围：支出/收入来自 `expenses` 表（仅未删除记录），资产来自 `assets`，福利来自 `welfare_items`，均按日期正序
+
+### 收入分类扩展（红包 / 出二手）
+- 收入分类由 4 个扩展为 6 个：新增 `red_packet`（红包）、`second_hand`（出二手）
+- 新增 AppIcon 图标：`red-envelope`（红包）、`swap`（交换箭头，二手流转）；红包用暖红 `#C2676A`、出二手用暖橙 `#D08770`（复用闲置辅助色，6 个收入分类配色互不重复）
+- 覆盖编辑页分类选项、账本卡片图标/标签/配色、Excel 导出标签；`ExpenseCard`/`ExpenseEditor`/`Expense.vue`/`exportExcel.ts` 同步更新
+- 需手动执行迁移（`expenses_category_check` 约束放行新分类，schema.sql 第 29 段）：
+  ```sql
+  ALTER TABLE public.expenses DROP CONSTRAINT IF EXISTS expenses_category_check;
+  ALTER TABLE public.expenses ADD CONSTRAINT expenses_category_check
+    CHECK (category IN (
+      'food', 'transport', 'shopping', 'accommodation', 'study', 'entertainment', 'medical', 'other',
+      'salary', 'subsidy', 'bonus', 'part_time', 'red_packet', 'second_hand'
+    ));
+  ```
+
 ---
 
 ## 3a. v5.1.4 更新摘要
@@ -212,6 +233,14 @@ ALTER TABLE public.journey_milestones DROP COLUMN IF EXISTS position;
 
 -- v5.1.5 账本具体时间点（选填，'HH:mm'）
 ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS expense_time TEXT;
+
+-- v5.1.5 收入分类新增 红包/出二手（red_packet / second_hand），重建约束放行新分类
+ALTER TABLE public.expenses DROP CONSTRAINT IF EXISTS expenses_category_check;
+ALTER TABLE public.expenses ADD CONSTRAINT expenses_category_check
+  CHECK (category IN (
+    'food', 'transport', 'shopping', 'accommodation', 'study', 'entertainment', 'medical', 'other',
+    'salary', 'subsidy', 'bonus', 'part_time', 'red_packet', 'second_hand'
+  ));
 ```
 
 ## 8. 已知限制

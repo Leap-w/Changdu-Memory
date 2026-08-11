@@ -95,6 +95,7 @@ const categoryLabels: Record<string, string> = {
   food: '餐饮', transport: '交通', shopping: '零食', accommodation: '住宿',
   study: '学习', entertainment: '娱乐', medical: '医疗', other: '其他',
   salary: '工资', subsidy: '补贴', bonus: '奖金', part_time: '兼职',
+  red_packet: '红包', second_hand: '出二手',
 }
 
 // Asset / Welfare icon helpers

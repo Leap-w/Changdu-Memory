@@ -2,28 +2,14 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { NCard, NButton, NDivider, NSpin, useMessage } from 'naive-ui'
-import { exportAllData, downloadJson } from '@/utils/export'
+import { NCard, NButton, NDivider, useMessage } from 'naive-ui'
+import ExportDataModal from '@/components/settings/ExportDataModal.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const message = useMessage()
 
-const exporting = ref(false)
-
-async function handleExport() {
-  exporting.value = true
-  try {
-    const data = await exportAllData()
-    downloadJson(data)
-    message.success('数据导出成功')
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : '导出失败'
-    message.error(msg)
-  } finally {
-    exporting.value = false
-  }
-}
+const showExportModal = ref(false)
 
 async function handleLogout() {
   try {
@@ -57,22 +43,17 @@ function goRecycleBin() {
       设置
     </h1>
 
-    <NSpin :show="exporting">
-      <!-- 数据管理 -->
-      <NCard class="settings-card" title="数据管理">
+    <!-- 数据管理 -->
+    <NCard class="settings-card" title="数据管理">
         <div class="settings-item">
           <div class="settings-item__info">
             <span class="settings-item__label">导出数据</span>
             <span class="settings-item__desc">
-              导出全部个人数据到 JSON 文件。照片仅导出 metadata（不含图片文件）。
+              导出所有数据到 JSON 备份，或导出账本（支出/收入/资产/福利）到 Excel 文件。
             </span>
           </div>
-          <NButton
-            type="primary"
-            :loading="exporting"
-            @click="handleExport"
-          >
-            导出 JSON
+          <NButton type="primary" @click="showExportModal = true">
+            导出
           </NButton>
         </div>
 
@@ -161,11 +142,13 @@ function goRecycleBin() {
         <div class="settings-item">
           <div class="settings-item__info">
             <span class="settings-item__label">昌都记忆 Changdu Memory</span>
-            <span class="settings-item__desc">v5.1.4 — 个人数字记录平台</span>
+            <span class="settings-item__desc">v5.1.5 — 个人数字记录平台</span>
           </div>
         </div>
       </NCard>
-    </NSpin>
+
+    <!-- 导出数据弹窗 -->
+    <ExportDataModal v-model:show="showExportModal" />
   </div>
 </template>
 

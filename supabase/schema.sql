@@ -914,6 +914,21 @@ ALTER TABLE public.work_plans ADD COLUMN IF NOT EXISTS end_time TEXT;
 ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS expense_time TEXT;
 
 -- ============================================================
+-- 29. expenses 收入分类新增 红包 / 出二手 — v5.1.5
+-- ============================================================
+-- 收入分类由 4 个扩展为 6 个：新增 red_packet（红包）、second_hand（出二手）
+-- 需要重建 expenses_category_check 约束以放行新分类值
+
+ALTER TABLE public.expenses DROP CONSTRAINT IF EXISTS expenses_category_check;
+ALTER TABLE public.expenses ADD CONSTRAINT expenses_category_check
+  CHECK (category IN (
+    -- 支出分类
+    'food', 'transport', 'shopping', 'accommodation', 'study', 'entertainment', 'medical', 'other',
+    -- 收入分类
+    'salary', 'subsidy', 'bonus', 'part_time', 'red_packet', 'second_hand'
+  ));
+
+-- ============================================================
 -- 完成
 -- ============================================================
 -- 总计: 17 张数据表 + 3 张关联表 = 20 张表
