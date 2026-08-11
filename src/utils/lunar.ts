@@ -63,7 +63,7 @@ function monthDays(year: number, month: number): number {
   return LUNAR_INFO[year - 1900] & (0x10000 >> month) ? 30 : 29
 }
 
-export interface LunarDate {
+interface LunarDate {
   year: number
   month: number
   day: number
@@ -72,7 +72,7 @@ export interface LunarDate {
 }
 
 /** 阳历（公历）转农历 */
-export function solarToLunar(year: number, month: number, day: number): LunarDate {
+function solarToLunar(year: number, month: number, day: number): LunarDate {
   const objDate = new Date(year, month - 1, day)
   let offset = Math.round((objDate.getTime() - BASE_DATE.getTime()) / DAY_MS)
 

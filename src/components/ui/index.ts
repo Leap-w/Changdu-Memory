@@ -7,6 +7,5 @@
 export { default as AppCard } from './AppCard.vue'
 export { default as AppAvatar } from './AppAvatar.vue'
 export { default as AppIcon } from './AppIcon.vue'
-export { default as AppEmpty } from './AppEmpty.vue'
 export { default as AppSection } from './AppSection.vue'
 export { default as AppPillTabs } from './AppPillTabs.vue'

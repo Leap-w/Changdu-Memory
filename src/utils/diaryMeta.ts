@@ -5,13 +5,13 @@
  * 展示时渲染为「emoji + 文案」。
  */
 
-export interface WeatherOption {
+interface WeatherOption {
   key: string
   emoji: string
   label: string
 }
 
-export interface MoodOption {
+interface MoodOption {
   key: string
   emoji: string
   label: string
