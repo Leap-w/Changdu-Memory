@@ -5,7 +5,6 @@ import { useTodoStore } from '@/stores/todo'
 import { useScheduleStore } from '@/stores/schedule'
 import { useWorkStore } from '@/stores/work'
 import { useStudentStore } from '@/stores/student'
-import { useMessage } from 'naive-ui'
 import WorkCard from '@/components/work/WorkCard.vue'
 import ScheduleWeekView from '@/components/schedule/ScheduleWeekView.vue'
 import ScheduleEditor from '@/components/schedule/ScheduleEditor.vue'
@@ -13,6 +12,7 @@ import StudentCard from '@/components/student/StudentCard.vue'
 import { AppCard, AppSection, AppIcon } from '@/components/ui'
 import type { Schedule } from '@/repositories/ScheduleRepository'
 import type { Student } from '@/repositories/StudentRepository'
+import { formatTimeHM } from '@/utils/date'
 
 const router = useRouter()
 const route = useRoute()
@@ -20,7 +20,6 @@ const todoStore = useTodoStore()
 const scheduleStore = useScheduleStore()
 const workStore = useWorkStore()
 const studentStore = useStudentStore()
-const message = useMessage()
 
 // ==========================================
 // Tab state — synced with route query
@@ -33,6 +32,18 @@ watch(() => route.query.tab, (val) => {
     activeTab.value = val as string
   }
 })
+
+/**
+ * 切换 Tab：同步写入 URL query（用 replace，不污染历史栈）。
+ * 这样进入行政安排编辑页再返回时，router.back() 能恢复到原来的 Tab，
+ * 不会因为组件重建而重置回默认的「课程表」。
+ */
+function switchTab(t: string) {
+  activeTab.value = t
+  if (route.query.tab !== t) {
+    router.replace({ query: { tab: t } })
+  }
+}
 
 // ==========================================
 // Data loading
@@ -100,13 +111,12 @@ const todayTimeline = computed(() => {
   }
 
   for (const w of todayWorks.value) {
-    const periodLabels: Record<string, string> = { morning: '上午', afternoon: '下午', evening: '晚上' }
     items.push({
       type: 'work',
-      time: w.start_time || periodLabels[w.period] || '',
+      time: formatTimeHM(w.start_time),
       title: w.title,
       sub: w.start_time && w.end_time
-        ? `${w.start_time}-${w.end_time}`
+        ? `${formatTimeHM(w.start_time)} - ${formatTimeHM(w.end_time)}`
         : (w.content?.slice(0, 60) || undefined),
       id: w.id,
     })
@@ -162,45 +172,10 @@ async function handleDeleteSchedule(id: string) {
 }
 
 // ==========================================
-// Work tab (行政安排) — 支持编辑 + 批量删除
+// Work tab (行政安排) — 列表页仅编辑，删除移至编辑页
 // ==========================================
 function goWorkCreate() { router.push('/work/new') }
 function goWorkEdit(id: string) { router.push(`/work/${id}/edit`) }
-
-async function handleDeleteWork(id: string) {
-  if (!confirm('确定删除该安排？')) return
-  try {
-    await workStore.removeWork(id)
-    message.success('已删除')
-  } catch { message.error('删除失败') }
-}
-
-// ---- 批量选择 / 批量删除 ----
-const selectedWorkIds = ref<string[]>([])
-
-function toggleSelectWork(id: string) {
-  const idx = selectedWorkIds.value.indexOf(id)
-  if (idx >= 0) selectedWorkIds.value.splice(idx, 1)
-  else selectedWorkIds.value.push(id)
-}
-
-const allWorksSelected = computed(() =>
-  workStore.works.length > 0 && selectedWorkIds.value.length === workStore.works.length,
-)
-
-function toggleSelectAll() {
-  selectedWorkIds.value = allWorksSelected.value ? [] : workStore.works.map((w) => w.id)
-}
-
-async function handleBatchDeleteWork() {
-  if (selectedWorkIds.value.length === 0) { message.warning('请先选择要删除的安排'); return }
-  if (!confirm(`确定删除选中的 ${selectedWorkIds.value.length} 项安排？`)) return
-  try {
-    await workStore.batchRemove([...selectedWorkIds.value])
-    selectedWorkIds.value = []
-    message.success('已批量删除')
-  } catch { message.error('批量删除失败') }
-}
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00')
@@ -329,7 +304,7 @@ async function handleBatchAdd() {
         :key="t"
         class="work-tabs__btn"
         :class="{ 'work-tabs__btn--active': activeTab === t }"
-        @click="activeTab = t"
+        @click="switchTab(t)"
       >
         {{ t }}
       </button>
@@ -367,7 +342,7 @@ async function handleBatchAdd() {
     </div>
 
     <!-- ================================================================ -->
-    <!-- TAB 2: 行政安排（只能删除，不能修改） -->
+    <!-- TAB 2: 行政安排（列表页仅编辑，删除在编辑页） -->
     <!-- ================================================================ -->
     <div v-if="activeTab === '行政安排'" class="work-tab">
       <div v-if="ready && workStore.works.length === 0" class="work-empty">
@@ -383,28 +358,6 @@ async function handleBatchAdd() {
       </div>
 
       <div v-else>
-        <!-- 批量操作栏 -->
-        <div v-if="workStore.works.length > 0" class="work-batch-bar">
-          <label class="work-batch-bar__select-all">
-            <input
-              type="checkbox"
-              :checked="allWorksSelected"
-              @change="toggleSelectAll"
-            />
-            <span>全选</span>
-          </label>
-          <span v-if="selectedWorkIds.length > 0" class="work-batch-bar__count">
-            已选 {{ selectedWorkIds.length }} 项
-          </span>
-          <button
-            class="work-batch-bar__del"
-            :disabled="selectedWorkIds.length === 0"
-            @click="handleBatchDeleteWork"
-          >
-            <AppIcon name="trash" size="13" /> 批量删除
-          </button>
-        </div>
-
         <div v-for="group in workStore.groupedByDate" :key="group.date" class="work-group">
           <div class="work-group__head">
             <span class="work-group__date">{{ formatDate(group.date) }}</span>
@@ -412,21 +365,12 @@ async function handleBatchAdd() {
           </div>
           <div class="work-group__list">
             <div v-for="w in group.items" :key="w.id" class="work-item-row">
-              <input
-                type="checkbox"
-                class="work-item-row__check"
-                :checked="selectedWorkIds.includes(w.id)"
-                @change="toggleSelectWork(w.id)"
-              />
               <WorkCard
                 :work="w"
                 class="work-item-row__card"
               />
               <button class="work-item-row__edit" title="编辑" @click.stop="goWorkEdit(w.id)">
                 <AppIcon name="edit" size="13" />
-              </button>
-              <button class="work-item-row__del" title="删除" @click.stop="handleDeleteWork(w.id)">
-                <AppIcon name="trash" size="13" />
               </button>
             </div>
           </div>
@@ -574,7 +518,7 @@ async function handleBatchAdd() {
 
 <style scoped>
 /* ================================================
-   Work Page — v5.1.3
+   Work Page — v5.1.4
    ================================================ */
 .work-page {
   max-width: 960px;
@@ -856,77 +800,10 @@ async function handleBatchAdd() {
   gap: 8px;
 }
 
-.work-batch-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  margin-bottom: var(--spacing-lg);
-  border-radius: var(--radius-md);
-  background: var(--color-bg);
-  border: 1px solid var(--color-border-light);
-}
-
-.work-batch-bar__select-all {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: var(--font-caption);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  user-select: none;
-}
-
-.work-batch-bar__select-all input,
-.work-item-row__check {
-  accent-color: var(--color-primary);
-  cursor: pointer;
-}
-
-.work-batch-bar__count {
-  font-size: var(--font-caption);
-  color: var(--color-primary);
-  font-weight: var(--font-weight-semibold);
-  flex: 1;
-}
-
-.work-batch-bar__del {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 6px 14px;
-  border: none;
-  border-radius: var(--radius-full);
-  background: rgba(194, 103, 106, 0.12);
-  color: var(--color-error);
-  font-size: var(--font-caption);
-  font-family: inherit;
-  font-weight: var(--font-weight-semibold);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.work-batch-bar__del:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.work-batch-bar__del:not(:disabled):hover {
-  background: var(--color-error);
-  color: #fff;
-}
-
 .work-item-row {
   display: flex;
   align-items: flex-start;
   gap: 4px;
-}
-
-.work-item-row__check {
-  width: 16px;
-  height: 16px;
-  margin-top: 18px;
-  flex-shrink: 0;
 }
 
 .work-item-row__card {
@@ -934,8 +811,7 @@ async function handleBatchAdd() {
   min-width: 0;
 }
 
-.work-item-row__edit,
-.work-item-row__del {
+.work-item-row__edit {
   flex-shrink: 0;
   padding: 8px;
   margin-top: 4px;
@@ -948,19 +824,13 @@ async function handleBatchAdd() {
   transition: all var(--transition-fast);
 }
 
-.work-item-row:hover .work-item-row__edit,
-.work-item-row:hover .work-item-row__del {
+.work-item-row:hover .work-item-row__edit {
   opacity: 1;
 }
 
 .work-item-row__edit:hover {
   color: var(--color-primary);
   background: var(--color-primary-bg);
-}
-
-.work-item-row__del:hover {
-  color: var(--color-error);
-  background: rgba(194, 103, 106, 0.08);
 }
 
 /* ---- Student Groups ---- */

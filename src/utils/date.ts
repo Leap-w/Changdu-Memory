@@ -34,3 +34,14 @@ export function tsToTimeStr(ts: number): string {
   const d = new Date(ts)
   return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`
 }
+
+/**
+ * 时间字符串 → 只保留 'HH:mm'（去掉可能的 ':ss' 秒）。
+ * 兼容历史数据中出现 'HH:mm:ss' 的情况。
+ */
+export function formatTimeHM(t: string | null | undefined): string {
+  if (!t) return ''
+  const m = /^(\d{1,2}):(\d{2})/.exec(String(t).trim())
+  if (!m) return String(t).trim()
+  return `${m[1].padStart(2, '0')}:${m[2]}`
+}

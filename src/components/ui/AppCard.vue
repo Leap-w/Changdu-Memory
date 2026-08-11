@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * AppCard — 统一卡片容器 (v5.1.3 毛玻璃风格)
+ * AppCard — 统一卡片容器 (v5.1.4 毛玻璃风格)
  *
  * 默认样式：24px 圆角 + 毛玻璃背景 + 轻阴影 + 微边框
  * 支持 hover 上浮、多档内边距、class 透传。

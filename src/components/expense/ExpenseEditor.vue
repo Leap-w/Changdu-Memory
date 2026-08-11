@@ -35,7 +35,7 @@ const errorMsg = ref('')
 const expenseCategories = [
   { value: 'food', label: '餐饮', icon: 'check' },
   { value: 'transport', label: '交通', icon: 'chevron-right' },
-  { value: 'shopping', label: '购物', icon: 'wallet' },
+  { value: 'shopping', label: '零食', icon: 'wallet' },
   { value: 'accommodation', label: '住宿', icon: 'home' },
   { value: 'study', label: '学习', icon: 'book' },
   { value: 'entertainment', label: '娱乐', icon: 'star' },

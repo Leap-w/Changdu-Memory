@@ -26,7 +26,8 @@ onMounted(async () => {
   if (todoId.value) {
     loading.value = true
     try {
-      const cached = todoStore.todos.find((t) => t.id === todoId.value)
+      // 优先用 store 缓存；未命中则直接从数据库拉取（编辑页刷新 / 直接进入也能正常编辑）
+      const cached = await todoStore.getTodoById(todoId.value)
       if (cached) {
         existingTodo.value = {
           title: cached.title,

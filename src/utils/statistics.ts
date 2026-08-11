@@ -124,8 +124,11 @@ export const CATEGORY_LABELS: Record<string, string> = {
   people: '人物',
   other: '其他',
   // expense
-  food: '饮食',
+  food: '餐饮',
   transport: '交通',
+  shopping: '零食',
+  accommodation: '住宿',
+  entertainment: '娱乐',
   daily: '日用品',
   study: '学习',
   medical: '医疗',

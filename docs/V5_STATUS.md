@@ -1,10 +1,10 @@
-# 昌都记忆 Changdu Memory v5.1.3 — 开发状态
+# 昌都记忆 Changdu Memory v5.1.4 — 开发状态
 
 > 最新更新: 2026-08-11
-> 版本: v5.1.3
+> 版本: v5.1.4
 > Build: `npm run build` ✅ 0 errors
 > Type Check: `vue-tsc -b --noEmit` ✅ 0 errors
-> Lint: `eslint` ✅ 0 errors
+> Lint: `eslint` ✅ 0 errors（106 条历史 warning）
 
 ---
 
@@ -30,7 +30,39 @@
 
 ---
 
-## 3. v5.1.3 更新摘要
+## 3. v5.1.4 更新摘要
+
+### P1 — 路由 / 数据逻辑修复
+- 行政安排编辑页"取消"不再随机跳课程表：`Work.vue` Tab 状态同步写入 URL query（`router.replace`），`router.back()` 稳定返回原 Tab
+- 首页"今日课程"卡片数据源从 `workStore` 改为 `scheduleStore`，严格区分课程 ≠ 行政安排
+- 行政安排未设具体时间不再回退显示"上午"：`WorkCard` 显示"未设置时间"，今日时间轴/搜索去掉 period 回退
+
+### P2 — 待办与行政安排
+- 待办彻底移除批量选择/批量删除/批量栏及相关 store 状态
+- 修复待办无法修改：编辑页刷新/直达可用（`fetchTodoById` + `getTodoById` 缓存兜底），保存真正写库
+- 待办 UI 重写：今日进度总览卡 + 分组 + 优先级色点，保留全部真实功能
+- 行政安排列表页仅保留编辑按钮；删除移至编辑页底部危险操作区
+- 行政安排开始时间必填（未填禁止保存并提示）；新增 `utils/date.formatTimeHM` 时间只显示 `HH:mm`
+
+### P3 — 移动端「我的」与底部导航
+- 移动端「我的」卡片顺序重排：Hero→支教时光→印记→常用功能→系统管理→品牌（`display:contents` + `order`），PC 布局不变
+- 底部导航选中/未选中共用同一图形，仅颜色变化（移除 filled/outline 切换）
+- 「我的」底部导航图标改单人像，消除双人图形重叠
+- 设置项点击后颜色不再残留：`:hover` 收进 `@media (hover:hover)` + `:active` 按压反馈
+
+### P4 — 支出 / 首页 / 检查更新
+- 支出分类"购物"→"零食"（DB 值 `shopping` 不变，仅标签，历史数据兼容）；导入校验分类与 DB 对齐
+- 首页时间字体 14px→20px（仅该组件）
+- 检查更新弹窗：本地离线展示"已是最新版本 + 当前版本"，无联网，预留 `APP_VERSION` 单点
+
+### P5 — 日记天气心情 + 深色模式
+- 日记新增手动选择天气（☀️⛅☁️🌧❄️🌫）与心情（😊🙂😌😔😫🔥）；编辑页标题后正文前；详情/列表 emoji 展示；`utils/diaryMeta.ts`
+- `NConfigProvider` 绑定 `darkTheme`，Naive UI 组件（设置/日期选择器/Toast）跟随深色模式
+- 全站版本号统一为 5.1.4
+
+---
+
+## 3b. v5.1.3 更新摘要
 
 ### 全站图标统一
 - 所有「昌」字圆形 logo（顶部导航 / 登录页 / 我的页品牌卡）改用用户提供的图片 `public/icon-180.png`
@@ -106,7 +138,7 @@
 | `/login` | 登录 | 游客 |
 | `/` | 首页 | 可选 |
 | `/diary` `/diary/:id` `/diary/:id/edit` `/diary/new` | 日记 | 需登录 |
-| `/work` `/work/new` | 工作 / 添加行政安排 | 需登录 |
+| `/work` `/work/new` `/work/:id/edit` | 工作 / 添加、编辑行政安排 | 需登录 |
 | `/expense` `/expense/:id/edit` `/expense/new` | 账本 | 需登录 |
 | `/time-center` | 时光中心 | 需登录 |
 | `/memory` | 大事记（大事记 / 一年旅程 Tab） | 需登录 |
@@ -122,6 +154,7 @@
 > **已移除**：`/settings/tags`（标签管理）。
 > **V5.5.2 变更**：`/mood` 由可选改为需登录（数据入库）。
 > **v5.1.3 变更**：行政安排新增 `/work/:id/edit` 编辑路由；待办批量选择删除。
+> **v5.1.4 变更**：行政安排删除移至编辑页（列表仅编辑）；待办批量选择移除；日记新增天气/心情字段（`diaries.weather/mood`，V5.2 已有列）。
 
 ---
 
@@ -150,5 +183,6 @@ ALTER TABLE public.journey_milestones DROP COLUMN IF EXISTS position;
 
 ## 8. 已知限制
 
-- 统计分类图标（如 CATEGORY_ICONS）仍保留 emoji 映射但已不再使用
-- 暗色模式下部分渐变装饰卡（Hero / Wallet）保持亮色原效果
+- 统计分类图标 emoji 映射已移除（v5.1.4 清理阶段未涉及统计组件内部遗留映射时除外）
+- 暗色模式下部分纯 CSS 渐变装饰卡（Hero / Wallet）保持亮色原效果（设计意图）
+- 106 条 lint warning（MemoryTimeline 缩进、Profile 换行、`as any` 断言等），均为 warning 不影响构建与运行

@@ -2,6 +2,7 @@
  * 昌都记忆 Changdu Memory V5.2
  * 全局检索 — 纯内存搜索
  */
+import { formatTimeHM } from '@/utils/date'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Row = Record<string, any>
@@ -67,7 +68,7 @@ function searchWorks(works: Row[], keyword: string, month: string): SearchResult
       title: w.title,
       description: (w.content || '').slice(0, 80),
       date: w.work_date,
-      extra: w.period || '',
+      extra: formatTimeHM(w.start_time),
     }))
 }
 

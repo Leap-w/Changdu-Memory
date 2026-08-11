@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import type { Diary } from '@/repositories/DiaryRepository'
 import { AppCard, AppIcon } from '@/components/ui'
+import { weatherDisplay, moodDisplay } from '@/utils/diaryMeta'
 
 const props = defineProps<{
   diary: Diary
@@ -59,6 +60,11 @@ const extraPhotoCount = computed(() => props.photos ? Math.max(0, props.photos.l
         <div class="dc-photo__meta">
           <span class="dc-photo__date">{{ formatDate(diary.diary_date) }}</span>
           <span class="dc-photo__weekday">{{ formatWeekday(diary.diary_date) }}</span>
+          <template v-if="diary.weather || diary.mood">
+            <span class="dc-photo__weather">
+              {{ [weatherDisplay(diary.weather), moodDisplay(diary.mood)].filter(Boolean).join(' · ') }}
+            </span>
+          </template>
         </div>
         <h3 class="dc-photo__title">
           {{ diary.title || '无标题' }}
@@ -97,8 +103,8 @@ const extraPhotoCount = computed(() => props.photos ? Math.max(0, props.photos.l
       <div class="dc__meta">
         <span class="dc-multi__date">{{ formatDate(diary.diary_date) }}</span>
         <span class="dc-multi__weekday">{{ formatWeekday(diary.diary_date) }}</span>
-        <span v-if="diary.weather" class="dc-multi__weather">{{ diary.weather }}</span>
-        <span v-if="diary.mood" class="dc-multi__mood">{{ diary.mood }}</span>
+        <span v-if="diary.weather" class="dc-multi__weather">{{ weatherDisplay(diary.weather) }}</span>
+        <span v-if="diary.mood" class="dc-multi__mood">{{ moodDisplay(diary.mood) }}</span>
       </div>
     </div>
     <h3 class="dc-multi__title">
@@ -156,7 +162,7 @@ const extraPhotoCount = computed(() => props.photos ? Math.max(0, props.photos.l
           <span>{{ formatWeekday(diary.diary_date) }}</span>
           <template v-if="diary.weather || diary.mood">
             <span class="dc-text__meta-sep">·</span>
-            <span>{{ [diary.weather, diary.mood].filter(Boolean).join(' · ') }}</span>
+            <span>{{ [weatherDisplay(diary.weather), moodDisplay(diary.mood)].filter(Boolean).join(' · ') }}</span>
           </template>
         </div>
         <h3 class="dc-text__title">
@@ -285,6 +291,12 @@ const extraPhotoCount = computed(() => props.photos ? Math.max(0, props.photos.l
 .dc-photo__weekday {
   font-size: var(--font-caption, 12px);
   color: var(--color-text-tertiary);
+}
+
+.dc-photo__weather {
+  font-size: var(--font-caption, 12px);
+  color: var(--color-text-tertiary);
+  margin-left: 4px;
 }
 
 .dc-photo__title {

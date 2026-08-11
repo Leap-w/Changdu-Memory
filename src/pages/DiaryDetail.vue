@@ -7,6 +7,7 @@ import { fetchDiaryTagIds } from '@/repositories/TagRepository'
 import { fetchDiaryPhotos, getDiaryPhotoUrl, deleteAllDiaryPhotos } from '@/repositories/DiaryPhotoRepository'
 import type { DiaryPhoto } from '@/repositories/DiaryPhotoRepository'
 import { AppCard, AppIcon } from '@/components/ui'
+import { weatherDisplay, moodDisplay } from '@/utils/diaryMeta'
 
 const router = useRouter()
 const route = useRoute()
@@ -144,11 +145,11 @@ function goDiary(id: string) {
           <span class="detail__meta-date">{{ formatDate(diary.diary_date) }}</span>
           <template v-if="diary.weather || diary.mood">
             <span class="detail__meta-sep">·</span>
-            <span v-if="diary.weather" class="detail__meta-tag">
-              <AppIcon name="camera" size="12" /> {{ diary.weather }}
+            <span v-if="diary.weather" class="detail__meta-tag detail__meta-tag--emoji">
+              {{ weatherDisplay(diary.weather) }}
             </span>
-            <span v-if="diary.mood" class="detail__meta-tag">
-              <AppIcon name="smile" size="12" /> {{ diary.mood }}
+            <span v-if="diary.mood" class="detail__meta-tag detail__meta-tag--emoji">
+              {{ moodDisplay(diary.mood) }}
             </span>
           </template>
         </div>
@@ -252,7 +253,7 @@ function goDiary(id: string) {
 
 <style scoped>
 /* ==========================================
-   Diary Detail — v5.1.3 Immersive Reading
+   Diary Detail — v5.1.4 Immersive Reading
    ========================================== */
 .detail {
   max-width: 780px;
@@ -366,6 +367,13 @@ function goDiary(id: string) {
   display: inline-flex;
   align-items: center;
   gap: 3px;
+}
+
+.detail__meta-tag--emoji {
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  background: var(--color-bg);
+  font-weight: var(--font-weight-medium);
 }
 
 .detail__meta-sep {

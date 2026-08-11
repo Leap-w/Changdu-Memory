@@ -37,7 +37,7 @@ Changdu Memory/
 ├── public/                   # PWA 图标 + favicon
 ├── supabase/
 │   └── schema.sql            # 完整数据库 Schema（可重复执行）
-├── docs/                     # 开发文档（v5.1.3-Development-Handbook / V5_STATUS）
+├── docs/                     # 开发文档（v5.1.4-Development-Handbook / V5_STATUS）
 ├── src/
 │   ├── main.ts               # 入口
 │   ├── App.vue               # 根组件（登录全屏 / 其他统一外壳）
@@ -64,7 +64,7 @@ Changdu Memory/
 │   │   └── ...               # dashboard / diary / work / todo / expense / schedule / student
 │   ├── types/
 │   │   └── database.ts       # 数据库表类型
-│   ├── utils/                # 工具函数（date/lunar/export/import/search/statistics/templates）
+│   ├── utils/                # 工具函数（date/lunar/export/import/search/statistics/templates/diaryMeta）
 │   └── styles/               # 全局样式（variables.css / global.css）
 ├── eslint.config.js          # ESLint 配置
 ├── .prettierrc               # Prettier 配置
@@ -168,7 +168,8 @@ chore: 工程配置
 
 ## 版本记录
 
-- **v5.1.3（当前）** — 全站图标改为用户提供的图片；首页 Hero 倒计时卡片固定 240px、日期字体加大并新增农历日期、时间/日期/农历实时化；修复日期选择器选 31 日变 30 日的时区 bug；全站日期/时间选择器统一为 Naive UI 中文界面；行政安排支持编辑 + 开始/结束时间 + 批量删除；待办卡片 UI 统一 + 批量选择删除 + 图标文字对齐修复；课程表默认科目改为数学；「我的」支教时光卡片深色模式修复；全面清理无用文件与代码（删除 AppFab 组件、未用函数、冗余图标、未接线 eslint 依赖）；新增 Supabase 保活 cron
+- **v5.1.4（当前）** — 五大阶段稳定化：① 修复行政安排编辑页取消误跳课程表（Tab 状态同步 URL query）、首页课程表卡片只显示课程（数据源切为 schedules）、行政安排未设时间不再显示"上午"；② 待办移除批量选择、修复待办无法修改（刷新/直达可正常编辑）、待办 UI 重写、行政安排列表仅编辑/删除移至编辑页、开始时间必填、时间只显示 HH:mm；③ 移动端「我的」卡片顺序重排、底部导航同一图形仅颜色变化、修复设置项点击后颜色残留（hover 收进 `@media (hover:hover)`）；④ 支出分类"购物"→"零食"（DB 值不变仅标签，历史数据兼容）、首页时间字体放大、检查更新离线弹窗；⑤ 日记新增天气/心情手动选择（编辑/详情/列表展示）、深色模式 Naive UI 组件跟随主题、版本号统一 5.1.4
+- **v5.1.3** — 全站图标改为用户提供的图片；首页 Hero 倒计时卡片固定 240px、日期字体加大并新增农历日期、时间/日期/农历实时化；修复日期选择器选 31 日变 30 日的时区 bug；全站日期/时间选择器统一为 Naive UI 中文界面；行政安排支持编辑 + 开始/结束时间 + 批量删除；待办卡片 UI 统一 + 批量选择删除 + 图标文字对齐修复；课程表默认科目改为数学；「我的」支教时光卡片深色模式修复；全面清理无用文件与代码（删除 AppFab 组件、未用函数、冗余图标、未接线 eslint 依赖）；新增 Supabase 保活 cron
 - **V5.5.2** — 「我的」页功能入口重构（常用功能+系统管理分组卡片、退出登录移入账号弹窗）；大事记取消固定分类、支持自定义地点、新增「大事记/一年旅程」Tab；一年旅程节点改为日期设置；今日心情数据库化（一天多条+自定义心情选项）；首页 Hero 可自定义展示倒计时；时光页大事记展示优化
 - **V5.5.1** — 首页 Hero / 我的个人卡按原型还原；账号管理新增学校/科目；数据管理合并入口；今日心情独立功能（localStorage）；行政安排仅可删除；待办新增过期分组并统一页面；移除标签管理；日记模板随时切换
 - **V5.4** — 全站设计系统升级：毛玻璃卡片、统一 AppLayout 外壳、AppIcon SVG 图标、高原自然色系

@@ -88,7 +88,7 @@ const categoryBreakdown = computed(() => {
 // Category helpers
 // ==========================================
 const categoryLabels: Record<string, string> = {
-  food: '餐饮', transport: '交通', shopping: '购物', accommodation: '住宿',
+  food: '餐饮', transport: '交通', shopping: '零食', accommodation: '住宿',
   study: '学习', entertainment: '娱乐', medical: '医疗', other: '其他',
   salary: '工资', subsidy: '补贴', bonus: '奖金', part_time: '兼职',
 }
@@ -560,7 +560,7 @@ async function handleWelfareSave() {
 
 <style scoped>
 /* ================================================
-   Expense Page — v5.1.3
+   Expense Page — v5.1.4
    ================================================ */
 .expense-page {
   max-width: 840px;

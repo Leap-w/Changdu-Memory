@@ -28,17 +28,19 @@ const localDate = ref<number | null>(
   props.workDate ? new Date(props.workDate + 'T00:00:00').getTime() : Date.now(),
 )
 
-// 开始/结束时间（选填）：NTimePicker 绑定时间戳，与 'HH:mm' 字符串桥接
+// 开始时间必填、结束时间选填：NTimePicker 绑定时间戳，与 'HH:mm' 字符串桥接
 const startTimeTs = ref<number | null>(props.startTime ? timeStrToTs(props.startTime) : null)
 const endTimeTs = ref<number | null>(props.endTime ? timeStrToTs(props.endTime) : null)
 
 function handleSubmit() {
   if (!localTitle.value.trim()) { message.warning('请输入标题'); return }
+  // 开始时间必填：未填写时禁止保存并明确提示
+  if (!startTimeTs.value) { message.warning('请选择开始时间'); return }
   emit('submit', {
     title: localTitle.value.trim(),
     content: localContent.value.trim(),
     work_date: localDate.value ? tsToDateStr(localDate.value) : formatLocalDate(),
-    start_time: startTimeTs.value ? tsToTimeStr(startTimeTs.value) : null,
+    start_time: tsToTimeStr(startTimeTs.value),
     end_time: endTimeTs.value ? tsToTimeStr(endTimeTs.value) : null,
   })
 }
@@ -65,12 +67,12 @@ function handleSubmit() {
       />
     </div>
     <div class="we__field">
-      <label class="we__label">时间（选填）</label>
+      <label class="we__label">开始时间 <span class="we__required">*</span></label>
       <div class="we__time-row">
         <NTimePicker
           v-model:value="startTimeTs"
           format="HH:mm"
-          placeholder="开始时间"
+          placeholder="选择开始时间"
           size="large"
           clearable
           style="flex:1"
@@ -79,7 +81,7 @@ function handleSubmit() {
         <NTimePicker
           v-model:value="endTimeTs"
           format="HH:mm"
-          placeholder="结束时间"
+          placeholder="结束时间（选填）"
           size="large"
           clearable
           style="flex:1"

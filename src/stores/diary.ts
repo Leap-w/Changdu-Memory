@@ -57,7 +57,7 @@ export const useDiaryStore = defineStore('diary', () => {
 
   /** 创建 */
   async function addDiary(
-    fields: { title: string; content: string; diary_date: string },
+    fields: { title: string; content: string; diary_date: string; weather?: string | null; mood?: string | null },
   ): Promise<Diary> {
     loading.value = true
     error.value = null
@@ -76,7 +76,7 @@ export const useDiaryStore = defineStore('diary', () => {
   /** 更新 */
   async function editDiary(
     id: string,
-    fields: { title: string; content: string; diary_date: string },
+    fields: { title: string; content: string; diary_date: string; weather?: string | null; mood?: string | null },
   ): Promise<Diary> {
     loading.value = true
     error.value = null

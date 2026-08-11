@@ -16,6 +16,14 @@ export async function fetchTodos(): Promise<Todo[]> {
   return (data ?? []) as Todo[]
 }
 
+/** 按 ID 获取单条待办（编辑页直接进入 / 刷新时使用，不依赖 store 缓存） */
+export async function fetchTodoById(id: string): Promise<Todo | null> {
+  const { data, error } = await db.from('todos').select('*')
+    .eq('id', id).is('deleted_at', null).maybeSingle()
+  if (error) throw error
+  return (data ?? null) as Todo | null
+}
+
 export async function fetchTodayTodos(): Promise<Todo[]> {
   const today = formatLocalDate()
   const { data, error } = await db.from('todos').select('*').is('deleted_at', null)

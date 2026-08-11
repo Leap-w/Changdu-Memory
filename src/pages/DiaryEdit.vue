@@ -20,6 +20,8 @@ const existingDiary = ref<{
   title: string
   content: string
   diary_date: string
+  weather: string | null
+  mood: string | null
   tag_ids: string[]
 } | null>(null)
 
@@ -35,6 +37,8 @@ onMounted(async () => {
           title: diary.title ?? '',
           content: diary.content ?? '',
           diary_date: diary.diary_date,
+          weather: diary.weather ?? null,
+          mood: diary.mood ?? null,
           tag_ids: tagIds,
         }
       } else {
@@ -46,15 +50,15 @@ onMounted(async () => {
   }
 })
 
-async function handleSubmit(data: { title: string; content: string; diary_date: string; tag_ids: string[]; pendingImages?: File[] }) {
+async function handleSubmit(data: { title: string; content: string; diary_date: string; weather: string | null; mood: string | null; tag_ids: string[]; pendingImages?: File[] }) {
   try {
     if (isEdit.value && diaryId.value) {
-      await diaryStore.editDiary(diaryId.value, { title: data.title, content: data.content, diary_date: data.diary_date })
+      await diaryStore.editDiary(diaryId.value, { title: data.title, content: data.content, diary_date: data.diary_date, weather: data.weather, mood: data.mood })
       await setDiaryTags(diaryId.value, data.tag_ids)
       message.success('已更新')
       router.push(`/diary/${diaryId.value}`)
     } else {
-      const diary = await diaryStore.addDiary({ title: data.title, content: data.content, diary_date: data.diary_date })
+      const diary = await diaryStore.addDiary({ title: data.title, content: data.content, diary_date: data.diary_date, weather: data.weather, mood: data.mood })
       await setDiaryTags(diary.id, data.tag_ids)
       // 上传预缓存的图片
       if (data.pendingImages && data.pendingImages.length > 0) {
@@ -82,6 +86,8 @@ function handleCancel() { router.back() }
         :title="existingDiary?.title"
         :content="existingDiary?.content"
         :diary-date="existingDiary?.diary_date"
+        :weather="existingDiary?.weather"
+        :mood="existingDiary?.mood"
         :tag-ids="existingDiary?.tag_ids"
         :diary-id="diaryId"
         :loading="diaryStore.loading"

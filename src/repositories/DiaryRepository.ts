@@ -35,19 +35,24 @@ export async function fetchLatestDiary(): Promise<Diary | null> {
 }
 
 export async function createDiary(
-  fields: Pick<DiaryInsert, 'title' | 'content' | 'diary_date'>,
+  fields: Pick<DiaryInsert, 'title' | 'content' | 'diary_date'> & Partial<Pick<DiaryInsert, 'weather' | 'mood'>>,
 ): Promise<Diary> {
   const user = (await supabase.auth.getUser()).data.user
   if (!user) throw new Error('未登录')
   const { data, error } = await db.from('diaries').insert({
-    user_id: user.id, title: fields.title ?? '', content: fields.content ?? '', diary_date: fields.diary_date,
+    user_id: user.id,
+    title: fields.title ?? '',
+    content: fields.content ?? '',
+    diary_date: fields.diary_date,
+    weather: fields.weather ?? null,
+    mood: fields.mood ?? null,
   }).select('*').single()
   if (error) throw error
   return data as Diary
 }
 
 export async function updateDiary(
-  id: string, fields: Pick<DiaryUpdate, 'title' | 'content' | 'diary_date'>,
+  id: string, fields: Pick<DiaryUpdate, 'title' | 'content' | 'diary_date'> & Partial<Pick<DiaryUpdate, 'weather' | 'mood'>>,
 ): Promise<Diary> {
   const { data, error } = await db.from('diaries')
     .update({ ...fields, updated_at: new Date().toISOString() }).eq('id', id).select('*').single()

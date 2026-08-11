@@ -148,7 +148,7 @@ function toggleMode() {
 
       <!-- 底部版本信息 -->
       <p class="login-version">
-        v5.1.3
+        v5.1.4
       </p>
     </div>
   </div>

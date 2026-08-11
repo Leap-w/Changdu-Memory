@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import {
   fetchTodos,
   fetchTodayTodos,
+  fetchTodoById,
   createTodo,
   updateTodo,
   toggleCompleteTodo,
@@ -60,6 +61,18 @@ export const useTodoStore = defineStore('todo', () => {
     } finally {
       loading.value = false
     }
+  }
+
+  /** 按 ID 获取单条待办：先查缓存，未命中则从数据库拉取（编辑页刷新时兜底） */
+  async function getTodoById(id: string): Promise<Todo | null> {
+    const cached = todos.value.find((t) => t.id === id)
+    if (cached) return cached
+    const todo = await fetchTodoById(id)
+    if (todo) {
+      todos.value.unshift(todo)
+      return todo
+    }
+    return null
   }
 
   /** 加载今日待办（首页使用，轻量） */
@@ -148,78 +161,6 @@ export const useTodoStore = defineStore('todo', () => {
     }
   }
 
-  // ==========================================
-  // 批量操作（选择模式）
-  // ==========================================
-  const selectionMode = ref(false)
-  const selectedIds = ref<Set<string>>(new Set())
-
-  function isSelected(id: string) {
-    return selectedIds.value.has(id)
-  }
-
-  function toggleSelect(id: string) {
-    const next = new Set(selectedIds.value)
-    if (next.has(id)) next.delete(id)
-    else next.add(id)
-    selectedIds.value = next
-    selectionMode.value = next.size > 0
-  }
-
-  function toggleSelectAll() {
-    const allIds = todos.value.map((t) => t.id)
-    const allSelected = allIds.length > 0 && allIds.every((id) => selectedIds.value.has(id))
-    if (allSelected) {
-      selectedIds.value = new Set()
-      selectionMode.value = false
-    } else {
-      selectedIds.value = new Set(allIds)
-      selectionMode.value = true
-    }
-  }
-
-  function clearSelection() {
-    selectedIds.value = new Set()
-    selectionMode.value = false
-  }
-
-  async function batchComplete() {
-    loading.value = true
-    error.value = null
-    try {
-      const ids = [...selectedIds.value]
-      for (const id of ids) {
-        const todo = todos.value.find((t) => t.id === id)
-        if (todo && !todo.completed) {
-          const updated = await toggleCompleteTodo(id, false)
-          todo.completed = updated.completed
-        }
-      }
-      clearSelection()
-    } catch (err: unknown) {
-      error.value = err instanceof Error ? err.message : '操作失败'
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function batchDelete() {
-    loading.value = true
-    error.value = null
-    try {
-      const ids = [...selectedIds.value]
-      for (const id of ids) {
-        await softDeleteTodo(id)
-      }
-      todos.value = todos.value.filter((t) => !selectedIds.value.has(t.id))
-      clearSelection()
-    } catch (err: unknown) {
-      error.value = err instanceof Error ? err.message : '删除失败'
-    } finally {
-      loading.value = false
-    }
-  }
-
   return {
     todos,
     loading,
@@ -232,18 +173,10 @@ export const useTodoStore = defineStore('todo', () => {
     todayCompletedCount,
     loadTodos,
     loadTodayTodos,
+    getTodoById,
     addTodo,
     editTodo,
     toggleTodo,
     removeTodo,
-    // 批量操作
-    selectionMode,
-    selectedIds,
-    isSelected,
-    toggleSelect,
-    toggleSelectAll,
-    clearSelection,
-    batchComplete,
-    batchDelete,
   }
 })

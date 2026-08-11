@@ -6,7 +6,7 @@ defineProps<{ expense: Expense }>()
 const emit = defineEmits<{ click: [id: string] }>()
 
 const labels: Record<string, string> = {
-  food: '餐饮', transport: '交通', shopping: '购物', accommodation: '住宿',
+  food: '餐饮', transport: '交通', shopping: '零食', accommodation: '住宿',
   study: '学习', entertainment: '娱乐', medical: '医疗',
   salary: '工资', subsidy: '补贴', bonus: '奖金', part_time: '兼职',
   other: '其他',

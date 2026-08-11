@@ -11,6 +11,7 @@ import type { DiaryPhoto } from '@/repositories/DiaryPhotoRepository'
 import { NDatePicker } from 'naive-ui'
 import { AppIcon } from '@/components/ui'
 import { dateStrToTs, tsToDateStr } from '@/utils/date'
+import { WEATHER_OPTIONS, MOOD_OPTIONS } from '@/utils/diaryMeta'
 
 // ==========================================
 // Props / Emits
@@ -19,6 +20,8 @@ interface Props {
   title?: string
   content?: string
   diaryDate?: string
+  weather?: string | null
+  mood?: string | null
   tagIds?: string[]
   diaryId?: string          // 编辑模式下的日记ID（用于图片上传）
   loading?: boolean
@@ -26,11 +29,11 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  title: '', content: '', diaryDate: '', tagIds: () => [], diaryId: '', loading: false, submitLabel: '保存',
+  title: '', content: '', diaryDate: '', weather: null, mood: null, tagIds: () => [], diaryId: '', loading: false, submitLabel: '保存',
 })
 
 const emit = defineEmits<{
-  submit: [data: { title: string; content: string; diary_date: string; tag_ids: string[]; pendingImages?: File[] }]
+  submit: [data: { title: string; content: string; diary_date: string; weather: string | null; mood: string | null; tag_ids: string[]; pendingImages?: File[] }]
   cancel: []
 }>()
 
@@ -41,6 +44,8 @@ const tagStore = useTagStore()
 // ==========================================
 const localTitle = ref(props.title)
 const localContent = ref(props.content)
+const localWeather = ref(props.weather ?? '')
+const localMood = ref(props.mood ?? '')
 const localDate = ref<number | null>(
   props.diaryDate ? dateStrToTs(props.diaryDate) : Date.now(),
 )
@@ -183,6 +188,8 @@ function handleSubmit() {
     title: localTitle.value.trim(),
     content: localContent.value,
     diary_date: tsToDateStr(localDate.value),
+    weather: localWeather.value || null,
+    mood: localMood.value || null,
     tag_ids: [...localTagIds.value],
     pendingImages: pendingImages.value.length > 0 ? [...pendingImages.value] : undefined,
   })
@@ -219,6 +226,41 @@ function handleSubmit() {
         placeholder="日记标题…"
         maxlength="100"
       />
+    </div>
+
+    <!-- ====== Weather & Mood ====== -->
+    <div class="de__section">
+      <label class="de__label">天气</label>
+      <div class="de__picks">
+        <button
+          v-for="w in WEATHER_OPTIONS"
+          :key="w.key"
+          class="de__pick"
+          :class="{ 'de__pick--active': localWeather === w.key }"
+          type="button"
+          @click="localWeather = localWeather === w.key ? '' : w.key"
+        >
+          <span class="de__pick-emoji">{{ w.emoji }}</span>
+          <span class="de__pick-label">{{ w.label }}</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="de__section">
+      <label class="de__label">心情</label>
+      <div class="de__picks">
+        <button
+          v-for="m in MOOD_OPTIONS"
+          :key="m.key"
+          class="de__pick"
+          :class="{ 'de__pick--active': localMood === m.key }"
+          type="button"
+          @click="localMood = localMood === m.key ? '' : m.key"
+        >
+          <span class="de__pick-emoji">{{ m.emoji }}</span>
+          <span class="de__pick-label">{{ m.label }}</span>
+        </button>
+      </div>
     </div>
 
     <!-- ====== Date ====== -->
@@ -381,6 +423,23 @@ function handleSubmit() {
 .de__img-add { width:84px;height:84px;border:2px dashed var(--color-border);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--color-text-tertiary);transition:all var(--transition-fast); }
 .de__img-add:hover { border-color:var(--color-primary);color:var(--color-primary);background:var(--color-primary-bg); }
 .de__img-add.loading { opacity:.5;pointer-events:none; }
+
+/* Weather & Mood pickers */
+.de__picks { display:grid;grid-template-columns:repeat(3,1fr);gap:8px; }
+@media (min-width: 520px) {
+  .de__picks { grid-template-columns:repeat(6,1fr); }
+}
+.de__pick {
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  padding:10px 6px;border:1px solid var(--color-border-light);border-radius:var(--radius-lg);
+  background:var(--color-bg-white);cursor:pointer;font-family:inherit;
+  transition:all var(--transition-fast);
+}
+.de__pick:hover { border-color:var(--color-primary);background:var(--color-primary-bg); }
+.de__pick--active { border-color:var(--color-primary);background:var(--color-primary-bg);box-shadow:0 0 0 1px var(--color-primary) inset; }
+.de__pick--active .de__pick-label { color:var(--color-primary);font-weight:var(--font-weight-semibold); }
+.de__pick-emoji { font-size:22px;line-height:1; }
+.de__pick-label { font-size:11px;color:var(--color-text-secondary);white-space:nowrap;font-weight:var(--font-weight-medium); }
 
 /* Tags */
 .de__tags { display:flex;gap:6px;flex-wrap:wrap;align-items:center; }

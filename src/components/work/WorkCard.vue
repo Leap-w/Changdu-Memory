@@ -1,10 +1,7 @@
 <script setup lang="ts">
 import type { WorkPlan } from '@/repositories/WorkRepository'
 import { AppCard } from '@/components/ui'
-
-const periodLabels: Record<string, string> = {
-  morning: '上午', afternoon: '下午', evening: '晚上',
-}
+import { formatTimeHM } from '@/utils/date'
 
 defineProps<{
   work: WorkPlan
@@ -17,9 +14,9 @@ defineProps<{
       <div class="wc__body">
         <div class="wc__head">
           <span v-if="work.start_time || work.end_time" class="wc__time">
-            {{ work.start_time }}{{ work.end_time ? `–${work.end_time}` : '' }}
+            {{ formatTimeHM(work.start_time) }}{{ work.end_time ? ` – ${formatTimeHM(work.end_time)}` : '' }}
           </span>
-          <span v-else class="wc__period">{{ periodLabels[work.period] || work.period }}</span>
+          <span v-else class="wc__period">未设置时间</span>
           <span class="wc__title">{{ work.title }}</span>
         </div>
         <span

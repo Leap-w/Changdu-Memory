@@ -172,6 +172,14 @@ async function doExport() {
   finally { exporting.value = false }
 }
 
+// ====== 版本检查（当前为本地离线检查，预留未来接入真实版本服务） ======
+const APP_VERSION = '5.1.4'
+const showUpdateCheck = ref(false)
+
+function openUpdateCheck() {
+  showUpdateCheck.value = true
+}
+
 // ====== Menu groups ======
 interface MenuItem { id: string; label: string; icon: string; route?: string; action?: () => void; desc?: string }
 
@@ -338,8 +346,13 @@ function goTo(path: string) {
             </p>
           </div>
           <div class="profile__about-foot">
-            <span class="profile__about-version">当前版本 v5.1.3</span>
-            <span class="profile__about-update">检查更新</span>
+            <span class="profile__about-version">当前版本 v{{ APP_VERSION }}</span>
+            <span
+              class="profile__about-update"
+              role="button"
+              tabindex="0"
+              @click="openUpdateCheck"
+            >检查更新</span>
           </div>
         </div>
       </div>
@@ -570,6 +583,42 @@ function goTo(path: string) {
           </div>
         </div>
       </Transition>
+
+      <!-- 检查更新弹窗 -->
+      <Transition name="modal">
+        <div v-if="showUpdateCheck" class="modal-overlay" @click.self="showUpdateCheck = false">
+          <div class="modal-sheet modal-sheet--update">
+            <div class="update-check">
+              <div class="update-check__badge">
+                <svg
+                  width="26"
+                  height="26"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                ><path d="M5 13l4 4L19 7" /></svg>
+              </div>
+              <h3 class="update-check__title">
+                已是最新版本
+              </h3>
+              <p class="update-check__version">
+                当前版本 V{{ APP_VERSION }}
+              </p>
+              <p class="update-check__desc">
+                您的“昌都记忆”已经是最新版本，<br />
+                暂时不需要更新。
+              </p>
+              <button class="update-check__btn" @click="showUpdateCheck = false">
+                好的
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
     </Teleport>
 
   </div>
@@ -577,7 +626,7 @@ function goTo(path: string) {
 
 <style scoped>
 /* ================================================
-   Profile — v5.1.3
+   Profile — v5.1.4
    ================================================ */
 .profile {
   max-width: 1200px;
@@ -630,6 +679,33 @@ function goTo(path: string) {
        默认 stretch 让左右两列等高，右侧卡片 flex-grow 使「常用功能」底部与左侧「关于」底部对齐 */
     grid-template-columns: 4fr 8fr;
     align-items: stretch;
+  }
+}
+
+/* ==========================================
+   Mobile reorder — 仅移动端卡片顺序重排（PC 端保持不变）
+   移动端顺序：Hero → 支教时光 → 在昌都的印记 → 常用功能 → 系统管理 → 品牌卡片
+   通过 display:contents 把左右两列的子卡片提升为 grid item，再用 order 排序
+   ========================================== */
+@media (max-width: 1023px) {
+  .profile__left,
+  .profile__right {
+    display: contents;
+  }
+
+  .profile-hero { order: 1; }
+  .profile__time-capsule { order: 2; }
+  .profile__stats-card { order: 3; }
+  .profile__menu-card:not(.profile__menu-card--push) { order: 4; }
+  .profile__menu-card.profile__menu-card--push { order: 5; }
+  .profile__about-card { order: 6; }
+
+  /* 取消桌面端 flex 对齐用属性，间距统一交给 grid gap */
+  .profile__menu-card.profile__menu-card--push { margin-top: 0; }
+  .profile__time-capsule,
+  .profile__stats-card {
+    flex-grow: 0;
+    margin-bottom: 0;
   }
 }
 
@@ -904,9 +980,11 @@ function goTo(path: string) {
   transition: opacity var(--transition-fast);
 }
 
-.profile__about-update:hover {
-  opacity: 0.8;
-  text-decoration: underline;
+@media (hover: hover) {
+  .profile__about-update:hover {
+    opacity: 0.8;
+    text-decoration: underline;
+  }
 }
 
 /* ==========================================
@@ -1055,8 +1133,10 @@ function goTo(path: string) {
   transition: background var(--transition-fast);
 }
 
-.time-capsule__empty-btn:hover {
-  background: var(--color-primary-dark);
+@media (hover: hover) {
+  .time-capsule__empty-btn:hover {
+    background: var(--color-primary-dark);
+  }
 }
 
 /* ==========================================
@@ -1166,8 +1246,16 @@ function goTo(path: string) {
   border-bottom: none;
 }
 
-.profile__menu-row:hover {
+/* 触摸按压反馈：按下时高亮，松开自动结束 */
+.profile__menu-row:active {
   background: var(--color-bg);
+}
+
+/* 仅支持 hover 的设备（鼠标）才应用 hover，避免移动端点击后背景残留 */
+@media (hover: hover) {
+  .profile__menu-row:hover {
+    background: var(--color-bg);
+  }
 }
 
 .profile__menu-row:focus-visible {
@@ -1349,8 +1437,10 @@ function goTo(path: string) {
   color: var(--color-text-secondary);
 }
 
-.modal-btn--cancel:hover {
-  background: var(--color-border-light);
+@media (hover: hover) {
+  .modal-btn--cancel:hover {
+    background: var(--color-border-light);
+  }
 }
 
 .modal-btn--save {
@@ -1359,8 +1449,10 @@ function goTo(path: string) {
   font-weight: var(--font-weight-semibold);
 }
 
-.modal-btn--save:hover {
-  background: var(--color-primary-dark);
+@media (hover: hover) {
+  .modal-btn--save:hover {
+    background: var(--color-primary-dark);
+  }
 }
 
 .modal-btn--save:disabled {
@@ -1393,9 +1485,11 @@ function goTo(path: string) {
   transition: all var(--transition-fast);
 }
 
-.modal-btn--logout:hover {
-  background: var(--color-error);
-  color: #fff;
+@media (hover: hover) {
+  .modal-btn--logout:hover {
+    background: var(--color-error);
+    color: #fff;
+  }
 }
 
 /* Avatar section in account modal */
@@ -1417,7 +1511,9 @@ function goTo(path: string) {
   transition: opacity var(--transition-fast);
 }
 
-.modal-avatar-btn:hover { opacity: 0.8; }
+@media (hover: hover) {
+  .modal-avatar-btn:hover { opacity: 0.8; }
+}
 .modal-avatar-btn.loading { opacity: 0.4; pointer-events: none; }
 
 /* Data management modal */
@@ -1441,9 +1537,11 @@ function goTo(path: string) {
   transition: all var(--transition-fast);
 }
 
-.data-mgmt__btn:hover {
-  border-color: var(--color-primary);
-  background: var(--color-primary-bg);
+@media (hover: hover) {
+  .data-mgmt__btn:hover {
+    border-color: var(--color-primary);
+    background: var(--color-primary-bg);
+  }
 }
 
 .data-mgmt__btn:disabled {
@@ -1478,6 +1576,79 @@ function goTo(path: string) {
 .data-mgmt__desc {
   font-size: var(--font-caption);
   color: var(--color-text-tertiary);
+}
+
+/* ==========================================
+   检查更新弹窗
+   ========================================== */
+.modal-sheet--update {
+  max-width: 360px;
+  text-align: center;
+}
+
+.update-check {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.update-check__badge {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-sky));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-md);
+  margin-bottom: 16px;
+  animation: fade-in var(--transition-normal);
+}
+
+.update-check__title {
+  font-size: var(--font-card-title, 18px);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin: 0 0 8px;
+}
+
+.update-check__version {
+  font-size: var(--font-secondary);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+  margin: 0 0 12px;
+}
+
+.update-check__desc {
+  font-size: var(--font-caption);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+  margin: 0 0 22px;
+}
+
+.update-check__btn {
+  padding: 10px 48px;
+  border: none;
+  border-radius: var(--radius-button);
+  background: var(--color-primary);
+  color: #fff;
+  font-size: var(--font-content);
+  font-family: inherit;
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (hover: hover) {
+  .update-check__btn:hover {
+    background: var(--color-primary-dark);
+  }
 }
 
 /* Modal transitions */

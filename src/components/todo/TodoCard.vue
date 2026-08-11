@@ -4,25 +4,16 @@ import { NCheckbox } from 'naive-ui'
 
 const props = defineProps<{
   todo: Todo
-  /** 批量选择模式：显示左侧选择框 */
-  selectable?: boolean
-  /** 是否已选中 */
-  selected?: boolean
 }>()
 
 const emit = defineEmits<{
   toggle: [id: string]
   click: [id: string]      // 点击卡片 → 编辑
   delete: [id: string]
-  select: [id: string]
 }>()
 
 function onCheck() {
   emit('toggle', props.todo.id)
-}
-
-function onSelect() {
-  emit('select', props.todo.id)
 }
 
 function formatDeadline(todo: Todo): string {
@@ -32,24 +23,21 @@ function formatDeadline(todo: Todo): string {
   if (dt) return `${dd} ${dt}`
   return dd
 }
+
+const priorityColor: Record<string, string> = {
+  high: 'var(--color-error)',
+  medium: 'var(--color-gold)',
+  low: 'var(--color-text-tertiary)',
+}
 </script>
 
 <template>
   <div
     class="todo-card"
-    :class="{ 'todo-card--done': todo.completed, 'todo-card--selected': selected }"
+    :class="{ 'todo-card--done': todo.completed }"
     @click="emit('click', todo.id)"
   >
     <div class="todo-card__inner">
-      <!-- 批量选择框 -->
-      <NCheckbox
-        v-if="selectable"
-        :checked="selected"
-        :on-update:checked="onSelect"
-        class="todo-card__select"
-        @click.stop
-      />
-
       <!-- 完成勾选 -->
       <NCheckbox
         :checked="todo.completed"
@@ -59,9 +47,17 @@ function formatDeadline(todo: Todo): string {
       />
 
       <div class="todo-card__body">
-        <span class="todo-card__title" :class="{ 'line-through': todo.completed }">
-          {{ todo.title }}
-        </span>
+        <div class="todo-card__title-row">
+          <span
+            v-if="todo.priority && priorityColor[todo.priority]"
+            class="todo-card__priority"
+            :style="{ background: priorityColor[todo.priority] }"
+            :title="todo.priority"
+          />
+          <span class="todo-card__title" :class="{ 'line-through': todo.completed }">
+            {{ todo.title }}
+          </span>
+        </div>
         <div v-if="todo.description" class="todo-card__desc">
           {{ todo.description }}
         </div>
@@ -166,10 +162,6 @@ function formatDeadline(todo: Todo): string {
 .todo-card--done {
   opacity: 0.55;
 }
-.todo-card--selected {
-  border-color: var(--color-primary);
-  background: var(--color-primary-bg);
-}
 
 .todo-card__inner {
   display: flex;
@@ -177,7 +169,6 @@ function formatDeadline(todo: Todo): string {
   gap: 12px;
 }
 
-.todo-card__select,
 .todo-card__check {
   flex-shrink: 0;
   margin-top: 2px;
@@ -189,6 +180,20 @@ function formatDeadline(todo: Todo): string {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.todo-card__title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.todo-card__priority {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-top: 6px;
+  flex-shrink: 0;
 }
 
 .todo-card__title {

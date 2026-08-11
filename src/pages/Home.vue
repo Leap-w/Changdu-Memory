@@ -3,7 +3,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTimeStore } from '@/stores/time'
 import { useAuthStore } from '@/stores/auth'
-import { useWorkStore } from '@/stores/work'
+import { useScheduleStore } from '@/stores/schedule'
 import { useTodoStore } from '@/stores/todo'
 import { useDiaryStore } from '@/stores/diary'
 import { useExpenseStore } from '@/stores/expense'
@@ -16,7 +16,7 @@ import { getLunarText } from '@/utils/lunar'
 const router = useRouter()
 const timeStore = useTimeStore()
 const authStore = useAuthStore()
-const workStore = useWorkStore()
+const scheduleStore = useScheduleStore()
 const todoStore = useTodoStore()
 const diaryStore = useDiaryStore()
 const expenseStore = useExpenseStore()
@@ -24,9 +24,6 @@ const memoryStore = useMemoryStore()
 const moodStore = useMoodStore()
 
 const ready = ref(false)
-const periodLabels: Record<string, string> = {
-  morning: '上午', afternoon: '下午', evening: '晚上',
-}
 
 // ==========================================
 // Data loading
@@ -38,7 +35,7 @@ onMounted(async () => {
 
   if (authStore.isLoggedIn) {
     const tasks = [
-      { load: () => workStore.works.length ? Promise.resolve() : workStore.loadWorks() },
+      { load: () => scheduleStore.schedules.length ? Promise.resolve() : scheduleStore.loadSchedules() },
       { load: () => todoStore.todos.length ? Promise.resolve() : todoStore.loadTodos() },
       { load: () => diaryStore.diaries.length ? Promise.resolve() : diaryStore.loadDiaries() },
       { load: () => expenseStore.expenses.length ? Promise.resolve() : expenseStore.loadExpenses() },
@@ -57,7 +54,16 @@ onMounted(async () => {
 // ==========================================
 // Today
 // ==========================================
-const todayWorks = computed(() => workStore.todayWorks)
+/** 返回 1-7（周一=1 … 周日=7） */
+function getWeekdayNum(): number {
+  const d = new Date().getDay()
+  return d === 0 ? 7 : d
+}
+
+/** 今日课程：只取课程表（schedules），与行政安排（work_plans）严格区分 */
+const todayCourses = computed(() =>
+  scheduleStore.schedules.filter((s) => s.day_of_week === getWeekdayNum()),
+)
 const todayTodos = computed(() => todoStore.todayTodos)
 const doneTodos = computed(() => todayTodos.value.filter((t) => t.completed))
 const pendingTodos = computed(() => todayTodos.value.filter((t) => !t.completed))
@@ -169,18 +175,18 @@ function goTo(path: string) {
               </div>
               <span class="today-card__title">今日课程</span>
             </div>
-            <template v-if="ready && todayWorks.length > 0">
+            <template v-if="ready && todayCourses.length > 0">
               <div class="today-card__body">
                 <div
-                  v-for="w in todayWorks.slice(0, 2)"
-                  :key="w.id"
+                  v-for="c in todayCourses.slice(0, 2)"
+                  :key="c.id"
                   class="today-card__item"
                 >
-                  <span class="today-card__item-meta">{{ periodLabels[w.period] || w.period }}</span>
-                  <span class="today-card__item-text">{{ w.title }}</span>
+                  <span class="today-card__item-meta">{{ c.start_time }}</span>
+                  <span class="today-card__item-text">{{ c.course_name }}{{ c.class_name ? ' · ' + c.class_name : '' }}</span>
                 </div>
-                <div v-if="todayWorks.length > 2" class="today-card__more">
-                  还有 {{ todayWorks.length - 2 }} 项…
+                <div v-if="todayCourses.length > 2" class="today-card__more">
+                  还有 {{ todayCourses.length - 2 }} 项…
                 </div>
               </div>
             </template>
@@ -349,7 +355,7 @@ function goTo(path: string) {
 
 <style scoped>
 /* ================================================
-   Home Page — v5.1.3
+   Home Page — v5.1.4
    ================================================ */
 .home {
   /* Hero handles its own background */
@@ -405,10 +411,11 @@ function goTo(path: string) {
 }
 
 .home__date-time {
-  font-size: var(--font-secondary);
+  /* 首页时间展示：字体适当放大（仅此时间组件，不影响日期/农历/其他时间组件） */
+  font-size: 20px;
   color: var(--color-text-primary);
   font-weight: var(--font-weight-semibold);
-  padding: 4px 12px;
+  padding: 4px 14px;
   border-radius: var(--radius-full);
   background: rgba(0, 0, 0, 0.03);
 }

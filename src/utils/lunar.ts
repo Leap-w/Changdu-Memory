@@ -79,7 +79,7 @@ export function solarToLunar(year: number, month: number, day: number): LunarDat
   // 确定农历年份
   let i = 1900
   let temp = 0
-  for (i = 1900; i < 2101 && offset > 0; i++) {
+  for (; i < 2101 && offset > 0; i++) {
     temp = lunarYearDays(i)
     offset -= temp
   }
@@ -94,7 +94,7 @@ export function solarToLunar(year: number, month: number, day: number): LunarDat
 
   // 确定农历月份
   let j = 1
-  for (j = 1; j < 13 && offset > 0; j++) {
+  for (; j < 13 && offset > 0; j++) {
     // 遇到闰月：插在正常月之后，闰月当月循环不增加 j
     if (leap > 0 && j === leap + 1 && !isLeap) {
       --j

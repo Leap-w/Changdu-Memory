@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * AppLayout — v5.1.3 统一应用外壳
+ * AppLayout — v5.1.4 统一应用外壳
  *
  * 包含：顶部悬浮胶囊导航 + 主内容区 + 移动端底部导航
  * PC（>=768px）：顶部导航含全部链接
@@ -23,26 +23,25 @@ const appStore = useAppStore()
 interface NavItem {
   path: string
   label: string
-  icon: string       // outline icon name
-  iconFilled: string  // filled icon name (mobile active)
+  icon: string       // 图标名（选中/未选中共用同一图形，仅颜色变化）
 }
 
 const desktopNavItems: NavItem[] = [
-  { path: '/',             label: '首页', icon: 'home',        iconFilled: 'home-filled' },
-  { path: '/diary',        label: '日记', icon: 'book',        iconFilled: 'diary-filled' },
-  { path: '/work',         label: '工作', icon: 'briefcase',   iconFilled: 'work-filled' },
-  { path: '/expense',      label: '账本', icon: 'wallet',      iconFilled: 'wallet-filled' },
-  { path: '/time-center',  label: '时光', icon: 'clock',       iconFilled: 'clock' },
-  { path: '/profile',      label: '我的', icon: 'people',      iconFilled: 'profile-filled' },
+  { path: '/',             label: '首页', icon: 'home' },
+  { path: '/diary',        label: '日记', icon: 'book' },
+  { path: '/work',         label: '工作', icon: 'briefcase' },
+  { path: '/expense',      label: '账本', icon: 'wallet' },
+  { path: '/time-center',  label: '时光', icon: 'clock' },
+  { path: '/profile',      label: '我的', icon: 'people' },
 ]
 
 /** 移动端底部导航：5项（无「时光」） */
 const bottomNavItems: NavItem[] = [
-  { path: '/',             label: '首页', icon: 'home',        iconFilled: 'home-filled' },
-  { path: '/diary',        label: '日记', icon: 'book',        iconFilled: 'diary-filled' },
-  { path: '/work',         label: '工作', icon: 'briefcase',   iconFilled: 'work-filled' },
-  { path: '/expense',      label: '账本', icon: 'wallet',      iconFilled: 'wallet-filled' },
-  { path: '/profile',      label: '我的', icon: 'people',      iconFilled: 'profile-filled' },
+  { path: '/',             label: '首页', icon: 'home' },
+  { path: '/diary',        label: '日记', icon: 'book' },
+  { path: '/work',         label: '工作', icon: 'briefcase' },
+  { path: '/expense',      label: '账本', icon: 'wallet' },
+  { path: '/profile',      label: '我的', icon: 'people' },
 ]
 
 // ==========================================
@@ -142,7 +141,7 @@ const isDesktop = computed(() => !appStore.isMobile)
         :aria-label="item.label"
         @click="navigateTo(item.path)"
       >
-        <BottomNavIcon :name="isActive(item.path) ? item.iconFilled : item.icon" />
+        <BottomNavIcon :name="item.icon" />
         <span class="bottom-nav__label">{{ item.label }}</span>
       </button>
     </nav>
@@ -151,11 +150,12 @@ const isDesktop = computed(() => !appStore.isMobile)
 
 <!-- ==========================================
      BottomNavIcon — 底部导航 SVG 图标
+     同一导航项选中/未选中保持同一个图形，仅通过 color 变化区分
      ========================================== -->
 <script lang="ts">
 import { defineComponent, h } from 'vue'
 
-/** 底部导航专用图标组件：根据 name 渲染对应 SVG */
+/** 底部导航专用图标组件：根据 name 渲染对应 SVG（描边风格，无 filled 变体） */
 export const BottomNavIcon = defineComponent({
   props: {
     name: { type: String, required: true },
@@ -175,39 +175,10 @@ export const BottomNavIcon = defineComponent({
         class: 'bottom-nav__svg',
       }
 
-      // Filled icons use fill="currentColor" + stroke="none"
-      const filled = (path1: string, path2?: string) =>
-        h('svg', { ...common, fill: 'currentColor', stroke: 'none' }, [
-          h('path', { d: path1 }),
-          path2 ? h('path', { d: path2 }) : null,
-        ])
-
       const outlined = (d: string[]) =>
         h('svg', common, d.map((p) => h('path', { d: p })))
 
       switch (props.name) {
-        // ---- filled ----
-        case 'home-filled':
-          return filled('M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z')
-        case 'diary-filled':
-          return filled(
-            'M4 19.5A2.5 2.5 0 0 1 6.5 17H20v-15H6.5A2.5 2.5 0 0 0 4 4.5v15z',
-          )
-        case 'work-filled':
-          return filled(
-            'M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16h8z',
-            'M2 7h20v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7z',
-          )
-        case 'wallet-filled':
-          return filled(
-            'M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z',
-          )
-        case 'profile-filled':
-          return filled(
-            'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0z',
-            'M12 14a7 7 0 0 0-7 7h14a7 7 0 0 0-7-7z',
-          )
-        // ---- outlined ----
         case 'home':
           return outlined([
             'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
@@ -228,11 +199,10 @@ export const BottomNavIcon = defineComponent({
             'M3 10h18M7 15h1m4 0h1m-7 4h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2z',
           ])
         case 'people':
+          // 单人像：避免双人图标在底部导航中呈图形重合感
           return outlined([
-            'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2',
-            'M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z',
-            'M23 21v-2a4 4 0 0 0-3-3.87',
-            'M16 3.13a4 4 0 0 1 0 7.75',
+            'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z',
+            'M20 21a8 8 0 0 0-16 0',
           ])
         case 'clock':
           return outlined([
@@ -463,12 +433,24 @@ export const BottomNavIcon = defineComponent({
   font-weight: var(--font-weight-semibold);
 }
 
-.bottom-nav__item:hover {
+/* 触摸按压反馈：按下时高亮，松开自动结束 */
+.bottom-nav__item:active {
   color: var(--color-text-secondary);
 }
 
-.bottom-nav__item--active:hover {
+.bottom-nav__item--active:active {
   color: var(--color-primary);
+}
+
+/* 仅支持 hover 的设备（鼠标）才应用 hover，避免移动端点击后颜色残留 */
+@media (hover: hover) {
+  .bottom-nav__item:hover {
+    color: var(--color-text-secondary);
+  }
+
+  .bottom-nav__item--active:hover {
+    color: var(--color-primary);
+  }
 }
 
 .bottom-nav__svg {

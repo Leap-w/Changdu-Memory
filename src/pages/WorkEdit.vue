@@ -3,6 +3,7 @@ import { computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useWorkStore } from '@/stores/work'
 import WorkEditor from '@/components/work/WorkEditor.vue'
+import { AppIcon } from '@/components/ui'
 import { useMessage } from 'naive-ui'
 
 const router = useRouter()
@@ -54,6 +55,19 @@ async function handleSubmit(data: {
 function handleCancel() {
   router.back()
 }
+
+/** 删除（编辑页底部危险操作） */
+async function handleDelete() {
+  if (!editId.value) return
+  if (!confirm('确定删除该安排？此操作将移入回收站。')) return
+  try {
+    await workStore.removeWork(editId.value)
+    message.success('已删除')
+    router.push('/work?tab=行政安排')
+  } catch {
+    message.error('删除失败')
+  }
+}
 </script>
 
 <template>
@@ -74,6 +88,16 @@ function handleCancel() {
       @submit="handleSubmit"
       @cancel="handleCancel"
     />
+
+    <!-- 危险操作区：删除仅在编辑模式显示，与保存操作明确区分 -->
+    <div v-if="isEdit" class="work-edit-page__danger">
+      <button
+        class="work-edit-page__delete"
+        @click="handleDelete"
+      >
+        <AppIcon name="trash" size="14" /> 删除该安排
+      </button>
+    </div>
   </div>
 </template>
 
@@ -90,5 +114,36 @@ function handleCancel() {
   margin: 0 0 28px;
   padding-bottom: 14px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+/* ---- 危险操作区（删除） ---- */
+.work-edit-page__danger {
+  margin-top: var(--spacing-xl);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--color-border-light);
+  display: flex;
+  justify-content: center;
+}
+
+.work-edit-page__delete {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 28px;
+  border: 1px solid rgba(194, 103, 106, 0.35);
+  border-radius: var(--radius-button);
+  background: transparent;
+  color: var(--color-error);
+  font-size: var(--font-secondary);
+  font-family: inherit;
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.work-edit-page__delete:hover {
+  background: var(--color-error);
+  border-color: var(--color-error);
+  color: #fff;
 }
 </style>

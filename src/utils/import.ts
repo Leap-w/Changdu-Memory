@@ -111,7 +111,8 @@ function cellStr(row: string[], col: number): string {
 
 const VALID_PERIODS = ['morning', 'afternoon', 'evening']
 const VALID_WORK_CATEGORIES = ['teaching', 'meeting', 'training', 'other']
-const VALID_EXPENSE_CATEGORIES = ['food', 'transport', 'daily', 'study', 'medical', 'other']
+// 与数据库 expenses.category CHECK 约束保持一致（含购物→零食、住宿、娱乐）
+const VALID_EXPENSE_CATEGORIES = ['food', 'transport', 'shopping', 'accommodation', 'study', 'entertainment', 'medical', 'other']
 const VALID_TODO_CATEGORIES = ['teaching', 'life', 'growth']
 const VALID_PRIORITIES = ['high', 'medium', 'low']
 
@@ -225,7 +226,7 @@ function parseAndValidateExpenses(rows: string[][]): ImportPreview<ExpenseImport
     if (!VALID_EXPENSE_CATEGORIES.includes(category)) {
       errors.push({
         row: rowNum,
-        message: `分类无效: "${cellStr(r, 1)}"，应为 food/transport/daily/study/medical/other`,
+        message: `分类无效: "${cellStr(r, 1)}"，应为 food/transport/shopping/accommodation/study/entertainment/medical/other`,
       })
       continue
     }
