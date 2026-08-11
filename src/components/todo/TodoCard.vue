@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { Todo } from '@/repositories/TodoRepository'
-import { NCheckbox } from 'naive-ui'
+import { formatLocalDate } from '@/utils/date'
 
 const props = defineProps<{
   todo: Todo
@@ -8,7 +9,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   toggle: [id: string]
-  click: [id: string]      // 点击卡片 → 编辑
+  click: [id: string]      // 点击卡片 → 编辑（无独立编辑按钮）
   delete: [id: string]
 }>()
 
@@ -16,198 +17,260 @@ function onCheck() {
   emit('toggle', props.todo.id)
 }
 
-function formatDeadline(todo: Todo): string {
-  const dd = (todo as any).deadline_date as string | null
-  const dt = (todo as any).deadline_time as string | null
-  if (!dd) return ''
-  if (dt) return `${dd} ${dt}`
-  return dd
-}
+/** 相对日期标签：今天 / 明天 / 已过期 / X月X日 */
+const dateTag = computed(() => {
+  const today = formatLocalDate()
+  const date = props.todo.todo_date
+  if (date === today) return { label: '今天', cls: 'today' }
+  const tomorrow = formatLocalDate(new Date(Date.now() + 86400000))
+  if (date === tomorrow) return { label: '明天', cls: '' }
+  if (date < today) {
+    if (props.todo.completed) {
+      const d = new Date(date + 'T00:00:00')
+      return { label: `${d.getMonth() + 1}月${d.getDate()}日`, cls: '' }
+    }
+    return { label: '已过期', cls: 'overdue' }
+  }
+  const d = new Date(date + 'T00:00:00')
+  return { label: `${d.getMonth() + 1}月${d.getDate()}日`, cls: '' }
+})
 
-const priorityColor: Record<string, string> = {
-  high: 'var(--color-error)',
-  medium: 'var(--color-gold)',
-  low: 'var(--color-text-tertiary)',
+const CATEGORY_TAGS: Record<string, { label: string; cls: string }> = {
+  teaching: { label: '教学', cls: 'teaching' },
+  life: { label: '生活', cls: 'life' },
+  growth: { label: '成长', cls: 'growth' },
 }
+const categoryTag = computed(() => CATEGORY_TAGS[props.todo.category] ?? null)
+
+const deadlineText = computed(() => {
+  const dd = props.todo.deadline_date
+  const dt = props.todo.deadline_time
+  if (!dd) return ''
+  return dt ? `${dd} ${dt}` : dd
+})
 </script>
 
 <template>
   <div
-    class="todo-card"
-    :class="{ 'todo-card--done': todo.completed }"
+    class="todo-item"
+    :class="{ completed: todo.completed }"
     @click="emit('click', todo.id)"
   >
-    <div class="todo-card__inner">
-      <!-- 完成勾选 -->
-      <NCheckbox
-        :checked="todo.completed"
-        :on-update:checked="onCheck"
-        class="todo-card__check"
-        @click.stop
-      />
+    <!-- 圆形勾选 -->
+    <div
+      class="todo-check"
+      :class="{ checked: todo.completed }"
+      role="checkbox"
+      :aria-checked="todo.completed"
+      tabindex="0"
+      @click.stop="onCheck"
+      @keydown.enter.prevent="onCheck"
+      @keydown.space.prevent="onCheck"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="3"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      ><polyline points="20 6 9 17 4 12" /></svg>
+    </div>
 
-      <div class="todo-card__body">
-        <div class="todo-card__title-row">
-          <span
-            v-if="todo.priority && priorityColor[todo.priority]"
-            class="todo-card__priority"
-            :style="{ background: priorityColor[todo.priority] }"
-            :title="todo.priority"
-          />
-          <span class="todo-card__title" :class="{ 'line-through': todo.completed }">
-            {{ todo.title }}
-          </span>
-        </div>
-        <div v-if="todo.description" class="todo-card__desc">
-          {{ todo.description }}
-        </div>
-        <div v-if="formatDeadline(todo)" class="todo-card__deadline">
+    <!-- 内容区：点击进入编辑 -->
+    <div class="todo-content">
+      <div class="todo-text" :class="{ done: todo.completed }">
+        {{ todo.title }}
+      </div>
+      <div class="todo-meta">
+        <span class="todo-tag" :class="dateTag.cls ? `tag-${dateTag.cls}` : ''">
+          {{ dateTag.label }}
+        </span>
+        <span
+          v-if="categoryTag"
+          class="todo-tag"
+          :class="`tag-${categoryTag.cls}`"
+        >
+          {{ categoryTag.label }}
+        </span>
+        <span v-if="deadlineText" class="todo-deadline">
           <svg
-            class="todo-card__deadline-icon"
-            width="12"
-            height="12"
+            width="11"
+            height="11"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
             stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
-          >
-            <rect
-              x="3"
-              y="4"
-              width="18"
-              height="18"
-              rx="2"
-              ry="2"
-            /><line
-              x1="16"
-              y1="2"
-              x2="16"
-              y2="6"
-            /><line
-              x1="8"
-              y1="2"
-              x2="8"
-              y2="6"
-            /><line
-              x1="3"
-              y1="10"
-              x2="21"
-              y2="10"
-            />
-          </svg>
-          <span>{{ formatDeadline(todo) }}</span>
-        </div>
+          ><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+          {{ deadlineText }}
+        </span>
       </div>
+      <div v-if="todo.description" class="todo-desc">
+        {{ todo.description }}
+      </div>
+    </div>
 
-      <!-- 操作区：编辑 / 删除（hover 显示） -->
-      <div class="todo-card__actions">
-        <button
-          class="todo-card__action"
-          title="编辑"
-          @click.stop="emit('click', todo.id)"
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          ><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
-        </button>
-        <button
-          class="todo-card__action todo-card__action--danger"
-          title="删除"
-          @click.stop="emit('delete', todo.id)"
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          ><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
-        </button>
-      </div>
+    <!-- 操作区：仅删除（编辑通过点击条目进入） -->
+    <div class="todo-actions">
+      <button
+        class="action-btn action-btn--delete"
+        title="删除"
+        aria-label="删除"
+        @click.stop="emit('delete', todo.id)"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        ><path d="M3 6h18" /><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6" /><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2" /></svg>
+      </button>
     </div>
   </div>
 </template>
 
 <style scoped>
 /* ================================================
-   TodoCard — 与系统毛玻璃卡片(AppCard)风格统一
+   TodoCard — 参照 待办1.1.html 重构
+   无编辑按钮：点击整条进入编辑；圆形勾选 + 标签 + 删除
    ================================================ */
-.todo-card {
-  background: var(--glass-bg-card, rgba(255, 255, 255, 0.85));
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.75));
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-sm);
-  transition: box-shadow var(--transition-fast), transform var(--transition-fast), border-color var(--transition-fast);
+.todo-item {
+  background: var(--color-bg-white);
+  border-radius: 16px;
+  box-shadow: var(--shadow-xs);
+  border: 1px solid var(--color-border-light);
+  padding: 14px 14px 14px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
   cursor: pointer;
-  padding: 14px 16px;
+  transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
+  animation: cardIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
-.todo-card:hover {
-  box-shadow: var(--shadow-card);
-  border-color: transparent;
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
-.todo-card--done {
+
+.todo-item:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-border);
+}
+
+.todo-item.completed {
   opacity: 0.55;
 }
 
-.todo-card__inner {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
+.todo-item.completed .todo-text {
+  text-decoration: line-through;
+  color: var(--color-text-tertiary);
+  text-decoration-thickness: 1px;
 }
 
-.todo-card__check {
+.todo-item.completed .todo-tag {
+  opacity: 0.7;
+}
+
+/* ---- 圆形勾选 ---- */
+.todo-check {
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  border-radius: 50%;
+  border: 1.8px solid var(--color-border-medium);
+  cursor: pointer;
   flex-shrink: 0;
-  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.22s ease;
+  background: transparent;
+  position: relative;
+  color: #fff;
 }
 
-.todo-card__body {
+.todo-check:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-bg);
+}
+
+.todo-item.completed .todo-check {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.todo-check svg {
+  width: 11px;
+  height: 11px;
+  opacity: 0;
+  transform: scale(0.5);
+  transition: opacity 0.18s ease, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.todo-item.completed .todo-check svg {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* ---- 内容区 ---- */
+.todo-content {
   flex: 1;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  padding-top: 1px;
 }
 
-.todo-card__title-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-}
-
-.todo-card__priority {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  margin-top: 6px;
-  flex-shrink: 0;
-}
-
-.todo-card__title {
-  font-size: 15px;
+.todo-text {
+  font-size: 15.5px;
+  font-weight: 450;
   color: var(--color-text-primary);
-  font-weight: 500;
-  overflow-wrap: break-word;
-}
-.todo-card__title.line-through {
-  text-decoration: line-through;
-  color: var(--color-text-secondary);
+  word-break: break-word;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
 }
 
-.todo-card__desc {
+.todo-meta {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.todo-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: var(--color-bg);
+  padding: 2px 8px;
+  border-radius: 6px;
+  letter-spacing: -0.01em;
+  line-height: 1.4;
+}
+
+.todo-tag.tag-today { color: var(--color-primary); background: var(--color-primary-bg); }
+.todo-tag.tag-overdue { color: var(--color-error); background: rgba(194, 103, 106, 0.1); }
+.todo-tag.tag-teaching { color: var(--color-sky); background: rgba(111, 168, 220, 0.12); }
+.todo-tag.tag-life { color: var(--color-gold); background: rgba(214, 168, 79, 0.12); }
+.todo-tag.tag-growth { color: var(--color-secondary); background: rgba(107, 158, 133, 0.12); }
+
+.todo-deadline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  color: var(--color-text-tertiary);
+}
+
+.todo-desc {
+  margin-top: 6px;
   font-size: 13px;
   color: var(--color-text-secondary);
   overflow: hidden;
@@ -215,58 +278,70 @@ const priorityColor: Record<string, string> = {
   white-space: nowrap;
 }
 
-/* 截止时间：flex 布局让图标与文字垂直居中（修复图标偏上） */
-.todo-card__deadline {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  color: var(--color-accent-soft);
-  font-weight: 500;
-  line-height: 1.2;
-}
-
-.todo-card__deadline-icon {
-  flex-shrink: 0;
-  display: block;
-}
-
-/* 操作区：hover 显示 */
-.todo-card__actions {
+/* ---- 操作区：删除（常显但弱化，hover 加强） ---- */
+.todo-actions {
   display: flex;
   align-items: center;
   gap: 2px;
   flex-shrink: 0;
-  opacity: 0;
+  margin-top: -2px;
+  opacity: 0.35;
   transition: opacity var(--transition-fast);
 }
 
-.todo-card:hover .todo-card__actions {
+.todo-item:hover .todo-actions,
+.todo-item:focus-within .todo-actions {
   opacity: 1;
 }
 
-.todo-card__action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
+@media (hover: none) {
+  .todo-actions {
+    opacity: 0.55;
+  }
+}
+
+.action-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
   border: none;
-  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--color-text-tertiary);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
 }
 
-.todo-card__action:hover {
-  color: var(--color-primary);
-  background: var(--color-primary-bg);
+.action-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--color-text-primary);
 }
 
-.todo-card__action--danger:hover {
-  color: var(--color-error);
-  background: rgba(194, 103, 106, 0.08);
+.action-btn--delete:hover,
+.action-btn--delete:active {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.action-btn:active {
+  transform: scale(0.92);
+}
+
+.action-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+@media (max-width: 420px) {
+  .todo-item {
+    padding: 13px 12px 13px 14px;
+    gap: 12px;
+  }
+
+  .todo-text {
+    font-size: 15px;
+  }
 }
 </style>

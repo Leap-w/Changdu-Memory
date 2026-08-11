@@ -8,6 +8,7 @@ import {
   updateTodo,
   toggleCompleteTodo,
   softDeleteTodo,
+  softDeleteTodos,
 } from '@/repositories/TodoRepository'
 import type { Todo } from '@/repositories/TodoRepository'
 import { formatLocalDate } from '@/utils/date'
@@ -161,6 +162,23 @@ export const useTodoStore = defineStore('todo', () => {
     }
   }
 
+  /** 清除全部已完成（软删除，进回收站） */
+  async function clearCompleted(): Promise<void> {
+    const ids = todos.value.filter((t) => t.completed).map((t) => t.id)
+    if (ids.length === 0) return
+    loading.value = true
+    error.value = null
+    try {
+      await softDeleteTodos(ids)
+      todos.value = todos.value.filter((t) => !t.completed)
+    } catch (err: unknown) {
+      error.value = err instanceof Error ? err.message : '清除失败'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     todos,
     loading,
@@ -178,5 +196,6 @@ export const useTodoStore = defineStore('todo', () => {
     editTodo,
     toggleTodo,
     removeTodo,
+    clearCompleted,
   }
 })

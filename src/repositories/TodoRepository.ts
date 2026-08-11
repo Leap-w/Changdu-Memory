@@ -77,6 +77,14 @@ export async function softDeleteTodo(id: string): Promise<void> {
   if (error) throw error
 }
 
+/** 批量软删除（进回收站，供「清除已完成」使用） */
+export async function softDeleteTodos(ids: string[]): Promise<void> {
+  if (ids.length === 0) return
+  const { error } = await db.from('todos')
+    .update({ deleted_at: new Date().toISOString() }).in('id', ids)
+  if (error) throw error
+}
+
 export async function fetchDeletedTodos(): Promise<Todo[]> {
   const { data, error } = await db.from('todos').select('*')
     .not('deleted_at', 'is', null).order('deleted_at', { ascending: false })

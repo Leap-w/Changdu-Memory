@@ -297,17 +297,48 @@ async function handleBatchAdd() {
       </div>
     </AppSection>
 
-    <!-- ====== Tabs ====== -->
-    <div class="work-tabs">
-      <button
-        v-for="t in tabs"
-        :key="t"
-        class="work-tabs__btn"
-        :class="{ 'work-tabs__btn--active': activeTab === t }"
-        @click="switchTab(t)"
-      >
-        {{ t }}
-      </button>
+    <!-- ====== Tabs + 顶部右侧添加操作 ====== -->
+    <div class="work-tabs-row">
+      <div class="work-tabs">
+        <button
+          v-for="t in tabs"
+          :key="t"
+          class="work-tabs__btn"
+          :class="{ 'work-tabs__btn--active': activeTab === t }"
+          @click="switchTab(t)"
+        >
+          {{ t }}
+        </button>
+      </div>
+
+      <!-- 当前 Tab 的添加操作，与导航栏同一行右上角 -->
+      <div class="work-tabs-actions">
+        <button
+          v-if="activeTab === '课程表'"
+          class="work-tabs-action"
+          @click="openAddSchedule(1)"
+        >
+          <AppIcon name="plus" size="14" /> 添加课程
+        </button>
+        <button
+          v-else-if="activeTab === '行政安排'"
+          class="work-tabs-action"
+          @click="goWorkCreate()"
+        >
+          <AppIcon name="plus" size="14" /> 添加安排
+        </button>
+        <template v-else-if="activeTab === '学生档案'">
+          <button
+            class="work-tabs-action work-tabs-action--secondary"
+            @click="showBatchModal = true"
+          >
+            批量添加
+          </button>
+          <button class="work-tabs-action" @click="openAddStudent()">
+            <AppIcon name="plus" size="14" /> 添加学生
+          </button>
+        </template>
+      </div>
     </div>
 
     <!-- ================================================================ -->
@@ -333,12 +364,6 @@ async function handleBatchAdd() {
         @edit="openEditSchedule"
         @add="openAddSchedule"
       />
-
-      <div v-if="scheduleStore.schedules.length > 0" class="work-fab-row">
-        <button class="work-fab-btn" @click="openAddSchedule(1)">
-          <AppIcon name="plus" size="16" /> 添加课程
-        </button>
-      </div>
     </div>
 
     <!-- ================================================================ -->
@@ -376,12 +401,6 @@ async function handleBatchAdd() {
           </div>
         </div>
       </div>
-
-      <div class="work-fab-row">
-        <button class="work-fab-btn" @click="goWorkCreate()">
-          <AppIcon name="plus" size="16" /> 添加安排
-        </button>
-      </div>
     </div>
 
     <!-- ================================================================ -->
@@ -415,15 +434,6 @@ async function handleBatchAdd() {
             />
           </div>
         </div>
-      </div>
-
-      <div class="work-fab-row">
-        <button class="work-fab-btn" @click="openAddStudent()">
-          <AppIcon name="plus" size="16" /> 添加学生
-        </button>
-        <button class="work-fab-btn work-fab-btn--secondary" @click="showBatchModal = true">
-          批量添加
-        </button>
       </div>
     </div>
 
@@ -570,11 +580,18 @@ async function handleBatchAdd() {
   margin-bottom: var(--spacing-lg);
 }
 
-/* ---- Tabs ---- */
+/* ---- Tabs + 顶部操作 ---- */
+.work-tabs-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: var(--spacing-lg);
+}
+
 .work-tabs {
   display: flex;
   gap: 4px;
-  margin-bottom: var(--spacing-lg);
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
@@ -608,6 +625,50 @@ async function handleBatchAdd() {
   background: var(--color-primary);
   color: #fff;
   font-weight: var(--font-weight-semibold);
+}
+
+/* ---- 顶部右侧添加按钮（与导航栏同一行） ---- */
+.work-tabs-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.work-tabs-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: #fff;
+  font-size: var(--font-caption, 12px);
+  font-family: inherit;
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-xs);
+}
+
+.work-tabs-action:hover {
+  background: var(--color-primary-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.work-tabs-action--secondary {
+  background: var(--color-bg-white);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-light);
+  box-shadow: var(--shadow-xs);
+}
+
+.work-tabs-action--secondary:hover {
+  background: var(--color-bg);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 .work-tab {
@@ -725,49 +786,6 @@ async function handleBatchAdd() {
 
 .work-empty__btn:hover {
   background: var(--color-primary-dark);
-}
-
-/* ---- FAB row (replaces absolute FAB) ---- */
-.work-fab-row {
-  display: flex;
-  gap: 8px;
-  margin-top: var(--spacing-lg);
-}
-
-.work-fab-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 20px;
-  border: none;
-  border-radius: var(--radius-full);
-  background: var(--color-primary);
-  color: #fff;
-  font-size: var(--font-secondary);
-  font-family: inherit;
-  font-weight: var(--font-weight-semibold);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  box-shadow: var(--shadow-sm);
-}
-
-.work-fab-btn:hover {
-  background: var(--color-primary-dark);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-}
-
-.work-fab-btn--secondary {
-  background: var(--color-bg-white);
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-border-light);
-  box-shadow: var(--shadow-xs);
-}
-
-.work-fab-btn--secondary:hover {
-  background: var(--color-bg);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
 }
 
 /* ---- Work Groups ---- */
@@ -1020,6 +1038,19 @@ async function handleBatchAdd() {
   .modal-overlay {
     align-items: center;
     padding: 40px;
+  }
+}
+
+/* 移动端：导航与添加按钮同行可能过挤，允许换行 */
+@media (max-width: 560px) {
+  .work-tabs-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .work-tabs-actions {
+    width: 100%;
+    justify-content: flex-end;
   }
 }
 </style>
