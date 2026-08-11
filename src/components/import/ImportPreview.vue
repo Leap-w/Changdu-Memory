@@ -3,6 +3,8 @@ import type { ImportError } from '@/utils/import'
 
 defineProps<{
   headers: string[]
+  /** 表头对应的对象字段 key（中文表头无法直接作为取值 key，预览用 rowKeys 取值） */
+  rowKeys: string[]
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   validRows: any[]
   errors: ImportError[]
@@ -52,8 +54,8 @@ defineProps<{
         </thead>
         <tbody>
           <tr v-for="(row, idx) in validRows.slice(0, 5)" :key="idx">
-            <td v-for="h in headers" :key="h">
-              {{ row[h] ?? '' }}
+            <td v-for="(h, ci) in headers" :key="h">
+              {{ (rowKeys[ci] ? row[rowKeys[ci]] : '') ?? '' }}
             </td>
           </tr>
         </tbody>

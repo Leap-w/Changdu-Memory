@@ -123,6 +123,71 @@ function normalizeType(val: string): string {
   return ''
 }
 
+/** 支出分类：中文标签 或 英文 key → 标准英文 key（与数据库 category CHECK 一致） */
+const EXPENSE_CATEGORY_ALIASES: Record<string, string> = {
+  food: 'food', 餐饮: 'food',
+  transport: 'transport', 交通: 'transport',
+  shopping: 'shopping', 零食: 'shopping',
+  accommodation: 'accommodation', 住宿: 'accommodation',
+  work: 'work', 工作: 'work',
+  entertainment: 'entertainment', 娱乐: 'entertainment',
+  medical: 'medical', 医疗: 'medical',
+  other: 'other', 其他: 'other',
+}
+
+/** 收入分类：中文标签 或 英文 key → 标准英文 key */
+const INCOME_CATEGORY_ALIASES: Record<string, string> = {
+  salary: 'salary', 工资: 'salary',
+  subsidy: 'subsidy', 补贴: 'subsidy',
+  bonus: 'bonus', 奖金: 'bonus',
+  part_time: 'part_time', 兼职: 'part_time',
+  red_packet: 'red_packet', 红包: 'red_packet',
+  second_hand: 'second_hand', 出二手: 'second_hand',
+  other: 'other', 其他: 'other',
+}
+
+/** 通用归一化：中文标签或英文 key → 标准英文 key（大小写不敏感） */
+function normalizeVal(raw: string, map: Record<string, string>): string {
+  const t = raw.trim()
+  return map[t] ?? map[t.toLowerCase()] ?? t.toLowerCase()
+}
+
+/** 归一化分类：中文标签或英文 key → 标准英文 key（大小写不敏感） */
+function normalizeCategory(raw: string, type: string): string {
+  const map = type === 'income' ? INCOME_CATEGORY_ALIASES : EXPENSE_CATEGORY_ALIASES
+  return normalizeVal(raw, map)
+}
+
+/** 工作时间段：上午/下午/晚上 或 morning/afternoon/evening → 标准英文 */
+const PERIOD_ALIASES: Record<string, string> = {
+  morning: 'morning', 上午: 'morning',
+  afternoon: 'afternoon', 下午: 'afternoon',
+  evening: 'evening', 晚上: 'evening',
+}
+
+/** 工作分类：会议/监考/培训/活动/其他 或 英文 key → 标准英文（与 DB 约束一致） */
+const WORK_CATEGORY_ALIASES: Record<string, string> = {
+  meeting: 'meeting', 会议: 'meeting',
+  exam_supervision: 'exam_supervision', 监考: 'exam_supervision',
+  training: 'training', 培训: 'training',
+  activity: 'activity', 活动: 'activity',
+  other: 'other', 其他: 'other',
+}
+
+/** 待办分类：教学/生活/成长 或 teaching/life/growth → 标准英文 */
+const TODO_CATEGORY_ALIASES: Record<string, string> = {
+  teaching: 'teaching', 教学: 'teaching',
+  life: 'life', 生活: 'life',
+  growth: 'growth', 成长: 'growth',
+}
+
+/** 优先级：高/中/低 或 high/medium/low → 标准英文 */
+const PRIORITY_ALIASES: Record<string, string> = {
+  high: 'high', 高: 'high',
+  medium: 'medium', 中: 'medium',
+  low: 'low', 低: 'low',
+}
+
 // ====== 各模块验证器 ======
 
 const VALID_PERIODS = ['morning', 'afternoon', 'evening']
@@ -181,7 +246,7 @@ function parseAndValidateWorks(rows: string[][]): ImportPreview<WorkImportRow> {
     if (!r || r.every((c) => !c)) continue
 
     const date = cellStr(r, 0)
-    const period = cellStr(r, 1).toLowerCase()
+    const period = normalizeVal(cellStr(r, 1), PERIOD_ALIASES)
     const title = cellStr(r, 2)
 
     if (!date) {
@@ -193,7 +258,7 @@ function parseAndValidateWorks(rows: string[][]): ImportPreview<WorkImportRow> {
       continue
     }
     if (!VALID_PERIODS.includes(period)) {
-      errors.push({ row: rowNum, message: `时间段无效: "${period}"，应为 morning/afternoon/evening` })
+      errors.push({ row: rowNum, message: `时间段无效: "${cellStr(r, 1)}"，应为 上午/下午/晚上（或 morning/afternoon/evening）` })
       continue
     }
     if (!title) {
@@ -201,9 +266,9 @@ function parseAndValidateWorks(rows: string[][]): ImportPreview<WorkImportRow> {
       continue
     }
 
-    const category = cellStr(r, 3).toLowerCase() || 'other'
+    const category = normalizeVal(cellStr(r, 3), WORK_CATEGORY_ALIASES) || 'other'
     if (!VALID_WORK_CATEGORIES.includes(category)) {
-      errors.push({ row: rowNum, message: `工作分类无效: "${cellStr(r, 3)}"，应为 meeting/exam_supervision/training/activity/other` })
+      errors.push({ row: rowNum, message: `工作分类无效: "${cellStr(r, 3)}"，应为 会议/监考/培训/活动/其他（或对应英文）` })
       continue
     }
 
@@ -233,7 +298,7 @@ function parseAndValidateExpenses(rows: string[][]): ImportPreview<ExpenseImport
     const date = cellStr(r, 0)
     const typeRaw = cellStr(r, 1)
     const type = normalizeType(typeRaw)
-    const category = cellStr(r, 2).toLowerCase()
+    const category = normalizeCategory(cellStr(r, 2), type)
     const amountStr = cellStr(r, 3)
     const timeRaw = cellStr(r, 5)
 
@@ -251,9 +316,12 @@ function parseAndValidateExpenses(rows: string[][]): ImportPreview<ExpenseImport
     }
     const allowedCats = type === 'income' ? VALID_INCOME_CATEGORIES : VALID_EXPENSE_CATEGORIES
     if (!allowedCats.includes(category)) {
+      const catNames = type === 'income'
+        ? ['工资', '补贴', '奖金', '兼职', '红包', '出二手', '其他']
+        : ['餐饮', '交通', '零食', '住宿', '工作', '娱乐', '医疗', '其他']
       errors.push({
         row: rowNum,
-        message: `分类无效: "${cellStr(r, 2)}"，${type === 'income' ? '收入' : '支出'}分类应为 ${allowedCats.join('/')}`,
+        message: `分类无效: "${cellStr(r, 2)}"，${type === 'income' ? '收入' : '支出'}分类应为 ${catNames.join('/')}（或对应英文）`,
       })
       continue
     }
@@ -307,15 +375,15 @@ function parseAndValidateTodos(rows: string[][]): ImportPreview<TodoImportRow> {
       continue
     }
 
-    const category = cellStr(r, 2).toLowerCase() || 'teaching'
+    const category = normalizeVal(cellStr(r, 2), TODO_CATEGORY_ALIASES) || 'teaching'
     if (!VALID_TODO_CATEGORIES.includes(category)) {
-      errors.push({ row: rowNum, message: `分类无效: "${cellStr(r, 2)}"` })
+      errors.push({ row: rowNum, message: `分类无效: "${cellStr(r, 2)}"，应为 教学/生活/成长（或 teaching/life/growth）` })
       continue
     }
 
-    const priority = cellStr(r, 3).toLowerCase() || 'medium'
+    const priority = normalizeVal(cellStr(r, 3), PRIORITY_ALIASES) || 'medium'
     if (!VALID_PRIORITIES.includes(priority)) {
-      errors.push({ row: rowNum, message: `优先级无效: "${cellStr(r, 3)}"` })
+      errors.push({ row: rowNum, message: `优先级无效: "${cellStr(r, 3)}"，应为 高/中/低（或 high/medium/low）` })
       continue
     }
 

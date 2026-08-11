@@ -103,6 +103,7 @@ function handleClear() {
     <div v-if="preview" class="import-card__preview">
       <ImportPreviewTable
         :headers="def?.headers ?? []"
+        :row-keys="def?.rowKeys ?? []"
         :valid-rows="preview.validRows"
         :errors="preview.errors"
         :total-rows="preview.totalRows"

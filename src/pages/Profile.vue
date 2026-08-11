@@ -221,10 +221,8 @@ function goTo(path: string) {
     <!-- ====== Desktop: 2-column | Mobile: single ====== -->
     <div class="profile__grid">
       <!-- ==========================================
-           LEFT COLUMN
+           ① Personal Hero Card（按 我的1.3.html 原型）
            ========================================== -->
-      <div class="profile__left">
-        <!-- Personal Hero Card (按 我的1.3.html 原型) -->
         <div class="profile-hero" @click="openAccount">
           <!-- 背景雪山线稿纹理 -->
           <svg
@@ -350,13 +348,10 @@ function goTo(path: string) {
             >检查更新</span>
           </div>
         </div>
-      </div>
 
       <!-- ==========================================
-           RIGHT COLUMN
+           ② 支教时光 Time capsule（按 我的1.3.html 原型）
            ========================================== -->
-      <div class="profile__right">
-        <!-- Time capsule (按 我的1.3.html 原型：支教第X天 / 已经过X月 / 剩余X天) -->
         <template v-if="hasTimeProfile">
           <div class="profile__time-capsule">
             <div class="time-capsule__head">
@@ -460,7 +455,6 @@ function goTo(path: string) {
             <AppIcon name="chevron-right" size="14" class="profile__menu-arrow" />
           </button>
         </div>
-      </div>
     </div>
 
     <!-- ====== Account Modal ====== -->
@@ -668,41 +662,36 @@ function goTo(path: string) {
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--spacing-xl);
+  /* 移动端（默认）卡片顺序：Hero → 支教时光 → 印记 → 常用功能 → 系统管理 → 品牌
+     用 grid-template-areas 而非 display:contents，兼容性更好（移动浏览器/内置 WebView 也生效） */
+  grid-template-areas:
+    'hero'
+    'time'
+    'stats'
+    'features'
+    'system'
+    'about';
 }
+
+/* 各卡片 grid-area 分配（桌面/移动共用，桌面端在下方 media 中重排） */
+.profile-hero                          { grid-area: hero; }
+.profile__time-capsule                 { grid-area: time; }
+.profile__stats-card                   { grid-area: stats; }
+.profile__menu-card:not(.profile__menu-card--push) { grid-area: features; }
+.profile__menu-card.profile__menu-card--push       { grid-area: system; }
+.profile__about-card                   { grid-area: about; }
 
 @media (min-width: 1024px) {
   .profile__grid {
-    /* 左侧含个人卡片+系统管理+关于，右侧含时间胶囊+印记+常用功能，4/8 保持均衡；
-       默认 stretch 让左右两列等高，右侧卡片 flex-grow 使「常用功能」底部与左侧「关于」底部对齐 */
+    /* 左列（4fr）：Hero + 系统管理 + 品牌；右列（8fr）：支教时光 + 印记 + 常用功能
+       hero 跨 1-2 行、features 跨 3-4 行，让「常用功能」底部与左侧「品牌」底部对齐 */
     grid-template-columns: 4fr 8fr;
+    grid-template-areas:
+      'hero time'
+      'hero stats'
+      'system features'
+      'about features';
     align-items: stretch;
-  }
-}
-
-/* ==========================================
-   Mobile reorder — 仅移动端卡片顺序重排（PC 端保持不变）
-   移动端顺序：Hero → 支教时光 → 在昌都的印记 → 常用功能 → 系统管理 → 品牌卡片
-   通过 display:contents 把左右两列的子卡片提升为 grid item，再用 order 排序
-   ========================================== */
-@media (max-width: 1023px) {
-  .profile__left,
-  .profile__right {
-    display: contents;
-  }
-
-  .profile-hero { order: 1; }
-  .profile__time-capsule { order: 2; }
-  .profile__stats-card { order: 3; }
-  .profile__menu-card:not(.profile__menu-card--push) { order: 4; }
-  .profile__menu-card.profile__menu-card--push { order: 5; }
-  .profile__about-card { order: 6; }
-
-  /* 取消桌面端 flex 对齐用属性，间距统一交给 grid gap */
-  .profile__menu-card.profile__menu-card--push { margin-top: 0; }
-  .profile__time-capsule,
-  .profile__stats-card {
-    flex-grow: 0;
-    margin-bottom: 0;
   }
 }
 
@@ -733,32 +722,11 @@ function goTo(path: string) {
   padding: 20px 24px 4px;
 }
 
-.profile__menu-card + .profile__menu-card {
-  margin-top: var(--spacing-2xl);
-}
-
-/* 需要靠底对齐的菜单卡片（左侧「系统管理」）：左侧列被拉伸时吸附到底部 */
-.profile__menu-card--push {
-  margin-top: auto;
-}
+/* 间距统一交给 .profile__grid 的 grid gap（桌面/移动） */
 
 /* ==========================================
-   LEFT — Personal Hero Card
+   Personal Hero Card
    ========================================== */
-.profile__left {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-lg);
-}
-
-/* ==========================================
-   RIGHT — 纵向 flex，中间卡片 grow 使底部对齐
-   ========================================== */
-.profile__right {
-  display: flex;
-  flex-direction: column;
-}
-
 .profile-hero {
   position: relative;
   overflow: hidden;
@@ -985,11 +953,9 @@ function goTo(path: string) {
 }
 
 /* ==========================================
-   RIGHT — Time capsule
+   Time capsule（grid item，间距交给 grid gap）
    ========================================== */
 .profile__time-capsule {
-  flex-grow: 1;
-  margin-bottom: var(--spacing-2xl);
   padding: 24px;
   border-radius: var(--radius-card, 24px);
   /* 与「在昌都的印记」(AppCard) 保持一致的毛玻璃背景，浅色白 / 深色自适应 */
@@ -1140,9 +1106,7 @@ function goTo(path: string) {
    Stats card (按 我的1.3.html 原型：外层圆角卡片 + 4 个数据勋章)
    ========================================== */
 .profile__stats-card {
-  flex-grow: 1;
-  margin-bottom: var(--spacing-2xl);
-  /* AppCard 提供毛玻璃背景 + 24px 圆角 */
+  /* 间距交给 grid gap；AppCard 提供毛玻璃背景 + 24px 圆角 */
 }
 
 .profile__stats-head {

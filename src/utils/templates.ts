@@ -1,75 +1,71 @@
 /**
- * 昌都记忆 Changdu Memory V5.0
- * Excel 模板生成工具 — 用 SheetJS (xlsx) 生成空白模板
+ * 昌都记忆 Changdu Memory V5.1.6
+ * Excel 导入模板元数据 + 下载
+ *
+ * 模板文件（带样式：表头蓝底、示例行标红、独立的「填写说明」工作表）由
+ * `scripts/gen_templates.py` 预生成到 `public/templates/`，构建时随 public 复制到 dist。
+ * 下载时直接触发浏览器下载静态文件。
+ *
+ * 注意：修改模板内容时，需同步修改 `scripts/gen_templates.py` 中对应定义，
+ * 并运行 `py scripts/gen_templates.py` 重新生成。
  */
-import * as XLSX from 'xlsx'
 
-/** 所有模板定义 */
 interface TemplateDef {
   label: string
   fileName: string
+  /** 数据工作表头（中文，与模板文件一致） */
   headers: string[]
-  exampleRow: (string | number)[]
+  /** 表头对应的对象字段 key（导入预览表取值用） */
+  rowKeys: string[]
 }
 
 export const TEMPLATES: Record<string, TemplateDef> = {
   diaries: {
-    label: '日记模板',
+    label: '日记',
     fileName: '日记导入模板.xlsx',
-    headers: ['date', 'title', 'content'],
-    exampleRow: ['2026-07-29', '昌都的第一堂课', '今天第一次站上讲台...'],
+    headers: ['日期', '标题', '内容'],
+    rowKeys: ['diary_date', 'title', 'content'],
   },
   work_plans: {
-    label: '工作模板',
+    label: '工作',
     fileName: '工作导入模板.xlsx',
-    headers: ['date', 'period', 'title', 'category', 'content'],
-    exampleRow: ['2026-07-29', 'morning', '英语教学', 'activity', '三年级英语课'],
+    headers: ['日期', '时间段', '标题', '分类', '内容'],
+    rowKeys: ['work_date', 'period', 'title', 'category', 'content'],
   },
   expenses: {
-    label: '花费模板',
+    label: '花费',
     fileName: '花费导入模板.xlsx',
-    headers: ['date', 'type', 'category', 'amount', 'description', 'time'],
-    exampleRow: ['2026-07-29', '支出', 'food', 42.5, '午餐', '12:30'],
+    headers: ['日期', '类型', '分类', '金额', '备注', '时间'],
+    rowKeys: ['expense_date', 'type', 'category', 'amount', 'description', 'expense_time'],
   },
   students: {
-    label: '学生档案模板',
+    label: '学生档案',
     fileName: '学生导入模板.xlsx',
-    headers: ['name', 'class_name', 'role', 'notes'],
-    exampleRow: ['张三', '三年三班', '班长', '喜欢画画，数学需要加强'],
+    headers: ['姓名', '班级', '职务', '备注'],
+    rowKeys: ['name', 'class_name', 'role', 'notes'],
   },
   schedules: {
-    label: '课程表模板',
+    label: '课程表',
     fileName: '课程表导入模板.xlsx',
-    headers: ['course_name', 'class_name', 'day_of_week', 'start_time', 'end_time', 'location', 'notes'],
-    exampleRow: ['英语', '三年级', 3, '08:00', '08:45', '教学楼301', ''],
+    headers: ['课程', '班级', '星期', '开始时间', '结束时间', '地点', '备注'],
+    rowKeys: ['course_name', 'class_name', 'day_of_week', 'start_time', 'end_time', 'location', 'notes'],
   },
   todos: {
-    label: '待办模板',
+    label: '待办',
     fileName: '待办导入模板.xlsx',
-    headers: ['date', 'title', 'category', 'priority'],
-    exampleRow: ['2026-07-29', '准备教案', 'teaching', 'high'],
+    headers: ['日期', '标题', '分类', '优先级'],
+    rowKeys: ['todo_date', 'title', 'category', 'priority'],
   },
 }
 
-/** 下载单个模板 Excel */
+/** 下载模板：直接触发浏览器下载 public/templates/ 下的静态文件 */
 export function downloadTemplate(key: string): void {
   const def = TEMPLATES[key]
   if (!def) return
-
-  const wb = XLSX.utils.book_new()
-
-  // 表头行
-  const rows: (string | number)[][] = [def.headers]
-  // 示例数据行
-  rows.push(def.exampleRow)
-  // 留两行空行
-  rows.push(def.headers.map(() => ''))
-
-  const ws = XLSX.utils.aoa_to_sheet(rows)
-
-  // 设置列宽
-  ws['!cols'] = def.headers.map(() => ({ wch: 25 }))
-
-  XLSX.utils.book_append_sheet(wb, ws, 'Sheet1')
-  XLSX.writeFile(wb, def.fileName)
+  const a = document.createElement('a')
+  a.href = `/templates/${encodeURIComponent(def.fileName)}`
+  a.download = def.fileName
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
 }

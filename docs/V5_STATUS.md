@@ -55,6 +55,14 @@
 - 导入校验：支持收入分类（工资/补贴/奖金/兼职/红包/出二手/其他）、时间格式校验（HH:mm），类型为空默认支出
 - `Import.vue` 透传 `type` 与 `expense_time`，可导入收入记录与具体时间
 
+### 导入模板中文化 + 填写说明 + 示例标红
+- **固定值支持中文**：花费分类（餐饮/工作/…）、工作时间段（上午/下午/晚上）、工作分类（会议/监考/培训/活动/其他）、待办分类（教学/生活/成长）、待办优先级（高/中/低）均可用中文填写（英文 key 仍兼容），导入时自动归一化
+- **模板带样式与说明**：由 `scripts/gen_templates.py`（Python 标准库 zipfile 手写 OOXML，npm xlsx 0.18.5 写样式不支持）预生成到 `public/templates/`
+  - 「数据」工作表：中文表头（蓝底白字加粗）、示例行**标红**（填表时删除/覆盖）
+  - 「填写说明」工作表：逐列说明必填/选填、自由填写（绿）还是固定值（橙）及固定值清单
+- `downloadTemplate` 改为直接下载静态文件；前端 `TEMPLATES` 仅保留 label/fileName/headers/rowKeys（预览用）
+- 修复导入预览表：中文表头下按 `rowKeys` 取值，预览不再空白
+
 ### 工作 Excel 导入校验与 DB 对齐
 - 工作分类校验由旧 `teaching/meeting/training/other` 对齐为 DB 现行 `meeting/exam_supervision/training/activity/other`（v5.1 起 teaching 已迁移到 other）
 - 模板示例分类 `teaching` → `activity`；导入透传 `period`/`category`（此前被丢弃）
@@ -121,7 +129,8 @@
 - 行政安排开始时间必填（未填禁止保存并提示）；新增 `utils/date.formatTimeHM` 时间只显示 `HH:mm`
 
 ### P3 — 移动端「我的」与底部导航
-- 移动端「我的」卡片顺序重排：Hero→支教时光→印记→常用功能→系统管理→品牌（`display:contents` + `order`），PC 布局不变
+- 移动端「我的」卡片顺序重排：Hero→支教时光→印记→常用功能→系统管理→品牌，PC 布局不变
+  - v5.1.6 修复：由 `display:contents` + `order` 改为 **`grid-template-areas`**（6 张卡片直接作为 grid 子元素，桌面/移动各定义一套 areas）。`display:contents` 在部分移动浏览器/内置 WebView 不生效导致顺序未重排
 - 底部导航选中/未选中共用同一图形，仅颜色变化（移除 filled/outline 切换）
 - 「我的」底部导航图标改单人像，消除双人图形重叠
 - 设置项点击后颜色不再残留：`:hover` 收进 `@media (hover:hover)` + `:active` 按压反馈
