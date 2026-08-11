@@ -237,8 +237,6 @@ function formatDate(dateStr: string): string {
 const showStudentModal = ref(false)
 const editingStudent = ref<Student | null>(null)
 const studentLoading = ref(false)
-const showBatchModal = ref(false)
-const batchText = ref('')
 const studentForm = ref({ name: '', class_name: '', role: '', notes: '' })
 
 function openAddStudent() {
@@ -265,29 +263,6 @@ async function handleStudentSubmit() {
 async function handleDeleteStudent(id: string) {
   if (!confirm('删除该学生？')) return
   await studentStore.removeStudent(id)
-}
-
-async function handleBatchAdd() {
-  if (!batchText.value.trim()) return
-  const lines = batchText.value.trim().split('\n').filter((l) => l.trim())
-  const students = lines.map((line) => {
-    const parts = line.split(/[,，\s]+/)
-    return {
-      name: parts[0] || '',
-      class_name: parts[1] || '',
-      role: parts[2] || '',
-      notes: parts.slice(3).join(' ') || '',
-    }
-  }).filter((s) => s.name)
-
-  if (!students.length) return
-  studentLoading.value = true
-  try {
-    await studentStore.batchAdd(students)
-    showBatchModal.value = false
-    batchText.value = ''
-  } catch { /* ignore */ }
-  finally { studentLoading.value = false }
 }
 
 // ==========================================
@@ -395,12 +370,6 @@ async function handleBatchAdd() {
           </template>
         </template>
         <template v-else-if="activeTab === '学生档案'">
-          <button
-            class="work-tabs-action work-tabs-action--secondary"
-            @click="showBatchModal = true"
-          >
-            批量添加
-          </button>
           <button class="work-tabs-action" @click="openAddStudent()">
             <AppIcon name="plus" size="14" /> 添加学生
           </button>
@@ -456,7 +425,13 @@ async function handleBatchAdd() {
             <span class="work-group__count">{{ group.items.length }} 项</span>
           </div>
           <div class="work-group__list">
-            <div v-for="w in group.items" :key="w.id" class="work-item-row">
+            <div
+              v-for="w in group.items"
+              :key="w.id"
+              class="work-item-row"
+              :class="{ 'work-item-row--batch': workBatchMode }"
+              @click="workBatchMode ? null : goWorkEdit(w.id)"
+            >
               <!-- 批量编辑模式：左侧多选圆圈 -->
               <button
                 v-if="workBatchMode"
@@ -465,21 +440,12 @@ async function handleBatchAdd() {
                 :aria-pressed="selectedWorkIds.includes(w.id)"
                 @click.stop="toggleSelectWork(w.id)"
               >
-                <AppIcon v-if="selectedWorkIds.includes(w.id)" name="check" size="11" />
+                <AppIcon v-if="selectedWorkIds.includes(w.id)" name="check" size="12" />
               </button>
               <WorkCard
                 :work="w"
                 class="work-item-row__card"
               />
-              <!-- 普通模式：单个编辑按钮 -->
-              <button
-                v-if="!workBatchMode"
-                class="work-item-row__edit"
-                title="编辑"
-                @click.stop="goWorkEdit(w.id)"
-              >
-                <AppIcon name="edit" size="13" />
-              </button>
             </div>
           </div>
         </div>
@@ -591,38 +557,6 @@ async function handleBatchAdd() {
                   {{ studentLoading ? '…' : '保存' }}
                 </button>
               </div>
-            </div>
-          </div>
-        </div>
-      </Transition>
-
-      <!-- Batch add modal -->
-      <Transition name="modal">
-        <div v-if="showBatchModal" class="modal-overlay" @click.self="showBatchModal = false">
-          <div class="modal-sheet">
-            <h3 class="modal-sheet__title">
-              批量添加学生
-            </h3>
-            <p class="modal-sheet__hint">
-              每行一个学生，格式：姓名 班级 职务 备注（用空格或逗号分隔）
-            </p>
-            <textarea
-              v-model="batchText"
-              class="modal-textarea"
-              rows="8"
-              placeholder="张三 三年三班 班长 喜欢画画&#10;李四 三年三班 学习委员"
-            />
-            <div class="modal-form__actions">
-              <button class="modal-btn modal-btn--cancel" @click="showBatchModal = false">
-                取消
-              </button>
-              <button
-                class="modal-btn modal-btn--save"
-                :disabled="studentLoading || !batchText.trim()"
-                @click="handleBatchAdd"
-              >
-                {{ studentLoading ? '导入中…' : `导入 ${batchText.trim().split('\n').filter(l => l.trim()).length} 人` }}
-              </button>
             </div>
           </div>
         </div>
@@ -934,15 +868,19 @@ async function handleBatchAdd() {
   min-width: 0;
 }
 
-/* 批量编辑：左侧多选圆圈 */
+/* 批量编辑：左侧多选圆圈（放大、下移、垂直居中） */
+.work-item-row--batch {
+  align-items: center;
+}
+
 .work-item-row__select {
-  width: 22px;
-  height: 22px;
-  margin-top: 14px;
-  margin-left: 6px;
+  width: 26px;
+  height: 26px;
+  margin-left: 8px;
+  align-self: center;
   flex-shrink: 0;
   border-radius: 50%;
-  border: 1.8px solid var(--color-border-medium);
+  border: 2px solid var(--color-border-medium);
   background: var(--color-bg-white);
   cursor: pointer;
   display: flex;
@@ -961,28 +899,6 @@ async function handleBatchAdd() {
 .work-item-row__select--checked {
   background: var(--color-primary);
   border-color: var(--color-primary);
-}
-
-.work-item-row__edit {
-  flex-shrink: 0;
-  padding: 8px;
-  margin-top: 4px;
-  border: none;
-  background: transparent;
-  color: var(--color-text-tertiary);
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-  opacity: 0;
-  transition: all var(--transition-fast);
-}
-
-.work-item-row:hover .work-item-row__edit {
-  opacity: 1;
-}
-
-.work-item-row__edit:hover {
-  color: var(--color-primary);
-  background: var(--color-primary-bg);
 }
 
 /* ---- 批量编辑底部操作条 ---- */
@@ -1103,13 +1019,6 @@ async function handleBatchAdd() {
   text-align: center;
 }
 
-.modal-sheet__hint {
-  font-size: var(--font-caption);
-  color: var(--color-text-tertiary);
-  margin: 0 0 14px;
-  line-height: var(--leading-relaxed);
-}
-
 .modal-sheet__del {
   display: block;
   width: 100%;
@@ -1150,23 +1059,6 @@ async function handleBatchAdd() {
 .modal-input:focus {
   border-color: var(--color-primary);
   background: var(--color-bg-white);
-}
-
-.modal-textarea {
-  padding: 12px 14px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: var(--font-caption);
-  font-family: monospace;
-  outline: none;
-  resize: vertical;
-  line-height: 1.6;
-  background: var(--color-bg);
-  transition: border-color var(--transition-fast);
-}
-
-.modal-textarea:focus {
-  border-color: var(--color-primary);
 }
 
 .modal-form__actions {

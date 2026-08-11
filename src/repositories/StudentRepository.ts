@@ -51,22 +51,3 @@ export async function deleteStudent(id: string): Promise<void> {
   if (error) throw error
 }
 
-/** 批量添加学生 */
-export async function batchCreateStudents(
-  students: { name: string; class_name: string; role: string; notes: string }[],
-): Promise<Student[]> {
-  const user = (await supabase.auth.getUser()).data.user
-  if (!user) throw new Error('未登录')
-
-  const results: Student[] = []
-  for (const s of students) {
-    const { data, error } = await db
-      .from('students')
-      .insert({ user_id: user.id, name: s.name, class_name: s.class_name, role: s.role, notes: s.notes })
-      .select('*')
-      .single()
-    if (error) throw error
-    results.push(data as Student)
-  }
-  return results
-}

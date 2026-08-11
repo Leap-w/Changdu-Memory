@@ -267,7 +267,12 @@ const footerCountText = computed(() =>
         </p>
       </div>
       <div v-else class="todo-list">
-        <div v-for="t in filteredTodos" :key="t.id" class="todo-item-row">
+        <div
+          v-for="t in filteredTodos"
+          :key="t.id"
+          class="todo-item-row"
+          :class="{ 'todo-item-row--batch': todoBatchMode }"
+        >
           <!-- 批量编辑模式：左侧多选圆圈 -->
           <button
             v-if="todoBatchMode"
@@ -276,7 +281,7 @@ const footerCountText = computed(() =>
             :aria-pressed="selectedTodoIds.includes(t.id)"
             @click.stop="toggleSelectTodo(t.id)"
           >
-            <AppIcon v-if="selectedTodoIds.includes(t.id)" name="check" size="11" />
+            <AppIcon v-if="selectedTodoIds.includes(t.id)" name="check" size="12" />
           </button>
           <TodoCard
             :todo="t"
@@ -592,20 +597,24 @@ const footerCountText = computed(() =>
   gap: 4px;
 }
 
+.todo-item-row--batch {
+  align-items: center;
+}
+
 .todo-item-row__card {
   flex: 1;
   min-width: 0;
 }
 
-/* 批量编辑：左侧多选圆圈 */
+/* 批量编辑：左侧多选圆圈（放大、下移、垂直居中，与行政安排一致） */
 .todo-item-row__select {
-  width: 22px;
-  height: 22px;
-  margin-top: 14px;
-  margin-left: 6px;
+  width: 26px;
+  height: 26px;
+  margin-left: 8px;
+  align-self: center;
   flex-shrink: 0;
   border-radius: 50%;
-  border: 1.8px solid var(--color-border-medium);
+  border: 2px solid var(--color-border-medium);
   background: var(--color-bg-white);
   cursor: pointer;
   display: flex;

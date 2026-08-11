@@ -9,7 +9,7 @@ defineProps<{
 </script>
 
 <template>
-  <AppCard class="wc">
+  <AppCard class="wc wc--clickable">
     <div class="wc__inner">
       <div class="wc__body">
         <div class="wc__head">
@@ -30,6 +30,16 @@ defineProps<{
 </template>
 
 <style scoped>
+.wc--clickable {
+  cursor: pointer;
+  transition: box-shadow var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.wc--clickable:hover {
+  border-color: var(--color-border);
+  box-shadow: var(--shadow-md);
+}
+
 .wc__inner {
   display: flex;
   align-items: center;

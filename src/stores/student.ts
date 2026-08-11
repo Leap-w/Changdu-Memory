@@ -5,7 +5,6 @@ import {
   createStudent,
   updateStudent,
   deleteStudent,
-  batchCreateStudents,
 } from '@/repositories/StudentRepository'
 import type { Student } from '@/repositories/StudentRepository'
 
@@ -87,22 +86,5 @@ export const useStudentStore = defineStore('student', () => {
     }
   }
 
-  async function batchAdd(list: {
-    name: string; class_name: string; role: string; notes: string
-  }[]): Promise<number> {
-    loading.value = true
-    error.value = null
-    try {
-      const created = await batchCreateStudents(list)
-      students.value.push(...created)
-      return created.length
-    } catch (err: unknown) {
-      error.value = err instanceof Error ? err.message : '批量添加失败'
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  return { students, loading, error, groupedByClass, loadStudents, addStudent, editStudent, removeStudent, batchAdd }
+  return { students, loading, error, groupedByClass, loadStudents, addStudent, editStudent, removeStudent }
 })
