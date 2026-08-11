@@ -60,9 +60,9 @@ export const useMoodStore = defineStore('mood', () => {
     }
   }
 
-  /** 新增一条心情记录 */
-  async function addRecord(label: string, emoji: string, note: string): Promise<MoodRecord> {
-    const rec = await createMood({ label, emoji, note })
+  /** 新增一条心情记录（mood_date 可选，JSON 恢复时保留原日期） */
+  async function addRecord(label: string, emoji: string, note: string, moodDate?: string): Promise<MoodRecord> {
+    const rec = await createMood({ label, emoji, note, ...(moodDate ? { mood_date: moodDate } : {}) })
     records.value.unshift(rec)
     return rec
   }

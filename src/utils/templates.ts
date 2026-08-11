@@ -23,13 +23,13 @@ export const TEMPLATES: Record<string, TemplateDef> = {
     label: '工作模板',
     fileName: '工作导入模板.xlsx',
     headers: ['date', 'period', 'title', 'category', 'content'],
-    exampleRow: ['2026-07-29', 'morning', '英语教学', 'teaching', '三年级英语课'],
+    exampleRow: ['2026-07-29', 'morning', '英语教学', 'activity', '三年级英语课'],
   },
   expenses: {
     label: '花费模板',
     fileName: '花费导入模板.xlsx',
-    headers: ['date', 'category', 'amount', 'description'],
-    exampleRow: ['2026-07-29', 'food', 42.5, '午餐'],
+    headers: ['date', 'type', 'category', 'amount', 'description', 'time'],
+    exampleRow: ['2026-07-29', '支出', 'food', 42.5, '午餐', '12:30'],
   },
   students: {
     label: '学生档案模板',

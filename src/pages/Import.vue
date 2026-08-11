@@ -8,6 +8,10 @@ import { useExpenseStore } from '@/stores/expense'
 import { useTodoStore } from '@/stores/todo'
 import { useStudentStore } from '@/stores/student'
 import { useScheduleStore } from '@/stores/schedule'
+import { useAssetStore } from '@/stores/asset'
+import { useWelfareStore } from '@/stores/welfare'
+import { useMemoryStore } from '@/stores/memory'
+import { useMoodStore } from '@/stores/mood'
 import ImportCard from '@/components/import/ImportCard.vue'
 
 const router = useRouter()
@@ -19,6 +23,10 @@ const expenseStore = useExpenseStore()
 const todoStore = useTodoStore()
 const studentStore = useStudentStore()
 const scheduleStore = useScheduleStore()
+const assetStore = useAssetStore()
+const welfareStore = useWelfareStore()
+const memoryStore = useMemoryStore()
+const moodStore = useMoodStore()
 
 const importingModule = ref<string | null>(null)
 const jsonImporting = ref(false)
@@ -33,15 +41,23 @@ async function handleImport(moduleKey: string, validRows: any[]) {
         if (moduleKey === 'diaries') {
           await diaryStore.addDiary({ title: row.title || '', content: row.content || '', diary_date: row.diary_date || row.date || '' })
         } else if (moduleKey === 'work_plans') {
-          await workStore.addWork({ title: row.title || '', content: row.content || '', work_date: row.work_date || row.date || '' })
+          await workStore.addWork({ title: row.title || '', content: row.content || '', work_date: row.work_date || row.date || '', period: row.period || 'morning', category: row.category || 'other' })
         } else if (moduleKey === 'expenses') {
-          await expenseStore.addExpense({ amount: Number(row.amount) || 0, type: row.type || 'expense', category: row.category || 'other', description: row.description || '', expense_date: row.expense_date || row.date || '' })
+          await expenseStore.addExpense({ amount: Number(row.amount) || 0, type: row.type || 'expense', category: row.category || 'other', description: row.description || '', expense_date: row.expense_date || row.date || '', expense_time: row.expense_time || null })
         } else if (moduleKey === 'todos') {
           await todoStore.addTodo({ title: row.title || '', description: row.description || '', todo_date: row.todo_date || row.date || '', priority: row.priority || 'medium', category: row.category || 'life' })
         } else if (moduleKey === 'students') {
           await studentStore.addStudent({ name: row.name, class_name: row.class_name || '', role: row.role || '', notes: row.notes || '' })
         } else if (moduleKey === 'schedules') {
           await scheduleStore.addSchedule({ course_name: row.course_name, class_name: row.class_name || '', day_of_week: row.day_of_week || 1, start_time: row.start_time || '08:00', end_time: row.end_time || '09:00', location: row.location || '', notes: row.notes || '' })
+        } else if (moduleKey === 'assets') {
+          await assetStore.addAsset({ name: row.name || '现金', amount: Number(row.amount) || 0 })
+        } else if (moduleKey === 'welfare_items') {
+          await welfareStore.addItem({ title: row.title || '', category: row.category || 'material', description: row.description || '', value_estimate: Number(row.value_estimate) || 0, received_date: row.received_date || row.date || '' })
+        } else if (moduleKey === 'memories') {
+          await memoryStore.addMemory({ title: row.title || '', content: row.content || '', event_date: row.event_date || row.date || '', category: row.category || 'life', location: row.location || '', image_urls: row.image_urls || [] })
+        } else if (moduleKey === 'moods') {
+          await moodStore.addRecord(row.label || '心情', row.emoji || '😊', row.note || '', row.mood_date)
         }
         count++
       } catch { /* skip */ }
@@ -62,11 +78,19 @@ async function handleJsonRestore(e: Event) {
   try {
     const text = await file.text()
     const data = JSON.parse(text)
+    // 可恢复模块（与导出范围对齐）：日记/工作/花费/待办/学生/课程表/资产/福利/大事记/心情
+    // 关联关系复杂或尚未建表的模块（地点+照片、标签关联、倒计时、旅程节点、心情自定义选项）暂不支持恢复
     const modules = [
       { key: 'diaries', store: diaryStore },
       { key: 'work_plans', store: workStore },
       { key: 'expenses', store: expenseStore },
       { key: 'todos', store: todoStore },
+      { key: 'students', store: studentStore },
+      { key: 'schedules', store: scheduleStore },
+      { key: 'assets', store: assetStore },
+      { key: 'welfare_items', store: welfareStore },
+      { key: 'memories', store: memoryStore },
+      { key: 'moods', store: moodStore },
     ]
     let total = 0
     for (const mod of modules) {

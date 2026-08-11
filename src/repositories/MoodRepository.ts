@@ -23,13 +23,17 @@ export async function fetchMoods(): Promise<MoodRecord[]> {
 
 /** 新增一条心情记录（一天可多条） */
 export async function createMood(
-  fields: { label: string; emoji: string; note: string },
+  fields: { label: string; emoji: string; note: string; mood_date?: string },
 ): Promise<MoodRecord> {
   const user = (await supabase.auth.getUser()).data.user
   if (!user) throw new Error('未登录')
+  const insertData: { user_id: string; label: string; emoji: string; note: string; mood_date?: string } = {
+    user_id: user.id, label: fields.label, emoji: fields.emoji, note: fields.note,
+  }
+  if (fields.mood_date) insertData.mood_date = fields.mood_date
   const { data, error } = await db
     .from('moods')
-    .insert({ user_id: user.id, ...fields })
+    .insert(insertData)
     .select('*')
     .single()
   if (error) throw error

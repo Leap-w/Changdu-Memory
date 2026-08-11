@@ -130,7 +130,7 @@ export const CATEGORY_LABELS: Record<string, string> = {
   accommodation: '住宿',
   entertainment: '娱乐',
   daily: '日用品',
-  study: '学习',
+  work: '工作',
   medical: '医疗',
   // work
   teaching: '教学',

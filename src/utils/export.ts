@@ -1,9 +1,11 @@
 /**
- * 昌都记忆 Changdu Memory V5.0
+ * 昌都记忆 Changdu Memory V5.1.6
  * 数据导出工具 — JSON 格式
  *
- * 导出内容：用户基本信息、时间配置、日记、待办、工作、花费、地点、照片metadata、标签
- * 不导出：照片文件（仅导出 storage_path）
+ * 导出内容：用户基本信息、时间配置、日记、待办、工作、花费、标签，
+ * 以及 学生/课程表/资产/福利/大事记/心情/地点/照片metadata/倒计时/旅程节点/心情选项。
+ * 不导出：照片文件（仅导出 storage_path）。
+ * 注：未建表或读取失败的表会安全跳过（返回 []/null），不阻塞其他模块。
  */
 
 import { supabase } from '@/services/supabase'
@@ -23,6 +25,19 @@ export interface ExportData {
   expenses: JsonValue[]
   tags: JsonValue[]
   diary_tags: JsonValue[]
+  students: JsonValue[]
+  schedules: JsonValue[]
+  assets: JsonValue[]
+  welfare_items: JsonValue[]
+  memories: JsonValue[]
+  moods: JsonValue[]
+  locations: JsonValue[]
+  photo_records: JsonValue[]
+  countdowns: JsonValue[]
+  diary_photos: JsonValue[]
+  memory_photos: JsonValue[]
+  mood_options: JsonValue[]
+  journey_milestones: JsonValue[]
 }
 
 /**
@@ -32,7 +47,7 @@ export interface ExportData {
 export async function exportAllData(): Promise<ExportData> {
   const data: ExportData = {
     exported_at: new Date().toISOString(),
-    version: '5.1.5',
+    version: '5.1.6',
     profile: null,
     time_profile: null,
     diaries: [],
@@ -41,6 +56,19 @@ export async function exportAllData(): Promise<ExportData> {
     expenses: [],
     tags: [],
     diary_tags: [],
+    students: [],
+    schedules: [],
+    assets: [],
+    welfare_items: [],
+    memories: [],
+    moods: [],
+    locations: [],
+    photo_records: [],
+    countdowns: [],
+    diary_photos: [],
+    memory_photos: [],
+    mood_options: [],
+    journey_milestones: [],
   }
 
   // 安全获取，单模块失败不影响其他
@@ -83,17 +111,33 @@ export async function exportAllData(): Promise<ExportData> {
     }
   }
 
-  // 并行导出所有模块
-  const [profile, timeProfile, diaries, todos, works, expenses, tags] =
-    await Promise.all([
-      safeSingle('profiles'),
-      safeSingle('time_profile'),
-      safeFetch('diaries'),
-      safeFetch('todos'),
-      safeFetch('work_plans'),
-      safeFetch('expenses'),
-      safeFetch('tags'),
-    ])
+  // 并行导出所有模块（未建表/失败的表返回 []/null，安全跳过）
+  const [
+    profile, timeProfile, diaries, todos, works, expenses, tags,
+    students, schedules, assets, welfareItems, memories, moods,
+    locations, photoRecords, countdowns, diaryPhotos, memoryPhotos, moodOptions, journeyMilestones,
+  ] = await Promise.all([
+    safeSingle('profiles'),
+    safeSingle('time_profile'),
+    safeFetch('diaries'),
+    safeFetch('todos'),
+    safeFetch('work_plans'),
+    safeFetch('expenses'),
+    safeFetch('tags'),
+    safeFetch('students'),
+    safeFetch('schedules'),
+    safeFetch('assets'),
+    safeFetch('welfare_items'),
+    safeFetch('memories'),
+    safeFetch('moods'),
+    safeFetch('locations'),
+    safeFetch('photo_records'),
+    safeFetch('countdowns'),
+    safeFetch('diary_photos'),
+    safeFetch('memory_photos'),
+    safeFetch('mood_options'),
+    safeFetch('journey_milestones'),
+  ])
 
   data.profile = profile
   data.time_profile = timeProfile
@@ -102,6 +146,19 @@ export async function exportAllData(): Promise<ExportData> {
   data.works = works
   data.expenses = expenses
   data.tags = tags
+  data.students = students
+  data.schedules = schedules
+  data.assets = assets
+  data.welfare_items = welfareItems
+  data.memories = memories
+  data.moods = moods
+  data.locations = locations
+  data.photo_records = photoRecords
+  data.countdowns = countdowns
+  data.diary_photos = diaryPhotos
+  data.memory_photos = memoryPhotos
+  data.mood_options = moodOptions
+  data.journey_milestones = journeyMilestones
 
   // 标签关联数据
   if (diaries.length > 0) {

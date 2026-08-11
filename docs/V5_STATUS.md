@@ -1,7 +1,7 @@
-# 昌都记忆 Changdu Memory v5.1.5 — 开发状态
+# 昌都记忆 Changdu Memory v5.1.6 — 开发状态
 
 > 最新更新: 2026-08-11
-> 版本: v5.1.5
+> 版本: v5.1.6
 > Build: `npm run build` ✅ 0 errors
 > Type Check: `vue-tsc -b --noEmit` ✅ 0 errors
 > Lint: `eslint` ✅ 0 errors（106 条历史 warning）
@@ -30,7 +30,47 @@
 
 ---
 
-## 3. v5.1.5 更新摘要
+## 3. v5.1.6 更新摘要
+
+### 记账添加按钮置顶
+- 账本页 4 个 Tab（支出/收入/资产/福利）的「记一笔 / 添加资产 / 添加福利」按钮从列表底部移到列表上方，记录多时无需滑到底部即可新增
+- 空态仍显示居中按钮；`.expense-page__actions` 由 `margin-top` 改为 `margin-bottom`
+
+### 支出分类「学习」→「工作」（DB key `study` → `work`）
+- 编辑页分类、账本卡片图标/标签/配色、分类占比、统计页、Excel 导出标签、导入校验全部同步
+- 图标由 `book` 改为 `briefcase`（工作/公文包）
+- **需手动执行迁移（schema.sql 第 30 段；先 DROP 约束再 UPDATE 数据，否则旧约束会拦下 study→work 的 UPDATE 报 23514）**：
+  ```sql
+  ALTER TABLE public.expenses DROP CONSTRAINT IF EXISTS expenses_category_check;
+  UPDATE public.expenses SET category = 'work' WHERE category = 'study';
+  ALTER TABLE public.expenses ADD CONSTRAINT expenses_category_check
+    CHECK (category IN (
+      'food', 'transport', 'shopping', 'accommodation', 'work', 'entertainment', 'medical', 'other',
+      'salary', 'subsidy', 'bonus', 'part_time', 'red_packet', 'second_hand'
+    ));
+  ```
+
+### 花费 Excel 导入模板对齐系统
+- 模板由 4 列扩展为 6 列：`日期 / 类型(支出·收入) / 分类 / 金额 / 备注 / 时间(HH:mm)`
+- 导入校验：支持收入分类（工资/补贴/奖金/兼职/红包/出二手/其他）、时间格式校验（HH:mm），类型为空默认支出
+- `Import.vue` 透传 `type` 与 `expense_time`，可导入收入记录与具体时间
+
+### 工作 Excel 导入校验与 DB 对齐
+- 工作分类校验由旧 `teaching/meeting/training/other` 对齐为 DB 现行 `meeting/exam_supervision/training/activity/other`（v5.1 起 teaching 已迁移到 other）
+- 模板示例分类 `teaching` → `activity`；导入透传 `period`/`category`（此前被丢弃）
+
+### JSON 全量导出 / 恢复补全
+- 「导出所有数据」由 8 张表扩展至全部 21 张表：新增 学生/课程表/资产/福利/大事记/心情/地点/照片/倒计时/旅程节点/心情选项（未建表安全跳过）
+- JSON 恢复由 4 模块扩至 10 模块：新增 学生/课程表/资产/福利/大事记/心情（心情保留原 mood_date）
+- 暂不恢复（关联关系复杂）：地点+照片、日记照片、大事记照片、标签关联、倒计时、旅程节点、心情自定义选项
+
+### 杂项
+- 设置页数据导入描述与支持模块对齐
+- 版本号统一为 5.1.6
+
+---
+
+## 3a. v5.1.5 更新摘要
 
 ### 账本编辑体验修复
 - **修复编辑记录原信息不显示**：根因是 `ExpenseEdit` 里 `expenseStore.expenses.find()` 是同步操作，`loading` 在同一 tick 内翻转，`v-if="!loading"` 的子组件 `ExpenseEditor` 从未真正卸载重挂，其本地 ref 停留在首次挂载的默认值。修复：`ExpenseEditor` 增加 `watch`（immediate）同步 props → 本地状态；编辑页新增 `store.getExpenseById`（缓存未命中时直连数据库 `fetchExpenseById`），刷新/直达编辑页也能正常预填
@@ -66,7 +106,7 @@
 
 ---
 
-## 3a. v5.1.4 更新摘要
+## 3b. v5.1.4 更新摘要
 
 ### P1 — 路由 / 数据逻辑修复
 - 行政安排编辑页"取消"不再随机跳课程表：`Work.vue` Tab 状态同步写入 URL query（`router.replace`），`router.back()` 稳定返回原 Tab
@@ -113,7 +153,7 @@
 
 ---
 
-## 3b. v5.1.3 更新摘要
+## 3c. v5.1.3 更新摘要
 
 ### 全站图标统一
 - 所有「昌」字圆形 logo（顶部导航 / 登录页 / 我的页品牌卡）改用用户提供的图片 `public/icon-180.png`

@@ -38,9 +38,13 @@ interface WorkImportRow {
 
 interface ExpenseImportRow {
   expense_date: string
+  /** 支出 / 收入（默认支出） */
+  type: string
   category: string
   amount: number
   description: string
+  /** 具体时间 'HH:mm'，可空 */
+  expense_time: string | null
 }
 
 interface TodoImportRow {
@@ -107,12 +111,26 @@ function cellStr(row: string[], col: number): string {
   return (row[col] ?? '').toString().trim()
 }
 
+/**
+ * 归一化账本类型：'支出'/'expense' → expense，'收入'/'income' → income。
+ * 空值默认支出；无法识别返回空串（由调用方报错）。
+ */
+function normalizeType(val: string): string {
+  const v = val.trim().toLowerCase()
+  if (!v) return 'expense'
+  if (v === '支出' || v === 'expense') return 'expense'
+  if (v === '收入' || v === 'income') return 'income'
+  return ''
+}
+
 // ====== 各模块验证器 ======
 
 const VALID_PERIODS = ['morning', 'afternoon', 'evening']
-const VALID_WORK_CATEGORIES = ['teaching', 'meeting', 'training', 'other']
-// 与数据库 expenses.category CHECK 约束保持一致（含购物→零食、住宿、娱乐）
-const VALID_EXPENSE_CATEGORIES = ['food', 'transport', 'shopping', 'accommodation', 'study', 'entertainment', 'medical', 'other']
+// 与数据库 work_plans.category CHECK 约束保持一致（v5.1 起 teaching 迁移到 other，新增 exam_supervision/activity）
+const VALID_WORK_CATEGORIES = ['meeting', 'exam_supervision', 'training', 'activity', 'other']
+// 与数据库 expenses.category CHECK 约束保持一致（支出分类：学习→工作；收入分类独立校验）
+const VALID_EXPENSE_CATEGORIES = ['food', 'transport', 'shopping', 'accommodation', 'work', 'entertainment', 'medical', 'other']
+const VALID_INCOME_CATEGORIES = ['salary', 'subsidy', 'bonus', 'part_time', 'red_packet', 'second_hand', 'other']
 const VALID_TODO_CATEGORIES = ['teaching', 'life', 'growth']
 const VALID_PRIORITIES = ['high', 'medium', 'low']
 
@@ -183,9 +201,9 @@ function parseAndValidateWorks(rows: string[][]): ImportPreview<WorkImportRow> {
       continue
     }
 
-    const category = cellStr(r, 3).toLowerCase() || 'teaching'
+    const category = cellStr(r, 3).toLowerCase() || 'other'
     if (!VALID_WORK_CATEGORIES.includes(category)) {
-      errors.push({ row: rowNum, message: `工作分类无效: "${cellStr(r, 3)}"，应为 teaching/meeting/training/other` })
+      errors.push({ row: rowNum, message: `工作分类无效: "${cellStr(r, 3)}"，应为 meeting/exam_supervision/training/activity/other` })
       continue
     }
 
@@ -206,14 +224,18 @@ function parseAndValidateExpenses(rows: string[][]): ImportPreview<ExpenseImport
   const errors: ImportError[] = []
   const dataRows = rows.slice(1)
 
+  // 列位：0=日期 1=类型(支出/收入) 2=分类 3=金额 4=备注 5=时间(HH:mm)
   for (let i = 0; i < dataRows.length; i++) {
     const rowNum = i + 2
     const r = dataRows[i]
     if (!r || r.every((c) => !c)) continue
 
     const date = cellStr(r, 0)
-    const category = cellStr(r, 1).toLowerCase()
-    const amountStr = cellStr(r, 2)
+    const typeRaw = cellStr(r, 1)
+    const type = normalizeType(typeRaw)
+    const category = cellStr(r, 2).toLowerCase()
+    const amountStr = cellStr(r, 3)
+    const timeRaw = cellStr(r, 5)
 
     if (!date) {
       errors.push({ row: rowNum, message: '日期不能为空' })
@@ -223,10 +245,15 @@ function parseAndValidateExpenses(rows: string[][]): ImportPreview<ExpenseImport
       errors.push({ row: rowNum, message: `日期格式错误: "${date}"` })
       continue
     }
-    if (!VALID_EXPENSE_CATEGORIES.includes(category)) {
+    if (typeRaw && !type) {
+      errors.push({ row: rowNum, message: `类型无效: "${typeRaw}"，应为 支出/收入 或 expense/income` })
+      continue
+    }
+    const allowedCats = type === 'income' ? VALID_INCOME_CATEGORIES : VALID_EXPENSE_CATEGORIES
+    if (!allowedCats.includes(category)) {
       errors.push({
         row: rowNum,
-        message: `分类无效: "${cellStr(r, 1)}"，应为 food/transport/shopping/accommodation/study/entertainment/medical/other`,
+        message: `分类无效: "${cellStr(r, 2)}"，${type === 'income' ? '收入' : '支出'}分类应为 ${allowedCats.join('/')}`,
       })
       continue
     }
@@ -236,12 +263,18 @@ function parseAndValidateExpenses(rows: string[][]): ImportPreview<ExpenseImport
       errors.push({ row: rowNum, message: `金额无效: "${amountStr}"，必须为正数` })
       continue
     }
+    if (timeRaw && !/^\d{1,2}:\d{2}$/.test(timeRaw)) {
+      errors.push({ row: rowNum, message: `时间格式错误: "${timeRaw}"，应为 HH:mm（如 14:30）` })
+      continue
+    }
 
     validRows.push({
       expense_date: date,
+      type,
       category,
       amount: Math.round(amount * 100) / 100,
-      description: cellStr(r, 3),
+      description: cellStr(r, 4),
+      expense_time: timeRaw || null,
     })
   }
 

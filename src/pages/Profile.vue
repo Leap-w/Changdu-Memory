@@ -168,7 +168,7 @@ const showDataMgmt = ref(false)
 const showExportModal = ref(false)
 
 // ====== 版本检查（当前为本地离线检查，预留未来接入真实版本服务） ======
-const APP_VERSION = '5.1.5'
+const APP_VERSION = '5.1.6'
 const showUpdateCheck = ref(false)
 
 function openUpdateCheck() {

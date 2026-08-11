@@ -178,7 +178,7 @@ CREATE TABLE IF NOT EXISTS public.expenses (
   user_id      UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   amount       NUMERIC(10,2) NOT NULL CHECK (amount > 0),
   category     TEXT NOT NULL DEFAULT 'other'
-               CHECK (category IN ('food','transport','daily','study','medical','other')),
+               CHECK (category IN ('food','transport','daily','work','medical','other')),
   description  TEXT DEFAULT '',
   expense_date DATE NOT NULL DEFAULT CURRENT_DATE,
   created_at   TIMESTAMPTZ DEFAULT now(),
@@ -573,7 +573,7 @@ ALTER TABLE public.expenses DROP CONSTRAINT IF EXISTS expenses_category_check;
 ALTER TABLE public.expenses ADD CONSTRAINT expenses_category_check
   CHECK (category IN (
     -- 支出分类
-    'food', 'transport', 'shopping', 'accommodation', 'study', 'entertainment', 'medical', 'other',
+    'food', 'transport', 'shopping', 'accommodation', 'work', 'entertainment', 'medical', 'other',
     -- 收入分类
     'salary', 'subsidy', 'bonus', 'part_time'
   ));
@@ -923,7 +923,27 @@ ALTER TABLE public.expenses DROP CONSTRAINT IF EXISTS expenses_category_check;
 ALTER TABLE public.expenses ADD CONSTRAINT expenses_category_check
   CHECK (category IN (
     -- 支出分类
-    'food', 'transport', 'shopping', 'accommodation', 'study', 'entertainment', 'medical', 'other',
+    'food', 'transport', 'shopping', 'accommodation', 'work', 'entertainment', 'medical', 'other',
+    -- 收入分类
+    'salary', 'subsidy', 'bonus', 'part_time', 'red_packet', 'second_hand'
+  ));
+
+-- ============================================================
+-- 30. expenses 支出分类「学习」→「工作」 — v5.1.6
+-- ============================================================
+-- 历史 study 数据迁移为 work，并重建分类约束放行 work、停用 study。
+-- 注意顺序：必须先 DROP 旧约束，再 UPDATE 迁移数据，最后 ADD 新约束。
+-- （若先 UPDATE 后 DROP，旧约束只允许 study，把 study 改成 work 会被 CHECK 拦下报 23514）
+-- （仅标签变化时代码里也应同步，见 ExpenseEditor/ExpenseCard/Expense.vue/exportExcel.ts/statistics.ts）
+
+ALTER TABLE public.expenses DROP CONSTRAINT IF EXISTS expenses_category_check;
+
+UPDATE public.expenses SET category = 'work' WHERE category = 'study';
+
+ALTER TABLE public.expenses ADD CONSTRAINT expenses_category_check
+  CHECK (category IN (
+    -- 支出分类
+    'food', 'transport', 'shopping', 'accommodation', 'work', 'entertainment', 'medical', 'other',
     -- 收入分类
     'salary', 'subsidy', 'bonus', 'part_time', 'red_packet', 'second_hand'
   ));

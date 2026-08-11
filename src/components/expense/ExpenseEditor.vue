@@ -65,7 +65,7 @@ const expenseCategories = [
   { value: 'transport', label: '交通', icon: 'chevron-right' },
   { value: 'shopping', label: '零食', icon: 'wallet' },
   { value: 'accommodation', label: '住宿', icon: 'home' },
-  { value: 'study', label: '学习', icon: 'book' },
+  { value: 'work', label: '工作', icon: 'briefcase' },
   { value: 'entertainment', label: '娱乐', icon: 'star' },
   { value: 'medical', label: '医疗', icon: 'heart' },
   { value: 'other', label: '其他', icon: 'grid' },
@@ -88,7 +88,7 @@ const currentCategories = computed(() => (
 const catColors: Record<string, string> = {
   food: 'var(--color-accent-soft)', transport: 'var(--color-sky)',
   shopping: 'var(--color-gold)', accommodation: 'var(--color-primary)',
-  study: 'var(--color-secondary)', entertainment: 'var(--color-accent)',
+  work: 'var(--color-secondary)', entertainment: 'var(--color-accent)',
   medical: '#E8B04C', other: 'var(--color-text-tertiary)',
   salary: 'var(--color-secondary)', subsidy: 'var(--color-primary)',
   bonus: 'var(--color-gold)', part_time: 'var(--color-sky)',

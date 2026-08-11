@@ -16,7 +16,7 @@ type JsonValue = any
 /** 支出分类英文值 → 中文标签（与 Expense.vue / 导入校验保持一致） */
 const EXPENSE_CATEGORY_LABELS: Record<string, string> = {
   food: '餐饮', transport: '交通', shopping: '零食', accommodation: '住宿',
-  study: '学习', entertainment: '娱乐', medical: '医疗', other: '其他',
+  work: '工作', entertainment: '娱乐', medical: '医疗', other: '其他',
 }
 
 /** 收入分类英文值 → 中文标签 */

@@ -59,9 +59,9 @@ export const useWorkStore = defineStore('work', () => {
     }
   }
 
-  /** 创建 */
+  /** 创建（period/category 供 Excel 导入透传，UI 未提供时不传） */
   async function addWork(
-    fields: { title: string; work_date: string; content: string; start_time?: string | null; end_time?: string | null },
+    fields: { title: string; work_date: string; content: string; start_time?: string | null; end_time?: string | null; period?: string; category?: string },
   ): Promise<WorkPlan> {
     loading.value = true
     error.value = null

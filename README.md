@@ -168,7 +168,23 @@ chore: 工程配置
 
 ## 版本记录
 
-- **v5.1.5（当前）** — 账本编辑体验、具体时间、Excel 导出与收入分类扩展：
+- **v5.1.6（当前）** — 记账按钮置顶、支出分类「学习→工作」、导入导出适配：
+  - 记账页 4 个 Tab（支出/收入/资产/福利）「记一笔 / 添加资产 / 添加福利」按钮从列表底部移到列表上方，记录多时无需滑到底部
+  - 支出分类「学习」改「工作」（DB key `study`→`work`，编辑页/卡片/统计/Excel 导出/导入校验全同步）
+  - **花费 Excel 导入模板对齐系统**：模板扩展为 6 列（日期/类型·支出收入/分类/金额/备注/时间·HH:mm），支持导入收入记录与具体时间
+  - **工作 Excel 导入校验与 DB 对齐**：分类改为 `meeting/exam_supervision/training/activity/other`（teaching 已停用），导入透传 `period`/`category`
+  - **JSON 全量导出/恢复补全**：导出扩展至全部 21 张表；恢复扩至 10 模块（新增 学生/课程表/资产/福利/大事记/心情，心情保留原日期）
+  - 需要手动执行 DB 迁移（`expenses` 分类 study→work，见 `supabase/schema.sql` 第 30 段）：
+    ```sql
+    ALTER TABLE public.expenses DROP CONSTRAINT IF EXISTS expenses_category_check;
+    UPDATE public.expenses SET category = 'work' WHERE category = 'study';
+    ALTER TABLE public.expenses ADD CONSTRAINT expenses_category_check
+      CHECK (category IN (
+        'food', 'transport', 'shopping', 'accommodation', 'work', 'entertainment', 'medical', 'other',
+        'salary', 'subsidy', 'bonus', 'part_time', 'red_packet', 'second_hand'
+      ));
+    ```
+- **v5.1.5** — 账本编辑体验、具体时间、Excel 导出与收入分类扩展：
   - 修复编辑支出/收入记录时原信息不显示（`ExpenseEditor` 增加 props 同步 watch；编辑页支持 store 未命中时直连数据库 `getExpenseById`，刷新/直达也可正常编辑）
   - 编辑页底部新增「删除这条记录」危险操作按钮（软删除，可到回收站恢复）
   - 从收入 Tab 进入「记一笔」默认收入类型；保存/取消后返回账本时定位到对应 Tab（支出/收入），不再固定跳回支出

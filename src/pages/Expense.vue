@@ -93,7 +93,7 @@ const categoryBreakdown = computed(() => {
 // ==========================================
 const categoryLabels: Record<string, string> = {
   food: '餐饮', transport: '交通', shopping: '零食', accommodation: '住宿',
-  study: '学习', entertainment: '娱乐', medical: '医疗', other: '其他',
+  work: '工作', entertainment: '娱乐', medical: '医疗', other: '其他',
   salary: '工资', subsidy: '补贴', bonus: '奖金', part_time: '兼职',
   red_packet: '红包', second_hand: '出二手',
 }
@@ -256,6 +256,12 @@ async function handleWelfareSave() {
     <!-- TAB: 支出 -->
     <!-- ======================================================== -->
     <div v-if="activeTab === '支出'" class="expense-page__tab">
+      <div v-if="expenseStore.expenseList.length > 0" class="expense-page__actions">
+        <button class="expense-page__action-btn" @click="goCreate()">
+          <AppIcon name="plus" size="16" /> 记一笔
+        </button>
+      </div>
+
       <div v-if="ready && expenseStore.expenseList.length === 0" class="expense-empty">
         <div class="expense-empty__icon">
           <AppIcon name="wallet" size="40" color="var(--color-text-tertiary)" />
@@ -287,17 +293,18 @@ async function handleWelfareSave() {
         </div>
       </div>
 
-      <div v-if="expenseStore.expenseList.length > 0" class="expense-page__actions">
-        <button class="expense-page__action-btn" @click="goCreate()">
-          <AppIcon name="plus" size="16" /> 记一笔
-        </button>
-      </div>
     </div>
 
     <!-- ======================================================== -->
     <!-- TAB: 收入 -->
     <!-- ======================================================== -->
     <div v-if="activeTab === '收入'" class="expense-page__tab">
+      <div v-if="expenseStore.incomeList.length > 0" class="expense-page__actions">
+        <button class="expense-page__action-btn" @click="goCreate()">
+          <AppIcon name="plus" size="16" /> 记一笔
+        </button>
+      </div>
+
       <div v-if="ready && expenseStore.incomeList.length === 0" class="expense-empty">
         <div class="expense-empty__icon">
           <AppIcon name="gift" size="40" color="var(--color-text-tertiary)" />
@@ -329,17 +336,18 @@ async function handleWelfareSave() {
         </div>
       </div>
 
-      <div v-if="expenseStore.incomeList.length > 0" class="expense-page__actions">
-        <button class="expense-page__action-btn" @click="goCreate()">
-          <AppIcon name="plus" size="16" /> 记一笔
-        </button>
-      </div>
     </div>
 
     <!-- ======================================================== -->
     <!-- TAB: 资产 -->
     <!-- ======================================================== -->
     <div v-if="activeTab === '资产'" class="expense-page__tab">
+      <div v-if="assetStore.assets.length > 0" class="expense-page__actions">
+        <button class="expense-page__action-btn" @click="openAddAsset()">
+          <AppIcon name="plus" size="16" /> 添加资产
+        </button>
+      </div>
+
       <div v-if="ready && assetStore.assets.length === 0" class="expense-empty">
         <div class="expense-empty__icon">
           <AppIcon name="wallet" size="40" color="var(--color-text-tertiary)" />
@@ -374,17 +382,18 @@ async function handleWelfareSave() {
         </div>
       </AppCard>
 
-      <div v-if="assetStore.assets.length > 0" class="expense-page__actions">
-        <button class="expense-page__action-btn" @click="openAddAsset()">
-          <AppIcon name="plus" size="16" /> 添加资产
-        </button>
-      </div>
     </div>
 
     <!-- ======================================================== -->
     <!-- TAB: 福利 -->
     <!-- ======================================================== -->
     <div v-if="activeTab === '福利'" class="expense-page__tab">
+      <div v-if="welfareStore.items.length > 0" class="expense-page__actions">
+        <button class="expense-page__action-btn" @click="openAddWelfare()">
+          <AppIcon name="plus" size="16" /> 添加福利
+        </button>
+      </div>
+
       <div v-if="ready && welfareStore.items.length === 0" class="expense-empty">
         <div class="expense-empty__icon">
           <AppIcon name="gift" size="40" color="var(--color-text-tertiary)" />
@@ -436,11 +445,6 @@ async function handleWelfareSave() {
         </div>
       </div>
 
-      <div v-if="welfareStore.items.length > 0" class="expense-page__actions">
-        <button class="expense-page__action-btn" @click="openAddWelfare()">
-          <AppIcon name="plus" size="16" /> 添加福利
-        </button>
-      </div>
     </div>
 
     <!-- ======================================================== -->
@@ -753,7 +757,7 @@ async function handleWelfareSave() {
 
 /* ---- Action button row ---- */
 .expense-page__actions {
-  margin-top: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
 }
 
 .expense-page__action-btn {

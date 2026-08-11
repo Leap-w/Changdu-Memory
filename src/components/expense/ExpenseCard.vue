@@ -10,7 +10,7 @@ const timeText = formatTimeHM(props.expense.expense_time)
 
 const labels: Record<string, string> = {
   food: '餐饮', transport: '交通', shopping: '零食', accommodation: '住宿',
-  study: '学习', entertainment: '娱乐', medical: '医疗',
+  work: '工作', entertainment: '娱乐', medical: '医疗',
   salary: '工资', subsidy: '补贴', bonus: '奖金', part_time: '兼职',
   red_packet: '红包', second_hand: '出二手',
   other: '其他',
@@ -18,7 +18,7 @@ const labels: Record<string, string> = {
 
 const categoryIcons: Record<string, string> = {
   food: 'check', transport: 'chevron-right', shopping: 'wallet', accommodation: 'home',
-  study: 'book', entertainment: 'star', medical: 'heart',
+  work: 'briefcase', entertainment: 'star', medical: 'heart',
   salary: 'wallet', subsidy: 'gift', bonus: 'star', part_time: 'briefcase',
   red_packet: 'red-envelope', second_hand: 'swap',
   other: 'grid',
@@ -27,7 +27,7 @@ const categoryIcons: Record<string, string> = {
 const categoryBgColors: Record<string, string> = {
   food: 'rgba(208,135,112,0.12)', transport: 'rgba(111,168,220,0.12)',
   shopping: 'rgba(214,168,79,0.12)', accommodation: 'rgba(75,143,140,0.1)',
-  study: 'rgba(107,158,133,0.12)', entertainment: 'rgba(194,103,106,0.1)',
+  work: 'rgba(107,158,133,0.12)', entertainment: 'rgba(194,103,106,0.1)',
   medical: 'rgba(232,176,76,0.12)',
   salary: 'rgba(107,158,133,0.12)', subsidy: 'rgba(75,143,140,0.1)',
   bonus: 'rgba(214,168,79,0.12)', part_time: 'rgba(111,168,220,0.12)',
@@ -38,7 +38,7 @@ const categoryBgColors: Record<string, string> = {
 const categoryIconColors: Record<string, string> = {
   food: 'var(--color-accent-soft)', transport: 'var(--color-sky)',
   shopping: 'var(--color-gold)', accommodation: 'var(--color-primary)',
-  study: 'var(--color-secondary)', entertainment: 'var(--color-accent)',
+  work: 'var(--color-secondary)', entertainment: 'var(--color-accent)',
   medical: '#E8B04C',
   salary: 'var(--color-secondary)', subsidy: 'var(--color-primary)',
   bonus: 'var(--color-gold)', part_time: 'var(--color-sky)',

@@ -63,7 +63,7 @@ function goRecycleBin() {
           <div class="settings-item__info">
             <span class="settings-item__label">数据导入</span>
             <span class="settings-item__desc">
-              通过 Excel 模板批量导入历史数据。支持日记、工作、花费、地点、待办。
+              通过 Excel 模板批量导入历史数据。支持日记、工作、花费、待办、学生档案、课程表。
             </span>
           </div>
           <NButton secondary @click="goImport">
